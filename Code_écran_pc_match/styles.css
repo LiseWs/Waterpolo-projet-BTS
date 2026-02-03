@@ -10,25 +10,21 @@ body {
   line-height: 12px;
 }
 
-/* Champ de nom de joueur */
-input.player-name {
-  border: none;
-  border-radius: 0;
-  padding: 0.125rem 0.5rem;
+/* Champ de nom de joueur (lecture seule) */
+.player-name {
   font-size: 0.75rem;
   font-weight: 600;
   width: 96px;
-  outline: none;
   background-color: transparent;
   text-align: left;
+  user-select: text;
 }
 
-/* Style en focus du champ joueur */
-input.player-name:focus {
-  border-color: transparent;
-  box-shadow: none;
-  outline: none;
-  background-color: transparent;
+/* Style visuel pour les joueurs exclus */
+.player-name.excluded-player {
+  opacity: 0.6;
+  text-decoration: line-through;
+  color: #9ca3af;
 }
 
 /* Style du score équipe 1 */

@@ -1,0 +1,15 @@
+{
+    "updated_at": 1770142016,
+    "state": {
+        "scoreTeam1": 0,
+        "scoreTeam2": 0,
+        "mainTimer": 480,
+        "possessionTimer": 30,
+        "period": 1,
+        "possessionMode": "normal",
+        "timeoutsTeam1": 0,
+        "timeoutsTeam2": 0,
+        "team1Name": "Équipe 1",
+        "team2Name": "Équipe 2"
+    }
+}

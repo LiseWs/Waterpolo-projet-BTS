@@ -28,7 +28,7 @@ if (!$data) {
 $temps_chrono = isset($data['temps_chrono']) && $data['temps_chrono'] !== '' ? $data['temps_chrono'] : null;
 
 // Préparation et exécution de la requête d'insertion
-$stmt = $pdo->prepare('INSERT INTO evenement (id_match, id_joueur, id_equipe, type_evenement, details, temps_chrono, horodatage) VALUES (?, ?, ?, ?, ?, ?, NOW())');
+$stmt = $pdo->prepare('INSERT INTO evenement (id_matchs, id_joueur, id_equipe, type_evenement, details, temps_chrono, horodatage) VALUES (?, ?, ?, ?, ?, ?, NOW())');
 $stmt->execute([
     $data['id_match'],
     $data['id_joueur'],

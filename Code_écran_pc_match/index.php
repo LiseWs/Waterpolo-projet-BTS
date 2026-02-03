@@ -2,12 +2,45 @@
 require_once __DIR__ . '/db.php'; // déjà présent si tu as suivi mes conseils
 session_start();
 
-// Si on n'est pas sur la page de paramétrage et qu'il n'y a pas de match en cours,
-// rediriger vers la page de paramétrage.
+// Si un matchId est fourni en GET (ex: redirection après création), le stocker en session
+if (isset($_GET['matchId']) && is_numeric($_GET['matchId'])) {
+    $_SESSION['current_match_id'] = (int)$_GET['matchId'];
+}
+
+// Validation stricte : si un match est en session, vérifier qu'il existe en base.
 $currentScript = basename($_SERVER['PHP_SELF']);
+$matchId = $_SESSION['current_match_id'] ?? null;
+if ($matchId) {
+    try {
+        $stmt = $pdo->prepare('SELECT id_match FROM matchs WHERE id_match = ? LIMIT 1');
+        $stmt->execute([(int)$matchId]);
+        $m = $stmt->fetch();
+        if (!$m) {
+            // Match invalide en session -> supprimer et rediriger vers configuration
+            unset($_SESSION['current_match_id']);
+            $_SESSION['flash'] = ['type' => 'error', 'message' => 'Aucun match valide en session. Veuillez configurer un nouveau match.'];
+            header('Location: match_setup.php');
+            exit;
+        }
+    } catch (Exception $e) {
+        unset($_SESSION['current_match_id']);
+        $_SESSION['flash'] = ['type' => 'error', 'message' => 'Erreur lors de la vérification du match en base. Veuillez configurer un nouveau match.'];
+        header('Location: match_setup.php');
+        exit;
+    }
+}
+
+// Si on n'est pas sur la page de paramétrage et qu'il n'y a pas de match en cours,
+// Pour index.php, afficher un message clair au lieu de rediriger. Pour les autres pages, rediriger.
+$noMatchConfigured = false;
 if ($currentScript !== 'match_setup.php' && empty($_SESSION['current_match_id'])) {
-    header('Location: match_setup.php');
-    exit;
+    if ($currentScript === 'index.php') {
+        $noMatchConfigured = true; // laissé pour affichage côté client
+    } else {
+        $_SESSION['flash'] = ['type' => 'info', 'message' => 'Veuillez créer le match dans la page de configuration avant d\'accéder à l\'interface d\'arbitrage.'];
+        header('Location: match_setup.php');
+        exit;
+    }
 }
 
 // ... suite de index.php (HTML/JS)
@@ -285,19 +318,20 @@ button:hover {
 </style>
  </head>
  <body class="bg-white font-sans select-none">
+  <script>window.currentMatchId = <?= json_encode($matchId ?? null); ?>; window.noMatchConfigured = <?= json_encode($noMatchConfigured ?? false); ?>;</script>
   <div class="flex flex-col min-h-screen max-w-[1400px] mx-auto">
    <header class="flex justify-between items-center px-6 py-4 border-b border-gray-300">
     <div class="flex items-center space-x-3">
-     <img alt="Logo Tarbes Nautic Club" class="team-logo" height="48" id="team1Logo" src="images/TNC.png" width="48"/>
-     <input autocomplete="off" class="team-name-input team1-color" id="team1Name" maxlength="15" placeholder="NOM EQUIPE 1" spellcheck="false" type="text" value="TNC"/>
+     <div id="team1LogoContainer" style="display:none"><img alt="" class="team-logo" height="48" id="team1Logo" width="48"/></div>
+     <div class="team-name-display font-bold text-lg" id="team1NameDisplay"></div>
     </div>
     <div class="flex items-center space-x-3">
-     <img alt="Logo équipe 2" class="team-logo" height="48" id="team2Logo" src="images/logo_Royal.png" width="48"/>
-     <select id="team2Select" class="team-select">
-      <option value="">Sélectionner une équipe</option>
-     </select>
+     <div id="team2LogoContainer" style="display:none"><img alt="" class="team-logo" height="48" id="team2Logo" width="48"/></div>
+     <div class="team-name-display font-bold text-lg" id="team2NameDisplay"></div>
+     <a id="openScoreboardBtn" href="scoreboard.php" target="_blank" class="bg-green-600 text-white text-sm font-semibold rounded-md py-2 px-3 ml-4">Ouvrir écran public</a>
     </div>
    </header>
+   <div id="noMatchMessage" class="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-3 my-3 hidden">Aucun match configuré. Veuillez passer par <a class="underline font-bold" href="match_setup.php">match_setup.php</a></div>
    <main class="flex flex-1 px-6 py-4 overflow-x-auto space-x-4">
     <!-- Left action buttons -->
     <div class="flex flex-col space-y-3 flex-shrink-0 lateral-buttons" data-team="1">
@@ -324,7 +358,7 @@ button:hover {
         <button aria-label="Bouton E joueur 1 équipe 1" title="Exclusion temporaire - 20 secondes hors du jeu" class="bg-black text-white rounded-md px-2 py-0.5 font-bold exclusion-button" type="button">E</button>
         <button aria-label="Bouton P joueur 1 équipe 1" title="Penalty - Tir de pénalité" class="bg-black text-white rounded-md px-2 py-0.5 font-bold btn-p" type="button" data-team="1">P</button>
        </div>
-       <input aria-label="Nom du joueur 1 équipe 1" autocomplete="off" class="player-name" maxlength="15" placeholder="Prénom" spellcheck="false" type="text" value=""/>
+       <!-- removed input: players are displayed read-only from match_setup.php -->
       </div>
       <div class="flex items-center space-x-2 text-xs font-semibold">
        <div class="w-5 text-right select-text">
@@ -341,7 +375,7 @@ button:hover {
          P
         </button>
        </div>
-       <input aria-label="Nom du joueur 2 équipe 1" autocomplete="off" class="player-name" maxlength="15" placeholder="Prénom" spellcheck="false" type="text" value=""/>
+       <!-- removed input: players are displayed read-only from match_setup.php -->
       </div>
       <div class="flex items-center space-x-2 text-xs font-semibold">
        <div class="w-5 text-right select-text">
@@ -358,7 +392,7 @@ button:hover {
          P
         </button>
        </div>
-       <input aria-label="Nom du joueur 3 équipe 1" autocomplete="off" class="player-name" maxlength="15" placeholder="Prénom" spellcheck="false" type="text" value=""/>
+       <!-- removed input: players are displayed read-only from match_setup.php -->
       </div>
       <div class="flex items-center space-x-2 text-xs font-semibold">
        <div class="w-5 text-right select-text">
@@ -373,7 +407,7 @@ button:hover {
         </button>
         <button aria-label="Bouton P joueur 4 équipe 1" title="Penalty - Tir de pénalité" class="bg-black text-white rounded-md px-2 py-0.5 font-bold btn-p" type="button" data-team="1">P</button>
        </div>
-       <input aria-label="Nom du joueur 4 équipe 1" autocomplete="off" class="player-name" maxlength="15" placeholder="Prénom" spellcheck="false" type="text" value=""/>
+       <!-- removed input: players are displayed read-only from match_setup.php -->
       </div>
       <div class="flex items-center space-x-2 text-xs font-semibold">
        <div class="w-5 text-right select-text">
@@ -388,7 +422,7 @@ button:hover {
         </button>
         <button aria-label="Bouton P joueur 5 équipe 1" title="Penalty - Tir de pénalité" class="bg-black text-white rounded-md px-2 py-0.5 font-bold btn-p" type="button" data-team="1">P</button>
        </div>
-       <input aria-label="Nom du joueur 5 équipe 1" autocomplete="off" class="player-name" maxlength="15" placeholder="Prénom" spellcheck="false" type="text" value=""/>
+       <!-- removed input: players are displayed read-only from match_setup.php -->
       </div>
       <div class="flex items-center space-x-2 text-xs font-semibold">
        <div class="w-5 text-right select-text">
@@ -403,7 +437,7 @@ button:hover {
         </button>
         <button aria-label="Bouton P joueur 6 équipe 1" title="Penalty - Tir de pénalité" class="bg-black text-white rounded-md px-2 py-0.5 font-bold btn-p" type="button" data-team="1">P</button>
        </div>
-       <input aria-label="Nom du joueur 6 équipe 1" autocomplete="off" class="player-name" maxlength="15" placeholder="Prénom" spellcheck="false" type="text" value=""/>
+       <!-- removed input: players displayed read-only -->
       </div>
       <div class="flex items-center space-x-2 text-xs font-semibold">
        <div class="w-5 text-right select-text">
@@ -418,7 +452,7 @@ button:hover {
         </button>
         <button aria-label="Bouton P joueur 7 équipe 1" title="Penalty - Tir de pénalité" class="bg-black text-white rounded-md px-2 py-0.5 font-bold btn-p" type="button" data-team="1">P</button>
        </div>
-       <input aria-label="Nom du joueur 7 équipe 1" autocomplete="off" class="player-name" maxlength="15" placeholder="Prénom" spellcheck="false" type="text" value=""/>
+       <!-- removed input: players displayed read-only -->
       </div>
       <div class="flex items-center space-x-2 text-xs font-semibold">
        <div class="w-5 text-right select-text">
@@ -433,7 +467,7 @@ button:hover {
         </button>
         <button aria-label="Bouton P joueur 8 équipe 1" title="Penalty - Tir de pénalité" class="bg-black text-white rounded-md px-2 py-0.5 font-bold btn-p" type="button" data-team="1">P</button>
        </div>
-       <input aria-label="Nom du joueur 8 équipe 1" autocomplete="off" class="player-name" maxlength="15" placeholder="Prénom" spellcheck="false" type="text" value=""/>
+       <!-- removed input: players displayed read-only -->
       </div>
       <div class="flex items-center space-x-2 text-xs font-semibold">
        <div class="w-5 text-right select-text">
@@ -448,7 +482,7 @@ button:hover {
         </button>
         <button aria-label="Bouton P joueur 9 équipe 1" title="Penalty - Tir de pénalité" class="bg-black text-white rounded-md px-2 py-0.5 font-bold btn-p" type="button" data-team="1">P</button>
        </div>
-       <input aria-label="Nom du joueur 9 équipe 1" autocomplete="off" class="player-name" maxlength="15" placeholder="Prénom" spellcheck="false" type="text" value=""/>
+       <!-- removed input: players displayed read-only -->
       </div>
       <div class="flex items-center space-x-2 text-xs font-semibold">
        <div class="w-5 text-right select-text">
@@ -463,7 +497,7 @@ button:hover {
         </button>
         <button aria-label="Bouton P joueur 10 équipe 1" title="Penalty - Tir de pénalité" class="bg-black text-white rounded-md px-2 py-0.5 font-bold btn-p" type="button" data-team="1">P</button>
        </div>
-       <input aria-label="Nom du joueur 10 équipe 1" autocomplete="off" class="player-name" maxlength="15" placeholder="Prénom" spellcheck="false" type="text" value=""/>
+       <!-- removed input: players displayed read-only -->
       </div>
       <div class="flex items-center space-x-2 text-xs font-semibold">
        <div class="w-5 text-right select-text">
@@ -478,7 +512,7 @@ button:hover {
         </button>
         <button aria-label="Bouton P joueur 11 équipe 1" title="Penalty - Tir de pénalité" class="bg-black text-white rounded-md px-2 py-0.5 font-bold btn-p" type="button" data-team="1">P</button>
        </div>
-       <input aria-label="Nom du joueur 11 équipe 1" autocomplete="off" class="player-name" maxlength="15" placeholder="Prénom" spellcheck="false" type="text" value=""/>
+       <!-- removed input: players displayed read-only -->
       </div>
       <div class="flex items-center space-x-2 text-xs font-semibold">
        <div class="w-5 text-right select-text">
@@ -493,7 +527,7 @@ button:hover {
         </button>
         <button aria-label="Bouton P joueur 12 équipe 1" title="Penalty - Tir de pénalité" class="bg-black text-white rounded-md px-2 py-0.5 font-bold btn-p" type="button" data-team="1">P</button>
        </div>
-       <input aria-label="Nom du joueur 12 équipe 1" autocomplete="off" class="player-name" maxlength="15" placeholder="Prénom" spellcheck="false" type="text" value=""/>
+       <!-- removed input: players displayed read-only -->
       </div>
       <div class="flex items-center space-x-2 text-xs font-semibold">
        <div class="w-5 text-right select-text">
@@ -508,7 +542,7 @@ button:hover {
         </button>
         <button aria-label="Bouton P joueur 13 équipe 1" title="Penalty - Tir de pénalité" class="bg-black text-white rounded-md px-2 py-0.5 font-bold btn-p" type="button" data-team="1">P</button>
        </div>
-       <input aria-label="Nom du joueur 13 équipe 1" autocomplete="off" class="player-name" maxlength="15" placeholder="Prénom" spellcheck="false" type="text" value=""/>
+       <!-- removed input: players displayed read-only -->
       </div>
       <div class="flex items-center space-x-2 text-xs font-semibold">
        <div class="w-5 text-right select-text">
@@ -523,7 +557,7 @@ button:hover {
         </button>
         <button aria-label="Bouton P joueur 14 équipe 1" title="Penalty - Tir de pénalité" class="bg-black text-white rounded-md px-2 py-0.5 font-bold btn-p" type="button" data-team="1">P</button>
        </div>
-       <input aria-label="Nom du joueur 14 équipe 1" autocomplete="off" class="player-name" maxlength="15" placeholder="Prénom" spellcheck="false" type="text" value=""/>
+       <!-- removed input: players displayed read-only -->
       </div>
       <div class="flex items-center space-x-2 text-xs font-semibold">
        <div class="w-5 text-right select-text">
@@ -538,7 +572,7 @@ button:hover {
         </button>
         <button aria-label="Bouton P joueur 15 équipe 1" title="Penalty - Tir de pénalité" class="bg-black text-white rounded-md px-2 py-0.5 font-bold btn-p" type="button" data-team="1">P</button>
        </div>
-       <input aria-label="Nom du joueur 15 équipe 1" autocomplete="off" class="player-name" maxlength="15" placeholder="Prénom" spellcheck="false" type="text" value=""/>
+       <!-- removed input: players displayed read-only -->
       </div>
      </div>
      <button id="btnTempsMortEquipe1" title="Temps mort - Arrêt du jeu pour 1 minute" class="bg-black text-white text-xs font-semibold rounded-md mt-3 py-1 w-32 self-center" data-team="1">
@@ -600,7 +634,7 @@ button:hover {
        <div class="w-5 text-left select-text">
         1.
        </div>
-       <input aria-label="Nom du joueur 1 équipe 2" autocomplete="off" class="player-name text-right" maxlength="15" placeholder="Prénom" spellcheck="false" type="text" value=""/>
+       <!-- removed input: players displayed read-only -->
        <div class="flex space-x-1 player-controls" data-player="1" data-team="2">
         <button aria-label="Bouton B joueur 1 équipe 2" title="But - Marquer un but pour ce joueur" class="bg-black text-white rounded-md px-2 py-0.5 font-bold but-button" type="button">
          B
@@ -615,7 +649,7 @@ button:hover {
        <div class="w-5 text-left select-text">
         2.
        </div>
-       <input aria-label="Nom du joueur 2 équipe 2" autocomplete="off" class="player-name text-right" maxlength="15" placeholder="Prénom" spellcheck="false" type="text" value=""/>
+       <!-- removed input: players displayed read-only -->
                <div class="flex space-x-1 player-controls" data-player="2" data-team="2">
          <button aria-label="Bouton B joueur 2 équipe 2" title="But - Marquer un but pour ce joueur" class="bg-black text-white rounded-md px-2 py-0.5 font-bold but-button" type="button">
          B
@@ -630,7 +664,7 @@ button:hover {
        <div class="w-5 text-left select-text">
         3.
        </div>
-       <input aria-label="Nom du joueur 3 équipe 2" autocomplete="off" class="player-name text-right" maxlength="15" placeholder="Prénom" spellcheck="false" type="text" value=""/>
+       <!-- removed input: players displayed read-only -->
        <div class="flex space-x-1 player-controls" data-player="3" data-team="2">
         <button aria-label="Bouton B joueur 3 équipe 2" title="But - Marquer un but pour ce joueur" class="bg-black text-white rounded-md px-2 py-0.5 font-bold player-B-right" type="button" data-team="2">
          B
@@ -645,7 +679,7 @@ button:hover {
        <div class="w-5 text-left select-text">
         4.
        </div>
-       <input aria-label="Nom du joueur 4 équipe 2" autocomplete="off" class="player-name text-right" maxlength="15" placeholder="Prénom" spellcheck="false" type="text" value=""/>
+       <!-- removed input: players displayed read-only -->
        <div class="flex space-x-1 player-controls" data-player="4" data-team="2">
         <button aria-label="Bouton B joueur 4 équipe 2" class="bg-black text-white rounded-md px-2 py-0.5 font-bold player-B-right" type="button" data-team="2">
          B
@@ -660,7 +694,7 @@ button:hover {
        <div class="w-5 text-left select-text">
         5.
        </div>
-       <input aria-label="Nom du joueur 5 équipe 2" autocomplete="off" class="player-name text-right" maxlength="15" placeholder="Prénom" spellcheck="false" type="text" value=""/>
+       <!-- removed input: players displayed read-only -->
        <div class="flex space-x-1 player-controls" data-player="5" data-team="2">
         <button aria-label="Bouton B joueur 5 équipe 2" title="But - Marquer un but pour ce joueur" class="bg-black text-white rounded-md px-2 py-0.5 font-bold player-B-right" type="button" data-team="2">
          B
@@ -675,7 +709,7 @@ button:hover {
        <div class="w-5 text-left select-text">
         6.
        </div>
-       <input aria-label="Nom du joueur 6 équipe 2" autocomplete="off" class="player-name text-right" maxlength="15" placeholder="Prénom" spellcheck="false" type="text" value=""/>
+       <!-- removed input: players displayed read-only -->
        <div class="flex space-x-1 player-controls" data-player="6" data-team="2">
         <button aria-label="Bouton B joueur 6 équipe 2" title="But - Marquer un but pour ce joueur" class="bg-black text-white rounded-md px-2 py-0.5 font-bold player-B-right" type="button" data-team="2">
          B
@@ -690,7 +724,7 @@ button:hover {
        <div class="w-5 text-left select-text">
         7.
        </div>
-       <input aria-label="Nom du joueur 7 équipe 2" autocomplete="off" class="player-name text-right" maxlength="15" placeholder="Prénom" spellcheck="false" type="text" value=""/>
+       <!-- removed input: players displayed read-only -->
        <div class="flex space-x-1 player-controls" data-player="7" data-team="2">
         <button aria-label="Bouton B joueur 7 équipe 2" title="But - Marquer un but pour ce joueur" class="bg-black text-white rounded-md px-2 py-0.5 font-bold player-B-right" type="button" data-team="2">
          B
@@ -705,7 +739,7 @@ button:hover {
        <div class="w-5 text-left select-text">
         8.
        </div>
-       <input aria-label="Nom du joueur 8 équipe 2" autocomplete="off" class="player-name text-right" maxlength="15" placeholder="Prénom" spellcheck="false" type="text" value=""/>
+       <!-- removed input: players displayed read-only -->
        <div class="flex space-x-1 player-controls" data-player="8" data-team="2">
         <button aria-label="Bouton B joueur 8 équipe 2" title="But - Marquer un but pour ce joueur" class="bg-black text-white rounded-md px-2 py-0.5 font-bold player-B-right" type="button" data-team="2">
          B
@@ -720,7 +754,7 @@ button:hover {
        <div class="w-5 text-left select-text">
         9.
        </div>
-       <input aria-label="Nom du joueur 9 équipe 2" autocomplete="off" class="player-name text-right" maxlength="15" placeholder="Prénom" spellcheck="false" type="text" value=""/>
+       <!-- removed input: players displayed read-only -->
        <div class="flex space-x-1 player-controls" data-player="9" data-team="2">
         <button aria-label="Bouton B joueur 9 équipe 2" title="But - Marquer un but pour ce joueur" class="bg-black text-white rounded-md px-2 py-0.5 font-bold player-B-right" type="button" data-team="2">
          B
@@ -735,7 +769,7 @@ button:hover {
        <div class="w-5 text-left select-text">
         10.
        </div>
-       <input aria-label="Nom du joueur 10 équipe 2" autocomplete="off" class="player-name text-right" maxlength="15" placeholder="Prénom" spellcheck="false" type="text" value=""/>
+       <!-- removed input: players displayed read-only -->
        <div class="flex space-x-1 player-controls" data-player="10" data-team="2">
         <button aria-label="Bouton B joueur 10 équipe 2" title="But - Marquer un but pour ce joueur" class="bg-black text-white rounded-md px-2 py-0.5 font-bold player-B-right" type="button" data-team="2">
          B
@@ -750,7 +784,7 @@ button:hover {
        <div class="w-5 text-left select-text">
         11.
        </div>
-       <input aria-label="Nom du joueur 11 équipe 2" autocomplete="off" class="player-name text-right" maxlength="15" placeholder="Prénom" spellcheck="false" type="text" value=""/>
+       <!-- removed input: players displayed read-only -->
        <div class="flex space-x-1 player-controls" data-player="11" data-team="2">
         <button aria-label="Bouton B joueur 11 équipe 2" title="But - Marquer un but pour ce joueur" class="bg-black text-white rounded-md px-2 py-0.5 font-bold player-B-right" type="button" data-team="2">
          B
@@ -765,7 +799,7 @@ button:hover {
        <div class="w-5 text-left select-text">
         12.
        </div>
-       <input aria-label="Nom du joueur 12 équipe 2" autocomplete="off" class="player-name text-right" maxlength="15" placeholder="Prénom" spellcheck="false" type="text" value=""/>
+       <!-- removed input: players displayed read-only -->
        <div class="flex space-x-1 player-controls" data-player="12" data-team="2">
         <button aria-label="Bouton B joueur 12 équipe 2" title="But - Marquer un but pour ce joueur" class="bg-black text-white rounded-md px-2 py-0.5 font-bold player-B-right" type="button" data-team="2">
          B
@@ -780,7 +814,7 @@ button:hover {
        <div class="w-5 text-left select-text">
         13.
        </div>
-       <input aria-label="Nom du joueur 13 équipe 2" autocomplete="off" class="player-name text-right" maxlength="15" placeholder="Prénom" spellcheck="false" type="text" value=""/>
+       <!-- removed input: players displayed read-only -->
        <div class="flex space-x-1 player-controls" data-player="13" data-team="2">
         <button aria-label="Bouton B joueur 13 équipe 2" title="But - Marquer un but pour ce joueur" class="bg-black text-white rounded-md px-2 py-0.5 font-bold player-B-right" type="button" data-team="2">
          B
@@ -795,7 +829,7 @@ button:hover {
        <div class="w-5 text-left select-text">
         14.
        </div>
-       <input aria-label="Nom du joueur 14 équipe 2" autocomplete="off" class="player-name text-right" maxlength="15" placeholder="Prénom" spellcheck="false" type="text" value=""/>
+       <!-- removed input: players displayed read-only -->
        <div class="flex space-x-1 player-controls" data-player="14" data-team="2">
         <button aria-label="Bouton B joueur 14 équipe 2" title="But - Marquer un but pour ce joueur" class="bg-black text-white rounded-md px-2 py-0.5 font-bold player-B-right" type="button" data-team="2">
          B
@@ -810,7 +844,7 @@ button:hover {
        <div class="w-5 text-left select-text">
         15.
        </div>
-       <input aria-label="Nom du joueur 15 équipe 2" autocomplete="off" class="player-name text-right" maxlength="15" placeholder="Prénom" spellcheck="false" type="text" value=""/>
+       <!-- removed input: players displayed read-only -->
        <div class="flex space-x-1 player-controls" data-player="15" data-team="2">
         <button aria-label="Bouton B joueur 15 équipe 2" title="But - Marquer un but pour ce joueur" class="bg-black text-white rounded-md px-2 py-0.5 font-bold player-B-right" type="button" data-team="2">
          B
@@ -849,18 +883,57 @@ button:hover {
     * Toutes les constantes de temps et limites du jeu de waterpolo
     */
    const CONFIG = {
-       PERIOD_TIME: 480,                 // Durée d'une période : 8 minutes (8 * 60 = 480 secondes)
-       POSSESSION_TIME: 30,              // Temps de possession (shot clock) : 30 secondes exactement
-       SPECIAL_TIME: 20,                 // Temps spécial pour situations particulières : 20 secondes
-       MAX_TIMEOUTS: 2,                  // Nombre maximum de temps morts par équipe par MATCH (4 périodes)
+       PERIOD_TIME: <?= (int)($_SESSION['current_rules']['PERIOD_TIME'] ?? 480) ?>,                 // Durée d'une période en secondes
+       POSSESSION_TIME: <?= (int)($_SESSION['current_rules']['POSSESSION_TIME'] ?? 30) ?>,          // Shot clock (s)
+       SPECIAL_TIME: <?= (int)($_SESSION['current_rules']['SPECIAL_TIME'] ?? 20) ?>,                // Chrono de reprise / récupération (s)
+       MAX_TIMEOUTS: <?= (int)($_SESSION['current_rules']['MAX_TIMEOUTS'] ?? 2) ?>,                // Temps morts max par équipe
        TIMEOUT_TIME: 60,                 // Durée d'un temps mort : 60 secondes (1 minute)
-       EXCLUSION_TIME: 20,               // Durée d'une exclusion temporaire : 20 secondes
-       EDAP_TIME: 240,                   // Durée EDAP (Exclusion Définitive avec Autorisation de remplacement après) : 4 minutes
-       MAX_EXCLUSIONS: 3,                // Nombre maximum d'exclusions temporaires avant exclusion définitive
-       TECHNICAL_TIMEOUT_TIME: 240,      // Temps mort technique automatique à 4 minutes restantes
-       LAST_SECONDS_THRESHOLD: 5,        // Seuil pour déclencher l'alerte des dernières secondes
-       MAX_PERIODS: 4                    // Nombre total de périodes en waterpolo (4 x 8 minutes)
+       EXCLUSION_TIME: <?= (int)($_SESSION['current_rules']['EXCLUSION_TIME'] ?? 20) ?>,            // Durée d'une exclusion temporaire (s)
+       EDAP_TIME: <?= (int)($_SESSION['current_rules']['EDAP_TIME'] ?? 240) ?>,                   // Durée EDAP (s)
+       MAX_EXCLUSIONS: <?= (int)($_SESSION['current_rules']['MAX_EXCLUSIONS'] ?? 3) ?>,
+       TECHNICAL_TIMEOUT_TIME: <?= (int)($_SESSION['current_rules']['TECHNICAL_TIMEOUT_TIME'] ?? 240) ?>,
+       LAST_SECONDS_THRESHOLD: 5,
+       MAX_PERIODS: <?= (int)($_SESSION['current_rules']['MAX_PERIODS'] ?? 4) ?>,
+       BREAK_SHORT_MINUTES: <?= (int)($_SESSION['current_rules']['BREAK_SHORT_MINUTES'] ?? 2) ?>,
+       HALFTIME_MINUTES: <?= (int)($_SESSION['current_rules']['HALFTIME_MINUTES'] ?? 5) ?>
    };
+
+   // Identifiant du match courant, utile pour la synchronisation
+   window.idMatchActuel = <?= (int)($_SESSION['current_match_id'] ?? 0) ?>;
+
+   // --- Synchronisation : envoi de l'état sur le serveur (fichier JSON) ---
+   let __lastSentState = null;
+   function sendStateToServer(state) {
+       if (!window.idMatchActuel) return;
+       try {
+           const s = JSON.stringify(state);
+           if (s === __lastSentState) return; // pas de changement
+           __lastSentState = s;
+           fetch('api/update_game_state.php', {
+               method: 'POST',
+               headers: {'Content-Type':'application/json'},
+               body: JSON.stringify({matchId: window.idMatchActuel, state: state})
+           }).catch(()=>{});
+       } catch (e) { /* ignore */ }
+   }
+
+   // Envoie périodique en cas de non changement mais présence de match (sécurité)
+   setInterval(() => {
+       if (!window.idMatchActuel) return;
+       sendStateToServer({
+           scoreTeam1: gameState.scoreTeam1,
+           scoreTeam2: gameState.scoreTeam2,
+           mainTimer: gameState.mainTimer,
+           possessionTimer: gameState.possessionTimer,
+           period: gameState.period,
+           possessionMode: gameState.possessionMode,
+           timeoutsTeam1: gameState.timeoutsTeam1 || 0,
+           timeoutsTeam2: gameState.timeoutsTeam2 || 0,
+           team1Name: getTeamName(1),
+           team2Name: getTeamName(2)
+       });
+   }, 2000);
+
 
    /**
     * ÉTAT GLOBAL DU JEU
@@ -1000,6 +1073,8 @@ button:hover {
        DOM.buttons.startStop = document.getElementById("startStopBtn");
        DOM.buttons.possession = document.getElementById("possessionBtn");
        DOM.buttons.special20 = document.getElementById("special20Btn");
+  // Mettre à jour le label du bouton en fonction de la configuration (ex: 20s par défaut)
+  if (DOM.buttons.special20) DOM.buttons.special20.textContent = CONFIG.SPECIAL_TIME + ' secondes';
        DOM.buttons.timeout1 = document.getElementById("btnTempsMortEquipe1");
        DOM.buttons.timeout2 = document.getElementById("btnTempsMortEquipe2");
        
@@ -1067,24 +1142,10 @@ button:hover {
     * @returns {string} - Nom de l'équipe ou nom par défaut
     */
    function getTeamName(equipe) {
-       if (equipe === 1) {
-           return 'TNC';
-       } else {
-           // Récupérer le nom de l'équipe sélectionnée dans le menu déroulant
-           const team2Input = document.querySelector('.team-name-input.team2-color');
-           const team2Select = document.getElementById('team2Select');
-           
-           // Si l'input existe et a une valeur, l'utiliser
-           if (team2Input && team2Input.value) {
-               return team2Input.value;
-           }
-           // Sinon, si une équipe est sélectionnée dans le menu déroulant, utiliser son nom
-           else if (team2Select && team2Select.selectedIndex > 0) {
-               return team2Select.options[team2Select.selectedIndex].textContent;
-           }
-           // Par défaut
-           return 'Équipe 2';
-       }
+       // Strict: only use values provided by the server state. Do not use UI inputs or defaults.
+       if (!window.currentServerState) return null;
+       if (equipe === 1) return window.currentServerState.team1Name || null;
+       return window.currentServerState.team2Name || null;
    }
 
    /**
@@ -1104,10 +1165,10 @@ button:hover {
        // === MISE À JOUR DU LABEL DE POSSESSION ===
        // Change le texte et la couleur selon le mode de jeu actuel
        if (gameState.possessionMode === 'special20') {
-           DOM.labels.possession.textContent = '20 secondes';                   // Mode 20 secondes (corner/penalty)
+           DOM.labels.possession.textContent = CONFIG.SPECIAL_TIME + ' secondes';                   // Mode spécial selon configuration (corner/penalty)
            DOM.labels.possession.style.color = '#3B82F6';                      // Couleur bleue pour distinguer du mode normal
        } else {
-           DOM.labels.possession.textContent = 'Possession (30s)';              // Mode normal 30 secondes
+           DOM.labels.possession.textContent = 'Possession (' + CONFIG.POSSESSION_TIME + 's)';              // Mode normal
            DOM.labels.possession.style.color = '#000';                         // Couleur noire par défaut
        }
        
@@ -1129,6 +1190,20 @@ button:hover {
            showTechnicalTimeout();                                              // Affiche la notification de temps mort technique
            gameState.technicalTimeoutShown = true;                             // Empêche l'affichage multiple
        }
+
+       // --- Envoyer l'état au serveur pour synchronisation avec l'écran public ---
+       sendStateToServer({
+           scoreTeam1: gameState.scoreTeam1,
+           scoreTeam2: gameState.scoreTeam2,
+           mainTimer: gameState.mainTimer,
+           possessionTimer: gameState.possessionTimer,
+           period: gameState.period,
+           possessionMode: gameState.possessionMode,
+           timeoutsTeam1: gameState.timeoutsTeam1 || 0,
+           timeoutsTeam2: gameState.timeoutsTeam2 || 0,
+           team1Name: getTeamName(1),
+           team2Name: getTeamName(2)
+       });
        
        // === MISE À JOUR DES SCORES ===
        DOM.scores.team1.textContent = gameState.scoreTeam1;                    // Affichage du score équipe 1
@@ -1184,7 +1259,7 @@ button:hover {
 
        // === NOTIFICATION DANS LE JOURNAL ===
        if (gameState.period <= CONFIG.MAX_PERIODS) {
-           addLogEntry(`🔄 DÉBUT DE LA PÉRIODE ${gameState.period} - Temps remis à 8:00`, 'text-blue-600 font-bold');
+           addLogEntry(`🔄 DÉBUT DE LA PÉRIODE ${gameState.period} - Temps remis à ${formatTime(CONFIG.PERIOD_TIME)}`, 'text-blue-600 font-bold');
            
            // Si c'est la dernière période
            if (gameState.period === CONFIG.MAX_PERIODS) {
@@ -1221,8 +1296,8 @@ button:hover {
                    
                    // Ajouter une entrée dans le journal
                    const team = teamKey === 'team1' ? 'Équipe 1' : 'Équipe 2';
-                   const playerInput = document.querySelector(`#${teamKey === 'team1' ? 'leftPlayersList' : 'rightPlayersList'} div:nth-child(${playerNumber}) input.player-name`);
-                   const playerName = playerInput ? playerInput.value || `Joueur ${playerNumber}` : `Joueur ${playerNumber}`;
+                   const playerNameElem = document.querySelector(`#${teamKey === 'team1' ? 'leftPlayersList' : 'rightPlayersList'} div:nth-child(${playerNumber}) .player-name`);
+                   const playerName = playerNameElem ? playerNameElem.textContent.trim() || `Joueur ${playerNumber}` : `Joueur ${playerNumber}`;
                    
                    if (exclusion.count < CONFIG.MAX_EXCLUSIONS) {
                        addLogEntry(`✅ Fin d'exclusion - ${playerName} (${playerNumber})`, 'text-green-600');
@@ -1284,8 +1359,8 @@ button:hover {
                        }
                        gameState.possessionTimer--;                            // Décrémenter le temps de possession
                    } else if (gameState.possessionMode === 'special20') {      // Mode 20 secondes
-                       if (gameState.possessionTimer === 0) {                  // Fin des 20 secondes
-                           addLogEntry(`⏱️ Fin des 20 secondes - ${formatTime(gameState.mainTimer)}`, 'text-gray-600');
+                       if (gameState.possessionTimer === 0) {                  // Fin du temps spécial
+                           addLogEntry(`⏱️ Fin des ${CONFIG.SPECIAL_TIME} secondes - ${formatTime(gameState.mainTimer)}`, 'text-gray-600');
                            DOM.sound.play();                                    // Signal sonore
                            // Redémarrer en mode normal avec changement de possession
                            gameState.possessionCount++;                        // Changement de possession
@@ -1396,7 +1471,7 @@ button:hover {
    function handleCorner() {
        stopPossessionTimer();
        startPossessionTimer(CONFIG.SPECIAL_TIME, 'corner');
-       addLogEntry(`🔄 Corner - ${formatTime(gameState.mainTimer)}<br>20 secondes de possession`, 'text-gray-600');
+       addLogEntry(`🔄 Corner - ${formatTime(gameState.mainTimer)}<br>${CONFIG.SPECIAL_TIME} secondes de possession`, 'text-gray-600');
    }
 
    /**
@@ -1452,7 +1527,7 @@ button:hover {
        badge.textContent = `TM${team === 1 ? gameState.timeoutsTeam1 + 1 : gameState.timeoutsTeam2 + 1}`;
        
        // Ajouter le badge à côté du nom de l'équipe concernée
-       const teamElement = document.getElementById(team === 1 ? 'team1Name' : 'team2Select');
+       const teamElement = document.getElementById(team === 1 ? 'team1Name' : 'team2Name');
        const teamHeader = teamElement.parentElement;
        teamHeader.classList.add('team-header');
        
@@ -1564,8 +1639,8 @@ button:hover {
        }
        
        // === RÉCUPÉRATION DU NOM DU JOUEUR ===
-       const playerInput = document.querySelector(`#${equipe === 1 ? 'leftPlayersList' : 'rightPlayersList'} div:nth-child(${playerNumber}) input.player-name`);
-       const playerName = playerInput ? playerInput.value || `Joueur ${playerNumber}` : `Joueur ${playerNumber}`;
+       const playerNameElem = document.querySelector(`#${equipe === 1 ? 'leftPlayersList' : 'rightPlayersList'} div:nth-child(${playerNumber}) .player-name`);
+       const playerName = playerNameElem ? playerNameElem.textContent.trim() || `Joueur ${playerNumber}` : `Joueur ${playerNumber}`;
        
        // === ENREGISTREMENT DANS LE JOURNAL ===
        addLogEntry(`⚽ BUT ! ${team} - ${playerName} (${playerNumber}) - ${formatTime(gameState.mainTimer)}`, 
@@ -1615,8 +1690,8 @@ button:hover {
        const teamKey = equipe === 1 ? 'team1' : 'team2';                        // Clé pour les objets d'état
        
        // === RÉCUPÉRATION DU NOM DU JOUEUR ===
-       const playerInput = document.querySelector(`#${equipe === 1 ? 'leftPlayersList' : 'rightPlayersList'} div:nth-child(${playerNumber}) input.player-name`);
-       const playerName = playerInput ? playerInput.value || `Joueur ${playerNumber}` : `Joueur ${playerNumber}`;
+       const playerNameElem = document.querySelector(`#${equipe === 1 ? 'leftPlayersList' : 'rightPlayersList'} div:nth-child(${playerNumber}) .player-name`);
+       const playerName = playerNameElem ? playerNameElem.textContent.trim() || `Joueur ${playerNumber}` : `Joueur ${playerNumber}`;
        
        // === GESTION DU COMPTEUR D'EXCLUSIONS ===
        // Initialiser le compteur d'exclusions pour ce joueur s'il n'existe pas
@@ -1684,8 +1759,8 @@ button:hover {
        const team = getTeamName(equipe);
        const opposingTeam = getTeamName(equipe === 1 ? 2 : 1);
        const teamKey = equipe === 1 ? 'team1' : 'team2';
-       const playerInput = document.querySelector(`#${equipe === 1 ? 'leftPlayersList' : 'rightPlayersList'} div:nth-child(${playerNumber}) input.player-name`);
-       const playerName = playerInput ? playerInput.value || `Joueur ${playerNumber}` : `Joueur ${playerNumber}`;
+       const playerNameElem = document.querySelector(`#${equipe === 1 ? 'leftPlayersList' : 'rightPlayersList'} div:nth-child(${playerNumber}) .player-name`);
+       const playerName = playerNameElem ? playerNameElem.textContent.trim() || `Joueur ${playerNumber}` : `Joueur ${playerNumber}`;
        
        // Arrêter tous les chronos - ils restent arrêtés jusqu'à la reprise manuelle
        stopAllTimers();
@@ -1754,7 +1829,7 @@ button:hover {
        stopAllTimers();
        startPossessionTimer(CONFIG.SPECIAL_TIME, 'penalty');
        
-       addLogEntry(`⚠️ Phase de penalty - ${formatTime(gameState.mainTimer)}<br>20 secondes pour tirer`, 'text-yellow-600 font-bold');
+       addLogEntry(`⚠️ Phase de penalty - ${formatTime(gameState.mainTimer)}<br>${CONFIG.SPECIAL_TIME} secondes pour tirer`, 'text-yellow-600 font-bold');
    }
 
    function handleAccident() {
@@ -1818,13 +1893,14 @@ button:hover {
        dialog.showModal();
 
        const playerSelect = dialog.querySelector('#playerSelect');
-       const inputs = document.querySelectorAll(`#${equipe === 1 ? 'leftPlayersList' : 'rightPlayersList'} input.player-name`);
+       const inputs = document.querySelectorAll(`#${equipe === 1 ? 'leftPlayersList' : 'rightPlayersList'} .player-name`);
        
        inputs.forEach((input, index) => {
-           if (input.value.trim()) {
+           const text = input.textContent.trim();
+           if (text) {
                const option = document.createElement('option');
                option.value = index + 1;
-               option.textContent = `${index + 1} - ${input.value}`;
+               option.textContent = `${index + 1} - ${text}`;
                playerSelect.appendChild(option);
            }
        });
@@ -1916,6 +1992,22 @@ button:hover {
    // Event listeners
    document.addEventListener('DOMContentLoaded', () => {
        console.log('Initialisation...');
+       // Ensure no editable placeholders are visible: clear any pre-rendered player inputs and hide logos until server state confirms values
+       try {
+           const left = document.getElementById('leftPlayersList'); if (left) left.innerHTML = '';
+           const right = document.getElementById('rightPlayersList'); if (right) right.innerHTML = '';
+           const t1disp = document.getElementById('team1NameDisplay'); if (t1disp) t1disp.textContent = '';
+           const t2disp = document.getElementById('team2NameDisplay'); if (t2disp) t2disp.textContent = '';
+           const t1logo = document.getElementById('team1LogoContainer'); if (t1logo) t1logo.style.display = 'none';
+           const t2logo = document.getElementById('team2LogoContainer'); if (t2logo) t2logo.style.display = 'none';
+
+           // If server-side already indicates no match configured, show the message and stop here
+           if (window.noMatchConfigured) {
+               document.getElementById('noMatchMessage').classList.remove('hidden');
+               document.getElementById('appContent').classList.add('no-match');
+           }
+       } catch (err) { console.warn('Nettoyage UI initial échoué:', err); }
+
        initializeDOMElements();
        initializePlayerButtons();
        initializeLateralButtons();
@@ -1934,8 +2026,12 @@ button:hover {
            gameState.possessionMode = 'special20';
            gameState.isPossessionRunning = true;
            updateDisplay();
-           addLogEntry(`⏱️ Phase de 20 secondes démarrée - ${formatTime(gameState.mainTimer)}`, 'text-yellow-600');
+           addLogEntry(`⏱️ Phase de ${CONFIG.SPECIAL_TIME} secondes démarrée - ${formatTime(gameState.mainTimer)}`, 'text-yellow-600');
        });
+
+       // Les noms d'équipe sont fournis par match_setup.php et ne sont pas modifiables depuis cette interface.
+       // L'état est synchronisé automatiquement via sendStateToServer() appelé périodiquement et lors des updateDisplay().
+       // NOTE : La sélection d'équipe a été supprimée (elle est fournie par match_setup.php). Aucune action 'change' n'est nécessaire ici.
 
        // Event listener pour la barre d'espace
        document.addEventListener('keydown', (event) => {
@@ -2008,6 +2104,50 @@ button:hover {
        // Initialisation de l'affichage
        updateDisplay();
 
+       // --- Charger l'état initial depuis le serveur si un match a été créé via match_setup.php ---
+       fetch('api/get_game_state.php')
+         .then(res => res.json())
+         .then(payload => {
+             if (payload && payload.state) {
+                 const s = payload.state;
+                 // garder une référence globale pour les helpers (getTeamName utilise window.currentServerState)
+                 window.currentServerState = s;
+                 if (typeof s.scoreTeam1 === 'number') gameState.scoreTeam1 = s.scoreTeam1;
+                 if (typeof s.scoreTeam2 === 'number') gameState.scoreTeam2 = s.scoreTeam2;
+                 if (typeof s.mainTimer === 'number') gameState.mainTimer = s.mainTimer;
+                 if (typeof s.possessionTimer === 'number') gameState.possessionTimer = s.possessionTimer;
+                 if (typeof s.period === 'number') gameState.period = s.period;
+
+                 // Peupler les champs d'équipe uniquement depuis l'état serveur (pas d'inputs)
+                 const t1 = document.getElementById('team1NameDisplay');
+                 if (t1 && s.team1Name) t1.textContent = s.team1Name;
+                 const t2 = document.getElementById('team2NameDisplay');
+                 if (t2 && s.team2Name) t2.textContent = s.team2Name;
+
+                 // Logos : n'afficher que si clairement fournis par l'état
+                 const t1logo = document.getElementById('team1Logo');
+                 const t1logoContainer = document.getElementById('team1LogoContainer');
+                 if (s.team1Logo) { t1logo.src = s.team1Logo; t1logoContainer.style.display = 'block'; } else { t1logo.removeAttribute('src'); t1logoContainer.style.display = 'none'; }
+                 const t2logo = document.getElementById('team2Logo');
+                 const t2logoContainer = document.getElementById('team2LogoContainer');
+                 if (s.team2Logo) { t2logo.src = s.team2Logo; t2logoContainer.style.display = 'block'; } else { t2logo.removeAttribute('src'); t2logoContainer.style.display = 'none'; }
+
+                 updateDisplay();
+                 // Charger la composition des équipes uniquement si le match existe
+                 if (payload.matchId) {
+                     if (typeof loadPlayers === 'function') loadPlayers();
+                     if (typeof updateTeamLogosFromState === 'function') updateTeamLogosFromState();
+                     document.getElementById('noMatchMessage').classList.add('hidden');
+                     document.getElementById('appContent').classList.remove('no-match');
+                 } else {
+                     // Afficher message clair et ne pas inventer d'équipes/joueurs
+                     document.getElementById('noMatchMessage').classList.remove('hidden');
+                     document.getElementById('appContent').classList.add('no-match');
+                 }
+             }
+         })
+         .catch(err => console.warn('Impossible de charger l'état initial du match :', err));
+
        console.log('Initialisation terminée');
    });
 
@@ -2032,23 +2172,8 @@ button:hover {
        }
    }
 
-   // Chargement des joueurs
-  fetch('recuperer_joueurs.php')
-    .then(res => res.json())
-    .then(data => {
-           // Injecte les joueurs de l'équipe 1
-      const joueurs1 = document.querySelectorAll('#leftPlayersList input.player-name');
-      data.equipe1.forEach((prenom, index) => {
-        if (joueurs1[index]) joueurs1[index].value = prenom;
-      });
-
-           // Injecte les joueurs de l'équipe 2
-      const joueurs2 = document.querySelectorAll('#rightPlayersList input.player-name');
-      data.equipe2.forEach((prenom, index) => {
-        if (joueurs2[index]) joueurs2[index].value = prenom;
-      });
-    })
-    .catch(error => console.error('Erreur chargement joueurs :', error));
+   // Les joueurs sont chargés via loadPlayers(), qui récupère les données du serveur
+  // (Ce bloc d'injection directe dans des inputs a été retiré pour garantir que la page reste en lecture seule.)
 
    /**
     * CHARGEMENT DES ÉQUIPES POUR LE MENU DÉROULANT
@@ -2058,8 +2183,8 @@ button:hover {
 
    function handleEDA(equipe, playerNumber) {
        const team = equipe === 1 ? 'Équipe 1' : 'Équipe 2';
-       const playerInput = document.querySelector(`#${equipe === 1 ? 'leftPlayersList' : 'rightPlayersList'} div:nth-child(${playerNumber}) input.player-name`);
-       const playerName = playerInput ? playerInput.value || `Joueur ${playerNumber}` : `Joueur ${playerNumber}`;
+       const playerNameElem = document.querySelector(`#${equipe === 1 ? 'leftPlayersList' : 'rightPlayersList'} div:nth-child(${playerNumber}) .player-name`);
+       const playerName = playerNameElem ? playerNameElem.textContent.trim() || `Joueur ${playerNumber}` : `Joueur ${playerNumber}`;
        
        // Ajouter l'indicateur EDA à côté du nom du joueur
        updatePlayerIndicators(equipe, playerNumber, 'eda');
@@ -2083,8 +2208,8 @@ button:hover {
 
    function handleEDAP(equipe, playerNumber) {
        const team = equipe === 1 ? 'Équipe 1' : 'Équipe 2';
-       const playerInput = document.querySelector(`#${equipe === 1 ? 'leftPlayersList' : 'rightPlayersList'} div:nth-child(${playerNumber}) input.player-name`);
-       const playerName = playerInput ? playerInput.value || `Joueur ${playerNumber}` : `Joueur ${playerNumber}`;
+       const playerNameElem = document.querySelector(`#${equipe === 1 ? 'leftPlayersList' : 'rightPlayersList'} div:nth-child(${playerNumber}) .player-name`);
+       const playerName = playerNameElem ? playerNameElem.textContent.trim() || `Joueur ${playerNumber}` : `Joueur ${playerNumber}`;
        
        // Ajouter l'indicateur EDAP à côté du nom du joueur
        updatePlayerIndicators(equipe, playerNumber, 'edap');
@@ -2126,12 +2251,12 @@ button:hover {
 
    function handleCartonRouge(equipe, playerNumber) {
        const team = equipe === 1 ? 'Équipe 1' : 'Équipe 2';
-       const playerInput = document.querySelector(`#${equipe === 1 ? 'leftPlayersList' : 'rightPlayersList'} div:nth-child(${playerNumber}) input.player-name`);
-       const playerName = playerInput ? playerInput.value || `Joueur ${playerNumber}` : `Joueur ${playerNumber}`;
+       const playerNameElem = document.querySelector(`#${equipe === 1 ? 'leftPlayersList' : 'rightPlayersList'} div:nth-child(${playerNumber}) .player-name`);
+       const playerName = playerNameElem ? playerNameElem.textContent.trim() || `Joueur ${playerNumber}` : `Joueur ${playerNumber}`;
        
-       if (playerInput) {
+       if (playerNameElem) {
            // Ajouter la classe pour griser et barrer le nom du joueur
-           playerInput.classList.add('excluded-player');
+           playerNameElem.classList.add('excluded-player');
            
            // Ajouter une bordure rouge autour du nom
            playerInput.style.border = '2px solid red';
@@ -2228,13 +2353,14 @@ button:hover {
                dialog.showModal();
 
                const playerSelect = dialog.querySelector('#playerSelect');
-               const inputs = document.querySelectorAll(`#${equipe === 1 ? 'leftPlayersList' : 'rightPlayersList'} input.player-name`);
+               const inputs = document.querySelectorAll(`#${equipe === 1 ? 'leftPlayersList' : 'rightPlayersList'} .player-name`);
                
                inputs.forEach((input, index) => {
-                   if (input.value.trim()) {
+                   const text = input.textContent.trim();
+                   if (text) {
                        const option = document.createElement('option');
                        option.value = index + 1;
-                       option.textContent = `${index + 1} - ${input.value}`;
+                       option.textContent = `${index + 1} - ${text}`;
                        playerSelect.appendChild(option);
                    }
                });
@@ -2274,13 +2400,14 @@ button:hover {
                dialog.showModal();
 
                const playerSelect = dialog.querySelector('#playerSelect');
-               const inputs = document.querySelectorAll(`#${equipe === 1 ? 'leftPlayersList' : 'rightPlayersList'} input.player-name`);
+               const inputs = document.querySelectorAll(`#${equipe === 1 ? 'leftPlayersList' : 'rightPlayersList'} .player-name`);
                
                inputs.forEach((input, index) => {
-                   if (input.value.trim()) {
+                   const text = input.textContent.trim();
+                   if (text) {
                        const option = document.createElement('option');
                        option.value = index + 1;
-                       option.textContent = `${index + 1} - ${input.value}`;
+                       option.textContent = `${index + 1} - ${text}`;
                        playerSelect.appendChild(option);
                    }
                });
@@ -2320,13 +2447,14 @@ button:hover {
                dialog.showModal();
 
                const playerSelect = dialog.querySelector('#playerSelect');
-               const inputs = document.querySelectorAll(`#${equipe === 1 ? 'leftPlayersList' : 'rightPlayersList'} input.player-name`);
+               const inputs = document.querySelectorAll(`#${equipe === 1 ? 'leftPlayersList' : 'rightPlayersList'} .player-name`);
                
                inputs.forEach((input, index) => {
-                   if (input.value.trim()) {
+                   const text = input.textContent.trim();
+                   if (text) {
                        const option = document.createElement('option');
                        option.value = index + 1;
-                       option.textContent = `${index + 1} - ${input.value}`;
+                       option.textContent = `${index + 1} - ${text}`;
                        playerSelect.appendChild(option);
                    }
                });
@@ -2634,48 +2762,14 @@ button:hover {
        }
    });
 
-   // Fonction pour charger les équipes dans le menu déroulant
-   function chargerEquipes() {
-       const equipes = [
-           { id: 1, nom: 'Lion', logo: 'images/Lion.jpg' },
-           { id: 2, nom: 'Aigle royal', logo: 'images/logo_Royal.png' },
-           { id: 3, nom: 'Team Panther', logo: 'images/team_panther.jpg' },
-           { id: 4, nom: 'Wolf', logo: 'images/wolf.jpg' }
-       ];
-
-       const select = document.getElementById('team2Select');
-       if (!select) {
-           console.error('Élément select non trouvé');
-           return;
-       }
-
-       select.innerHTML = '<option value="">Sélectionner une équipe</option>';
-       
-       equipes.forEach(equipe => {
-           const option = document.createElement('option');
-           option.value = equipe.id;
-           option.textContent = equipe.nom;
-           option.dataset.logo = equipe.logo;
-           select.appendChild(option);
-       });
-
-       // Créer un conteneur pour le select et l'input
-       const container = document.createElement('div');
-       container.className = 'team-select-container';
-       select.parentNode.insertBefore(container, select);
-       container.appendChild(select);
-
-       // Créer l'input qui sera caché initialement
-       const input = document.createElement('input');
-       input.type = 'text';
-       input.readOnly = true;
-       input.className = 'team-name-input team2-color';
-       input.maxLength = 15;
-       input.placeholder = 'NOM EQUIPE 2';
-       input.spellcheck = false;
-       input.autocomplete = 'off';
-       input.style.display = 'none';
-       container.appendChild(input);
+   // Les équipes sont fournies par match_setup.php. Cette fonction restaure simplement les logos
+   function updateTeamLogosFromState() {
+       const s = window.currentServerState || {};
+       const team1Logo = document.getElementById('team1Logo');
+       const team2Logo = document.getElementById('team2Logo');
+       if (s.team1Logo && team1Logo) team1Logo.src = s.team1Logo;
+       if (s.team2Logo && team2Logo) team2Logo.src = s.team2Logo;
+   }
 
        // Créer le bouton de modification qui sera caché initialement
        const editButton = document.createElement('button');
@@ -2695,23 +2789,8 @@ button:hover {
        container.style.alignItems = 'center';
        container.style.gap = '8px';
 
-       // Ajouter un écouteur d'événement pour le changement d'équipe
-       select.addEventListener('change', function() {
-           const selectedOption = this.options[this.selectedIndex];
-           if (selectedOption.value) {
-               // Afficher l'input et le bouton, cacher le select
-               input.value = selectedOption.textContent;
-               input.style.display = 'block';
-               editButton.style.display = 'inline-block';
-               this.style.display = 'none';
-               
-               // Mettre à jour le logo si nécessaire
-               const logo = document.getElementById('team2Logo');
-               if (logo && selectedOption.dataset.logo) {
-                   logo.src = selectedOption.dataset.logo;
-               }
-           }
-       });
+       // Editing of team names is disabled on the referee view. Any select/change behavior is intentionally inert.
+       // select.addEventListener('change', ...) removed to enforce display-only policy.
 
        // Ajouter un écouteur d'événement pour le bouton de modification
        editButton.addEventListener('click', function() {
@@ -2726,115 +2805,79 @@ button:hover {
 
    // Charger les équipes au démarrage
    document.addEventListener('DOMContentLoaded', () => {
-       console.log('DOM chargé, initialisation du chargement des équipes...');
-       chargerEquipes();
+       console.log('DOM chargé');
+       // Les équipes sont fixées depuis match_setup.php ; aucun chargement de sélection dynamique n'est nécessaire.
    });
 
-   // Fonction pour charger les joueurs d'une équipe
-   function chargerJoueurs(equipe, idEquipe) {
-       console.log(`Chargement des joueurs pour l'équipe ${equipe} (ID: ${idEquipe})`);
-       fetch(`recuperer_joueurs.php?equipe1=${idEquipe}&equipe2=${idEquipe}`)
+   // Fonction pour charger les joueurs du match (depuis la session / match en cours)
+   function loadPlayers() {
+       // Fetch players for current match only; do not invent players or create placeholders.
+       const url = 'recuperer_joueurs.php' + (window.currentMatchId ? '?matchId=' + encodeURIComponent(window.currentMatchId) : '');
+       fetch(url)
            .then(response => response.json())
            .then(data => {
-               console.log('Données reçues:', data);
-               const joueurs = equipe === 1 ? data.equipe1 : data.equipe2;
-               console.log('Joueurs sélectionnés:', joueurs);
+               console.log('recuperer_joueurs response:', data);
+               const joueurs1 = Array.isArray(data.equipe1) ? data.equipe1 : [];
+               const joueurs2 = Array.isArray(data.equipe2) ? data.equipe2 : [];
 
-               // Sélectionner tous les inputs de noms de joueurs pour cette équipe
-               const inputs = document.querySelectorAll(`input[aria-label^="Nom du joueur"][aria-label$="équipe ${equipe}"]`);
-
-               inputs.forEach((input, index) => {
-                   if (joueurs[index]) {
-                       input.value = joueurs[index]?.prenom_joueur || '';
-                   } else {
-                       input.value = '';
-                   }
-
-                   // Ajout de l'indicateur "dans l'eau" et du bouton de remplacement si pas déjà présent
-                   let indicator = input.parentNode.querySelector('.in-water-indicator');
-                   let replaceBtn = input.parentNode.querySelector('.replace-inwater-btn');
-                   if (!indicator) {
-                       indicator = document.createElement('div');
-                       indicator.className = 'in-water-indicator';
-                       indicator.style.width = '12px';
-                       indicator.style.height = '12px';
-                       indicator.style.borderRadius = '50%';
-                       indicator.style.display = 'inline-block';
-                       indicator.style.marginLeft = equipe === 1 ? '0' : '6px';
-                       indicator.style.marginRight = equipe === 1 ? '6px' : '0';
-                       indicator.style.backgroundColor = '#10B981'; // Vert = dans l'eau
-                       indicator.title = "Dans l'eau";
-                   }
-                   if (!replaceBtn) {
-                       console.log('Création du bouton de remplacement pour', input.value);
-                       replaceBtn = document.createElement('button');
-                       replaceBtn.type = 'button';
-                       replaceBtn.className = 'replace-inwater-btn';
-                       replaceBtn.textContent = '🔄';
-                       replaceBtn.style.marginLeft = equipe === 1 ? '0' : '4px';
-                       replaceBtn.style.marginRight = equipe === 1 ? '4px' : '0';
-                       replaceBtn.style.background = '#f3f4f6';
-                       replaceBtn.style.border = 'none';
-                       replaceBtn.style.borderRadius = '4px';
-                       replaceBtn.style.cursor = 'pointer';
-                       replaceBtn.title = "Changer l'état dans l'eau";
-                       console.log('Attachement de l\'événement click sur le bouton');
-                       replaceBtn.addEventListener('click', function() {
-                           const isInWater = indicator.style.backgroundColor === 'rgb(16, 185, 129)';
-                           indicator.style.backgroundColor = isInWater ? '#EF4444' : '#10B981';
-                           indicator.title = isInWater ? "Hors de l'eau" : "Dans l'eau";
-                           // Ajout dans le journal avec le temps du chrono principal
-                           const action = isInWater ? 'sorti' : 'rentré';
-                           const joueurNom = input.value;
-                           const equipeNom = getTeamName(equipe);
-                           
-                           // Récupération du temps du chrono avec une valeur par défaut
-                           const mainTimer = document.getElementById('timer');
-                           const chronoTemps = mainTimer ? mainTimer.textContent : '00:00';
-                           
-                           console.log('Ajout dans le journal:', `[${chronoTemps}] ${joueurNom} (${equipeNom}) est ${action}`);
-                           addLogEntry(`[${chronoTemps}] ${joueurNom} (${equipeNom}) est ${action}`, 'text-blue-600');
-                           
-                           // Enregistrement en base de données avec le temps du chrono
-                           enregistrerEvenement({
-                               id_match: window.idMatchActuel || 1,
-                               id_joueur: joueurs[index]?.id_joueur || null,
-                               id_equipe: equipe,
-                               type_evenement: 'remplacement',
-                               details: action,
-                               temps_chrono: chronoTemps
-                           });
-                       });
-                   }
-                   // Insérer à gauche pour équipe 1, à droite pour équipe 2
-                   if (equipe === 1) {
-                       if (input.previousSibling !== replaceBtn) {
-                           input.parentNode.insertBefore(replaceBtn, input);
-                       }
-                       if (input.previousSibling !== indicator) {
-                           input.parentNode.insertBefore(indicator, input);
-                       }
-                   } else {
-                       if (input.nextSibling !== indicator) {
-                           input.parentNode.insertBefore(indicator, input.nextSibling);
-                       }
-                       if (indicator.nextSibling !== replaceBtn) {
-                           input.parentNode.insertBefore(replaceBtn, indicator.nextSibling);
-                       }
-                   }
-               });
-
-               console.log(`Joueurs de l'équipe ${equipe} chargés avec succès`);
-               if (equipe === 1) {
-                   window.lastJoueursEquipe1 = joueurs;
+               // If no match is configured (no matchId returned), show the message and hide app content
+               const noMatch = !data.matchId && (!window.currentMatchId);
+               if (noMatch) {
+                   document.getElementById('noMatchMessage').classList.remove('hidden');
+                   document.getElementById('appContent').classList.add('no-match');
                } else {
-                   window.lastJoueursEquipe2 = joueurs;
+                   document.getElementById('noMatchMessage').classList.add('hidden');
+                   // Render exact players as provided by server; no inputs
+                   const left = document.getElementById('leftPlayersList');
+                   left.innerHTML = '';
+                   joueurs1.forEach((p, idx) => {
+                       const row = document.createElement('div');
+                       row.className = 'flex items-center space-x-2 text-xs font-semibold';
+                       row.innerHTML = `
+                           <div class="w-5 text-right select-text">${p.numero_bonnet !== null ? p.numero_bonnet : ''}</div>
+                           <div class="flex space-x-1 player-controls" data-player="${p.id_joueur}" data-team="1">
+                               <button class="bg-black text-white rounded-md px-2 py-0.5 font-bold but-button" type="button">B</button>
+                               <button class="bg-black text-white rounded-md px-2 py-0.5 font-bold exclusion-button" type="button">E</button>
+                               <button class="bg-black text-white rounded-md px-2 py-0.5 font-bold btn-p" type="button">P</button>
+                           </div>
+                           <div class="player-name">${(p.nom_joueur || '') + ' ' + (p.prenom_joueur || '')}</div>
+                       `;
+                       left.appendChild(row);
+                   });
+
+                   const right = document.getElementById('rightPlayersList');
+                   right.innerHTML = '';
+                   joueurs2.forEach((p, idx) => {
+                       const row = document.createElement('div');
+                       row.className = 'flex items-center space-x-2 text-xs font-semibold justify-end';
+                       row.innerHTML = `
+                           <div class="player-name">${(p.nom_joueur || '') + ' ' + (p.prenom_joueur || '')}</div>
+                           <div class="w-5 text-left select-text">${p.numero_bonnet !== null ? p.numero_bonnet : ''}</div>
+                           <div class="flex space-x-1 player-controls" data-player="${p.id_joueur}" data-team="2">
+                               <button class="bg-black text-white rounded-md px-2 py-0.5 font-bold but-button" type="button">B</button>
+                               <button class="bg-black text-white rounded-md px-2 py-0.5 font-bold exclusion-button" type="button">E</button>
+                               <button class="bg-black text-white rounded-md px-2 py-0.5 font-bold btn-p" type="button">P</button>
+                           </div>
+                       `;
+                       right.appendChild(row);
+                   });
+
+                   // store current players
+                   window.lastJoueursEquipe1 = joueurs1;
+                   window.lastJoueursEquipe2 = joueurs2;
+
+                   // store current match id if provided
+                   if (data.matchId) window.currentMatchId = data.matchId;
+                   document.getElementById('noMatchMessage').classList.add('hidden');
                }
            })
-           .catch(error => {
-               console.error('Erreur complète:', error);
-           });
+           .catch(error => console.error('Erreur chargement joueurs :', error));
    }
+
+   // Charger les joueurs au démarrage (lecture seule de la composition fournie par match_setup.php)
+   document.addEventListener('DOMContentLoaded', () => {
+       loadPlayers();
+   });
 
    // Fonction pour mettre à jour le logo de l'équipe
    function updateTeamLogo(teamId, logoPath) {
@@ -2844,18 +2887,7 @@ button:hover {
        }
    }
 
-   // Écouter le changement d'équipe dans le menu déroulant
-   document.getElementById('team2Select').addEventListener('change', function() {
-       const selectedOption = this.options[this.selectedIndex];
-       const selectedId = this.value;
-       if (selectedId) {
-           // Mettre à jour le logo
-           const logoPath = selectedOption.dataset.logo;
-           updateTeamLogo(2, logoPath);
-           // Charger les joueurs
-           chargerJoueurs(2, selectedId);
-       }
-   });
+   // Note : La sélection d'équipe a été supprimée. Les équipes et compositions sont fournies par match_setup.php (source unique).
 
    // Charger les joueurs au démarrage
    document.addEventListener('DOMContentLoaded', () => {

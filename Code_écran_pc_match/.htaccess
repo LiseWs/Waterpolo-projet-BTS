@@ -1,0 +1,15 @@
+# Force match_setup.php to be the default index page for this folder
+# DirectoryIndex directive ensures that when accessing the folder URL,
+# Apache serves match_setup.php before index.php
+DirectoryIndex match_setup.php index.php
+
+# Disable directory listing for safety
+Options -Indexes
+
+# Fallback rewrite: if the directory is requested, serve match_setup.php
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    # When requesting the directory root (no file specified), rewrite to match_setup.php
+    RewriteCond %{REQUEST_URI} ^/?$
+    RewriteRule ^$ match_setup.php [L]
+</IfModule>
