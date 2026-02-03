@@ -1,0 +1,335 @@
+/* Définition de la police principale */
+body {
+  font-family: "Roboto", sans-serif;
+}
+
+/* Étiquette de période */
+.period-label {
+  font-weight: 700;
+  font-size: 10px;
+  line-height: 12px;
+}
+
+/* Champ de nom de joueur */
+input.player-name {
+  border: none;
+  border-radius: 0;
+  padding: 0.125rem 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  width: 96px;
+  outline: none;
+  background-color: transparent;
+  text-align: left;
+}
+
+/* Style en focus du champ joueur */
+input.player-name:focus {
+  border-color: transparent;
+  box-shadow: none;
+  outline: none;
+  background-color: transparent;
+}
+
+/* Style du score équipe 1 */
+#scoreEquipe1 {
+  font-family: "Montserrat", sans-serif;
+  font-size: 48px;
+  color: #dc2626; /* rouge */
+  font-weight: 700;
+  border: none !important;
+  padding: 0;
+  margin-bottom: 0.75rem;
+  text-align: center;
+  letter-spacing: 0.05em;
+}
+
+/* Style du score équipe 2 */
+#scoreEquipe2 {
+  font-family: "Montserrat", sans-serif;
+  font-size: 48px;
+  color: #2563eb; /* bleu */
+  font-weight: 700;
+  border: none !important;
+  padding: 0;
+  margin-bottom: 0.75rem;
+  text-align: center;
+  letter-spacing: 0.05em;
+}
+
+/* Champs de nom d'équipe */
+.team-name-input {
+  font-family: "Montserrat", sans-serif;
+  font-size: 1.5rem;
+  font-weight: 700;
+  outline: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  transition: border-color 0.3s;
+  width: 12rem;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #111827;
+}
+
+/* Style focus sur les champs d'équipe */
+.team-name-input:focus {
+  border-color: currentColor;
+}
+
+/* Couleur pour l'équipe 1 (rouge) */
+.team1-color {
+  color: #dc2626;
+}
+
+/* Couleur pour l'équipe 2 (bleu) */
+.team2-color {
+  color: #2563eb;
+}
+
+/* Logos d'équipe */
+.team-logo {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+  border-radius: 0.375rem;
+  border: 1px solid #d1d5db;
+  background-color: white;
+}
+
+/* Scroll personnalisé pour les listes de joueurs */
+.players-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+.players-scroll::-webkit-scrollbar-thumb {
+  background-color: #a1a1aa;
+  border-radius: 3px;
+}
+.players-scroll::-webkit-scrollbar-track {
+  background-color: #f3f4f6;
+}
+
+/* Transitions sur boutons */
+button {
+  transition: background-color 0.2s ease;
+}
+
+/* Effet hover sur tous les boutons */
+button:hover {
+  background-color: #111827;
+}
+
+/* Boutons "B" actifs pour les deux équipes */
+.player-B,
+.player-B-right {
+  background-color: #111827;
+}
+
+/* Hover sur boutons "B" */
+.player-B:hover,
+.player-B-right:hover {
+  background-color: #374151;
+}
+
+/* Zone d'informations de buts */
+#goalInfo {
+  font-family: "Roboto", sans-serif;
+  font-size: 0.875rem;
+  color: #111827;
+  white-space: pre-wrap;
+  overflow-y: auto;
+  max-height: 96px;
+}
+
+#goalInfo {
+  max-height: calc(100vh - 300px); /* hauteur max adaptée à ton écran */
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+#goalInfo > div {
+  flex-shrink: 0;
+}
+
+.tm-badges {
+  margin-top: 0.5rem;
+  display: flex;
+  gap: 0.5rem;
+  font-weight: bold;
+  font-size: 0.75rem;
+}
+
+.tm-badges span {
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+  background-color: #f3f4f6;
+  border: 1px solid #d1d5db;
+}
+
+.pastille-TM {
+  display: inline-block;
+  background-color: #111827;
+  color: white;
+  border-radius: 9999px;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  margin-right: 0.25rem;
+  margin-top: 0.5rem;
+}
+
+.tm-time-label {
+  font-size: 0.65rem;
+  color: #374151;
+  margin-top: 0.125rem;
+}
+
+/* Effet clignotant pendant le temps mort */
+.blinking-timer {
+  animation: blinkingText 1s infinite;
+  color: #dc2626; /* red-600 */
+  font-weight: bold;
+}
+
+@keyframes blinkingText {
+  0% { opacity: 1; }
+  50% { opacity: 0.2; }
+  100% { opacity: 1; }
+}
+
+/* Badge TM pour temps morts */
+.tm-badge {
+  background-color: #1f2937; /* Gray-800 */
+  color: white;
+  font-size: 0.75rem;
+  font-weight: bold;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.5rem;
+  margin-top: 0.25rem;
+  text-align: center;
+}
+
+/* Animation pour les 5 dernières secondes */
+.last-five-seconds {
+    animation: lastFiveSeconds 1s infinite;
+    color: #dc2626 !important;
+}
+
+@keyframes lastFiveSeconds {
+    0% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.2); opacity: 0.8; }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+/* Indicateur de temps mort technique */
+.technical-timeout {
+    background-color: #059669;
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    font-weight: bold;
+    animation: fadeInOut 2s infinite;
+}
+
+@keyframes fadeInOut {
+    0% { opacity: 0.6; }
+    50% { opacity: 1; }
+    100% { opacity: 0.6; }
+}
+
+/* Conteneur pour les badges de joueur */
+.player-badges {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-left: 8px;
+}
+
+/* Style des pastilles d'exclusion */
+.exclusion-dot {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: bold;
+    color: white;
+    margin-left: 4px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    transition: transform 0.2s ease;
+}
+
+.exclusion-dot:hover {
+    transform: scale(1.1);
+}
+
+/* Couleurs des pastilles selon le nombre d'exclusions */
+.exclusion-dot-1 {
+    background-color: #EAB308; /* jaune plus vif */
+    border: 2px solid #854D0E;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.exclusion-dot-2 {
+    background-color: #EA580C; /* orange plus vif */
+    border: 2px solid #7C2D12;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.exclusion-dot-3 {
+    background-color: #DC2626; /* rouge vif */
+    border: 2px solid #7F1D1D;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+    animation: pulseStrong 1.5s infinite;
+}
+
+@keyframes pulseStrong {
+    0% { 
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.7);
+    }
+    50% { 
+        transform: scale(1.15);
+        box-shadow: 0 0 0 10px rgba(220, 38, 38, 0);
+    }
+    100% { 
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(220, 38, 38, 0);
+    }
+}
+
+/* Style pour joueur définitivement exclu */
+.player-excluded {
+    opacity: 0.7;
+    text-decoration: line-through;
+    background-color: #FEE2E2;
+    border-radius: 4px;
+    padding: 4px;
+    margin: -4px;
+    transition: all 0.3s ease;
+}
+
+.player-excluded .exclusion-dot {
+    opacity: 1; /* Garder les pastilles bien visibles */
+    transform: scale(1.1); /* Les rendre légèrement plus grandes pour plus de visibilité */
+}
+
+/* Animation d'apparition des pastilles */
+@keyframes dotAppear {
+    0% { 
+        transform: scale(0.5);
+        opacity: 0;
+    }
+    100% { 
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+.exclusion-dot {
+    animation: dotAppear 0.3s ease-out forwards;
+}
