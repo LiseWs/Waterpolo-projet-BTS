@@ -12,6 +12,7 @@
  */
 
 <?php
+require_once __DIR__ . '/db.php';
 // Configuration de l'en-tête pour renvoyer du JSON
 header('Content-Type: application/json');
 

@@ -1,3 +1,19 @@
+<?php
+require_once __DIR__ . '/db.php'; // db.php à la racine du projet
+$pdo = getPDO(); // ou utiliser directement $pdo si db.php expose la variable globale
+
+// Exemple : charger la liste des joueurs pour pré-remplir l'HTML côté serveur
+try {
+    $stmt = $pdo->query("SELECT id_joueur, prenom_joueur, numero_bonnet, id_equipe FROM joueur ORDER BY id_equipe, numero_bonnet");
+    $joueurs = $stmt->fetchAll();
+} catch (Exception $e) {
+    // Log et continuer proprement
+    error_log('Erreur chargement joueurs : ' . $e->getMessage());
+    $joueurs = [];
+}
+?>
+
+
 <html lang="fr">
  <head>
   <link rel="stylesheet" href="styles.css" />
@@ -12,6 +28,8 @@
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700&amp;family=Roboto&amp;display=swap" rel="stylesheet"/>
   <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&display=swap" rel="stylesheet"/>
   <style>
+
+
 body {
     font-family: 'Oswald', sans-serif;
 }
@@ -197,6 +215,7 @@ button:hover {
     max-height: 200px;
     overflow-y: auto;
 }
+
 
 .player {
     display: flex;

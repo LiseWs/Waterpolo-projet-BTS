@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/db.php';
 header("Content-Type: application/json");
 $host = 'localhost';
 $dbname = 'site_waterpolo';
