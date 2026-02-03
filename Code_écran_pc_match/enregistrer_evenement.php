@@ -13,21 +13,16 @@
 
 <?php
 require_once __DIR__ . '/db.php';
-// Configuration de l'en-tête pour renvoyer du JSON
-header('Content-Type: application/json');
+header('Content-Type: application/json; charset=utf-8');
 
-// Connexion à la base de données
-$pdo = new PDO('mysql:host=localhost;dbname=site_waterpolo;charset=utf8', 'root', '');
-
-// Récupération et décodage des données POST
+$pdo = getPDO();
 $data = json_decode(file_get_contents('php://input'), true);
-
-// Vérification de la présence des données
 if (!$data) {
     http_response_code(400);
     echo json_encode(['error' => 'Données manquantes']);
     exit;
 }
+// valider $data['type'], id_joueur, id_matchs, etc. puis INSERT dans evenement
 
 // Gestion du temps de chronomètre (NULL si vide)
 $temps_chrono = isset($data['temps_chrono']) && $data['temps_chrono'] !== '' ? $data['temps_chrono'] : null;

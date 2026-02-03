@@ -1,6 +1,10 @@
 <?php
 require_once __DIR__ . '/db.php';
-header("Content-Type: application/json");
+header("Content-Type: application/json; charset=utf-8");
+
+$pdo = getPDO();
+
+
 $host = 'localhost';
 $dbname = 'site_waterpolo';
 $user = 'root';

@@ -1,16 +1,16 @@
 <?php
-require_once __DIR__ . '/db.php'; // db.php à la racine du projet
-$pdo = getPDO(); // ou utiliser directement $pdo si db.php expose la variable globale
+require_once __DIR__ . '/db.php'; // déjà présent si tu as suivi mes conseils
+session_start();
 
-// Exemple : charger la liste des joueurs pour pré-remplir l'HTML côté serveur
-try {
-    $stmt = $pdo->query("SELECT id_joueur, prenom_joueur, numero_bonnet, id_equipe FROM joueur ORDER BY id_equipe, numero_bonnet");
-    $joueurs = $stmt->fetchAll();
-} catch (Exception $e) {
-    // Log et continuer proprement
-    error_log('Erreur chargement joueurs : ' . $e->getMessage());
-    $joueurs = [];
+// Si on n'est pas sur la page de paramétrage et qu'il n'y a pas de match en cours,
+// rediriger vers la page de paramétrage.
+$currentScript = basename($_SERVER['PHP_SELF']);
+if ($currentScript !== 'match_setup.php' && empty($_SESSION['current_match_id'])) {
+    header('Location: match_setup.php');
+    exit;
 }
+
+// ... suite de index.php (HTML/JS)
 ?>
 
 
