@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Match : {{ match.equipe_domicile.nom }} vs {{ match.equipe_exterieur.nom }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .score-box { font-size: 4rem; font-weight: bold; }
+        .chrono { font-family: 'Courier New', monospace; font-weight: bold; font-size: 3rem; background: black; color: red; border-radius: 10px; padding: 10px; }
+        .btn-action { width: 40px; height: 30px; padding: 0; font-size: 0.8rem; margin-left: 2px;}
+    </style>
+</head>
+<body class="bg-light">
+
+    <div class="container-fluid bg-dark text-white p-3 sticky-top shadow">
+        <div class="row text-center align-items-center">
+            <div class="col-3">
+                <h4 class="text-truncate">{{ match.equipe_domicile.nom }}</h4>
+                <div class="score-box text-info">{{ match.score_domicile }}</div>
+            </div>
+            
+            <div class="col-6">
+                <span class="chrono">08:00</span>
+                <div class="mt-2 text-warning fw-bold">Période {{ match.periode_actuelle }}</div>
+                <div class="small text-white-50">Possession: {{ match.config.temps_possession }}s | Excl: {{ match.config.temps_exclusion }}s</div>
+            </div>
+
+            <div class="col-3">
+                <h4 class="text-truncate">{{ match.equipe_exterieur.nom }}</h4>
+                <div class="score-box text-warning">{{ match.score_exterieur }}</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container-fluid mt-3">
+        <div class="row">
+            <div class="col-md-4">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-info text-white fw-bold">Bonnets Blancs (Domicile)</div>
+                    <ul class="list-group list-group-flush">
+                        {% for p in joueurs_dom %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center py-2">
+                            <span class="fw-bold fs-5" style="width: 30px;">{{ p.numero_bonnet }}</span>
+                            <span class="text-truncate flex-grow-1 mx-2">{{ p.joueur.nom }}</span>
+                            <div>
+                                <a href="{% url 'ajouter_action' match.id p.id 'BUT' %}" class="btn btn-success btn-action" title="But">BUT</a>
+                                <a href="{% url 'ajouter_action' match.id p.id 'EXCL' %}" class="btn btn-danger btn-action" title="Exclusion">EX</a>
+                                <a href="{% url 'ajouter_action' match.id p.id 'PENALTY' %}" class="btn btn-warning btn-action" title="Penalty">PE</a>
+                            </div>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-secondary text-white">Derniers événements</div>
+                    <ul class="list-group list-group-flush small">
+                        {% for event in events %}
+                        <li class="list-group-item">
+                            <strong>{{ event.temps_jeu_chrono }}</strong> - 
+                            {% if event.type_action == 'BUT' %}
+                                <span class="badge bg-success">BUT</span>
+                            {% elif event.type_action == 'EXCL' %}
+                                <span class="badge bg-danger">EXCL</span>
+                            {% else %}
+                                <span class="badge bg-secondary">{{ event.type_action }}</span>
+                            {% endif %}
+                            
+                            {{ event.joueur.joueur.nom }} ({{ event.joueur.joueur.equipe.nom }})
+                        </li>
+                        {% empty %}
+                        <li class="list-group-item text-muted text-center">Le match n'a pas commencé</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-warning text-dark fw-bold">Bonnets Bleus (Extérieur)</div>
+                    <ul class="list-group list-group-flush">
+                        {% for p in joueurs_ext %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center py-2">
+                            <span class="fw-bold fs-5" style="width: 30px;">{{ p.numero_bonnet }}</span>
+                            <span class="text-truncate flex-grow-1 mx-2">{{ p.joueur.nom }}</span>
+                            <div>
+                                <a href="{% url 'ajouter_action' match.id p.id 'BUT' %}" class="btn btn-success btn-action" title="But">BUT</a>
+                                <a href="{% url 'ajouter_action' match.id p.id 'EXCL' %}" class="btn btn-danger btn-action" title="Exclusion">EX</a>
+                                <a href="{% url 'ajouter_action' match.id p.id 'PENALTY' %}" class="btn btn-warning btn-action" title="Penalty">PE</a>
+                            </div>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>
