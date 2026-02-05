@@ -1,9 +1,8 @@
 from django.contrib import admin
-from django.urls import path, include  # <--- IL FAUT AJOUTER ", include" ICI
+from django.urls import path, include  # N'oublie pas l'import de 'include'
 
 urlpatterns = [
-    path('', views.accueil, name='accueil'),
-    path('match/<int:match_id>/compo/', views.compo_equipe, name='compo_equipe'), # <--- NOUVELLE LIGNE
-    path('match/<int:match_id>/', views.tableau_bord, name='tableau_bord'),
-    path('match/<int:match_id>/action/<int:participation_id>/<str:type_action>/', views.ajouter_action, name='ajouter_action'),
+    path('admin/', admin.site.urls),
+    # Ici, on utilise include() pour rediriger vers le fichier de l'application
+    path('', include('gestion.urls')), 
 ]

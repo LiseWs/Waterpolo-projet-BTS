@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Arbitre PRO</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        /* --- LAYOUT FIXE (ZERO SCROLL) --- */
+        body { 
+            background-color: #121212; color: white; 
+            height: 100vh; width: 100vw; overflow: hidden; /* INTERDICTION DE SCROLL */
+            display: grid;
+            grid-template-rows: 12vh 63vh 25vh; /* HAUT / MILIEU / BAS */
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        /* --- ZONE 1 : HEADER (SCORES & CHRONO) --- */
+        .header-zone { 
+            background: #1e1e1e; display: flex; justify-content: space-between; align-items: center; 
+            padding: 0 10px; border-bottom: 2px solid #333;
+        }
+        .score-box { font-size: 3rem; font-weight: 800; min-width: 80px; text-align: center; }
+        .chrono-main { 
+            font-family: 'Courier New', monospace; font-size: 4rem; font-weight: bold; 
+            color: #ff4444; cursor: pointer; user-select: none;
+        }
+        .chrono-active { color: #00ff00; } /* Vert quand actif */
+
+        /* --- ZONE 2 : TERRAIN (JOUEURS) --- */
+        .field-zone { 
+            display: flex; width: 100%; height: 100%; 
+        }
+        .team-col { 
+            width: 50%; padding: 5px; overflow-y: auto; /* Scroll interne si vraiment besoin */
+            display: grid; 
+            grid-template-columns: 1fr 1fr; /* 2 COLONNES DE JOUEURS PAR EQUIPE */
+            grid-auto-rows: min-content;
+            gap: 5px; align-content: start;
+        }
+        .team-dom { background: #2c3e50; border-right: 1px solid #444; }
+        .team-ext { background: #0f2b48; }
+
+        /* CARTE JOUEUR COMPACTE */
+        .player-card {
+            background: rgba(255,255,255,0.1); border-radius: 6px; padding: 4px;
+            display: flex; flex-direction: column; position: relative;
+        }
+        .player-info { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;}
+        .p-num { font-size: 1.4rem; font-weight: 900; }
+        .p-name { font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 80px;}
+        
+        /* BOUTONS ACTIONS RAPIDES */
+        .actions-row { display: flex; justify-content: space-between; gap: 2px; }
+        .btn-act { 
+            flex: 1; border: none; padding: 8px 0; border-radius: 4px; color: white; 
+            font-weight: bold; font-size: 0.9rem; cursor: pointer;
+        }
+        .btn-goal { background: #198754; }
+        .btn-excl { background: #dc3545; position: relative; }
+        .btn-pen { background: #ffc107; color: black; }
+
+        /* OVERLAY EXCLUSION (Compte à rebours) */
+        .excl-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(220, 53, 69, 0.9); border-radius: 6px; z-index: 10;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.5rem; font-weight: bold; display: none; /* Caché par défaut */
+        }
+        .excl-ready { background: rgba(25, 135, 84, 0.9); cursor: pointer; } /* Vert quand fini */
+
+        /* --- ZONE 3 : CONTRÔLE & HISTORIQUE --- */
+        .control-zone { 
+            background: #111; border-top: 2px solid #333; 
+            display: grid; grid-template-columns: 40% 60%;
+        }
+        
+        /* PANNEAU DE GAUCHE : CHRONO CONTROLS */
+        .chrono-controls { padding: 10px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .btn-ctrl { font-size: 1.2rem; font-weight: bold; padding: 10px; }
+
+        /* PANNEAU DE DROITE : HISTORIQUE */
+        .history-panel { 
+            background: #000; overflow-y: auto; padding: 5px; border-left: 1px solid #333;
+            font-size: 0.85rem;
+        }
+        .hist-item { 
+            border-bottom: 1px solid #333; padding: 4px; display: flex; justify-content: space-between; align-items: center;
+        }
+        .hist-del { color: #dc3545; cursor: pointer; padding: 0 10px; font-size: 1.2rem; }
+
+    </style>
+</head>
+<body>
+
+    <div class="header-zone">
+        <div class="d-flex align-items-center text-info">
+            <span class="fs-4 me-2">{{ match.nom_equipe_domicile|truncatechars:10 }}</span>
+            <div class="score-box bg-white text-dark rounded" id="scoreDom">{{ match.score_domicile }}</div>
+        </div>
+
+        <div class="text-center">
+            <div id="chrono" class="chrono-main" onclick="toggleChrono()">
+                {{ match.temps_restant|default:"480" }}
+            </div>
+            <div class="badge bg-secondary fs-6">Période <span id="periodeDisplay">{{ match.periode_actuelle }}</span></div>
+        </div>
+
+        <div class="d-flex align-items-center text-warning justify-content-end">
+            <div class="score-box bg-primary text-white rounded" id="scoreExt">{{ match.score_exterieur }}</div>
+            <span class="fs-4 ms-2">{{ match.nom_equipe_exterieur|truncatechars:10 }}</span>
+        </div>
+    </div>
+
+    <div class="field-zone">
+        <div class="team-col team-dom">
+            <button class="btn btn-outline-light w-100 mb-2" onclick="sendAction('TM', null, 'DOM')">TEMPS MORT BLANC</button>
+            {% for p in joueurs_dom %}
+            <div class="player-card" id="card-{{ p.id }}" data-excl-end="{{ p.fin_exclusion|date:'U' }}">
+                
+                <div class="excl-overlay" id="excl-timer-{{ p.id }}" onclick="forceReturn({{ p.id }})">
+                    <span id="excl-txt-{{ p.id }}">20</span>
+                </div>
+
+                <div class="player-info text-white">
+                    <span class="p-num">{{ p.numero_bonnet }}</span>
+                    <span class="p-name">{{ p.prenom }}</span>
+                </div>
+                <div class="actions-row">
+                    <button class="btn-act btn-goal" onclick="sendAction('BUT', {{ p.id }})">BUT</button>
+                    <button class="btn-act btn-pen" onclick="sendAction('PENALTY', {{ p.id }})">P</button>
+                    <button class="btn-act btn-excl" onclick="sendAction('EXCL', {{ p.id }})">20s</button>
+                    <button class="btn-act bg-black text-danger border border-danger" ondblclick="sendAction('EDA', {{ p.id }})">EDA</button>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <div class="team-col team-ext">
+            <button class="btn btn-outline-primary w-100 mb-2" onclick="sendAction('TM', null, 'EXT')">TEMPS MORT BLEU</button>
+            {% for p in joueurs_ext %}
+            <div class="player-card" id="card-{{ p.id }}" data-excl-end="{{ p.fin_exclusion|date:'U' }}">
+                
+                <div class="excl-overlay" id="excl-timer-{{ p.id }}" onclick="forceReturn({{ p.id }})">
+                    <span id="excl-txt-{{ p.id }}">20</span>
+                </div>
+
+                <div class="player-info text-white">
+                    <span class="p-num">{{ p.numero_bonnet }}</span>
+                    <span class="p-name">{{ p.prenom }}</span>
+                </div>
+                <div class="actions-row">
+                    <button class="btn-act btn-goal" onclick="sendAction('BUT', {{ p.id }})">BUT</button>
+                    <button class="btn-act btn-pen" onclick="sendAction('PENALTY', {{ p.id }})">P</button>
+                    <button class="btn-act btn-excl" onclick="sendAction('EXCL', {{ p.id }})">20s</button>
+                    <button class="btn-act bg-black text-danger border border-danger" ondblclick="sendAction('EDA', {{ p.id }})">EDA</button>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="control-zone">
+        <div class="chrono-controls">
+            <button class="btn btn-secondary btn-ctrl" onclick="adjustTime(-1)">-1s</button>
+            <button class="btn btn-secondary btn-ctrl" onclick="adjustTime(+1)">+1s</button>
+            <button class="btn btn-secondary btn-ctrl" onclick="adjustTime(-10)">-10s</button>
+            <button class="btn btn-secondary btn-ctrl" onclick="adjustTime(+10)">+10s</button>
+            <button class="btn btn-warning w-100" style="grid-column: span 2;" ondblclick="nextPeriod()">FIN PÉRIODE (Double Clic)</button>
+        </div>
+
+        <div class="history-panel" id="historyList">
+            <div class="text-center text-muted mt-2">Chargement historique...</div>
+        </div>
+    </div>
+
+    <script>
+        // --- ETAT GLOBAL ---
+        let matchId = {{ match.id }};
+        let timeLeft = {{ match.temps_restant }};
+        let isRunning = {{ match.chrono_en_cours|yesno:"true,false" }};
+        let timerInterval = null;
+        let exclInterval = null;
+
+        // --- 1. MOTEUR DU CHRONO ---
+        function formatTime(seconds) {
+            let m = Math.floor(seconds / 60).toString().padStart(2, '0');
+            let s = (seconds % 60).toString().padStart(2, '0');
+            return `${m}:${s}`;
+        }
+
+        function updateChronoDisplay() {
+            const el = document.getElementById('chrono');
+            el.innerText = formatTime(timeLeft);
+            if (isRunning) el.classList.add('chrono-active');
+            else el.classList.remove('chrono-active');
+        }
+
+        function startTimer() {
+            if(isRunning) return;
+            isRunning = true;
+            updateChronoDisplay();
+            
+            // Boucle locale (Optimistic UI)
+            timerInterval = setInterval(() => {
+                if(timeLeft > 0) { timeLeft--; updateChronoDisplay(); }
+                else { stopTimer(); }
+            }, 1000);
+
+            // Sync Serveur
+            callApi({ action: 'start_timer' });
+        }
+
+        function stopTimer() {
+            if(!isRunning) return;
+            isRunning = false;
+            clearInterval(timerInterval);
+            updateChronoDisplay();
+            callApi({ action: 'stop_timer', temps_restant: timeLeft });
+        }
+
+        function toggleChrono() {
+            isRunning ? stopTimer() : startTimer();
+        }
+
+        function adjustTime(delta) {
+            timeLeft += delta;
+            if(timeLeft < 0) timeLeft = 0;
+            updateChronoDisplay();
+            // On envoie le delta au serveur pour qu'il calcule pareil
+            callApi({ action: 'adjust_time', delta: delta });
+        }
+
+        function nextPeriod() {
+            if(confirm("Passer à la période suivante ? Le chrono sera réinitialisé.")) {
+                callApi({ action: 'next_period' }).then(res => {
+                    timeLeft = res.time;
+                    document.getElementById('periodeDisplay').innerText = res.period;
+                    stopTimer();
+                    updateChronoDisplay();
+                });
+            }
+        }
+
+        // --- 2. GESTION DES EXCLUSIONS ---
+        // Vérifie chaque seconde l'état des exclus
+        function checkExclusions() {
+            const now = Math.floor(Date.now() / 1000);
+            
+            document.querySelectorAll('.player-card').forEach(card => {
+                const endTimestamp = parseInt(card.dataset.exclEnd);
+                const overlay = card.querySelector('.excl-overlay');
+                const txt = card.querySelector('[id^="excl-txt-"]');
+
+                if (endTimestamp && endTimestamp > 0) {
+                    overlay.style.display = 'flex'; // Afficher overlay
+                    const remaining = endTimestamp - now;
+
+                    if (remaining > 0) {
+                        txt.innerText = remaining;
+                        overlay.classList.remove('excl-ready');
+                    } else {
+                        txt.innerText = "ENTRER";
+                        overlay.classList.add('excl-ready'); // Devient Vert
+                    }
+                } else {
+                    overlay.style.display = 'none'; // Pas d'exclusion
+                }
+            });
+        }
+        setInterval(checkExclusions, 1000);
+
+        // --- 3. ACTIONS DE JEU ---
+        function sendAction(type, pId, equipe=null) {
+            let data = {
+                action: type,
+                participation_id: pId,
+                equipe: equipe,
+                chrono_display: formatTime(timeLeft)
+            };
+
+            callApi(data).then(res => {
+                updateUI(res);
+                
+                // Si c'est une exclusion, on met à jour le data-attr pour le timer local
+                if (type === 'EXCL' && pId) {
+                    // Fin dans 20 secondes (approximatif pour UI instantanée, le serveur fait foi au reload)
+                    const end = Math.floor(Date.now() / 1000) + 20; 
+                    document.getElementById('card-' + pId).dataset.exclEnd = end;
+                }
+            });
+        }
+
+        function deleteEvent(evtId) {
+            if(confirm("Annuler cette action ?")) {
+                callApi({ action: 'delete_event', event_id: evtId }).then(res => {
+                    updateUI(res);
+                    // Si on annule une excl, il faut nettoyer le timer visuel
+                    // (Le rechargement complet est plus sûr ici, mais on fait simple)
+                    location.reload(); 
+                });
+            }
+        }
+
+        // --- 4. MISE A JOUR UI (DYNAMIQUE) ---
+        function updateUI(res) {
+            if(res.score_dom !== undefined) {
+                document.getElementById('scoreDom').innerText = res.score_dom;
+                document.getElementById('scoreExt').innerText = res.score_ext;
+            }
+
+            // Mettre à jour la liste historique
+            const list = document.getElementById('historyList');
+            list.innerHTML = "";
+            res.history.forEach(evt => {
+                let color = evt.equipe_attribuee === 'DOM' ? 'text-info' : 'text-warning';
+                let label = evt.joueur__nom ? `N°${evt.joueur__numero_bonnet} ${evt.joueur__nom}` : 'Équipe';
+                
+                let html = `
+                    <div class="hist-item">
+                        <span class="text-muted small">${evt.chrono_match}</span>
+                        <span class="${color} fw-bold ms-2">${evt.type_action}</span>
+                        <span class="ms-2 text-white text-truncate" style="max-width:120px">${label}</span>
+                        <i class="fas fa-times hist-del" onclick="deleteEvent(${evt.id})"></i>
+                    </div>
+                `;
+                list.innerHTML += html;
+            });
+        }
+
+        // --- 5. APPEL API GÉNÉRIQUE ---
+        async function callApi(data) {
+            try {
+                let response = await fetch(`/api/match/${matchId}/`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                return await response.json();
+            } catch (e) {
+                console.error("Erreur réseau", e);
+                alert("Erreur de connexion !");
+            }
+        }
+
+        // Initialisation
+        updateChronoDisplay();
+        if(isRunning) startTimer();
+        // Charger l'historique au démarrage (fake action)
+        callApi({ action: 'refresh' }).then(res => updateUI(res));
+
+    </script>
+</body>
+</html>

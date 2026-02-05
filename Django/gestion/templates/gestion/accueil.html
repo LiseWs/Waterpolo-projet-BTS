@@ -1,50 +1,151 @@
 <!DOCTYPE html>
-<html>
+<html lang="fr">
 <head>
-    <title>WaterPolo 2026</title>
+    <meta charset="UTF-8">
+    <title>WaterPolo Manager</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .team-badge { cursor: pointer; transition: 0.2s; }
+        .team-badge:hover { background-color: #0d6efd !important; color: white !important; }
+    </style>
 </head>
-<body class="bg-light container py-5">
-    <h1 class="mb-4 text-center">Nouveau Match</h1>
+<body class="bg-light container py-4">
     
-    <div class="card p-4 shadow">
-        <form method="post">
-            {% csrf_token %}
-            <div class="row">
-                <div class="col-md-5">
-                    <label class="form-label">Équipe Domicile (Blanc)</label>
-                    <select name="equipe_domicile" class="form-select">
-                        {% for eq in equipes %}
-                        <option value="{{ eq.id }}">{{ eq.nom }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                
-                <div class="col-md-2 text-center d-flex align-items-center justify-content-center">
-                    <h3>VS</h3>
-                </div>
-
-                <div class="col-md-5">
-                    <label class="form-label">Équipe Extérieur (Bleu)</label>
-                    <select name="equipe_exterieur" class="form-select">
-                        {% for eq in equipes %}
-                        <option value="{{ eq.id }}">{{ eq.nom }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-            </div>
-
-            <div class="mt-4">
-                <label class="form-label">Règlement</label>
-                <select name="config" class="form-select">
-                    {% for conf in configs %}
-                    <option value="{{ conf.id }}">{{ conf.nom }} ({{ conf.temps_possession }}s)</option>
-                    {% endfor %}
-                </select>
-            </div>
-
-            <button type="submit" class="btn btn-primary w-100 mt-4 btn-lg">COMMENCER LE MATCH</button>
-        </form>
+    <div class="d-flex justify-content-between align-items-center mb-5">
+        <h1>🤽 WaterPolo Manager</h1>
+        <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#modalNewTeam">
+            + Ajouter une équipe en base
+        </button>
     </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card shadow p-4">
+                <h3 class="mb-4">Nouveau Match</h3>
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="lancer_match">
+
+                    <div class="row mb-4">
+                        <div class="col-md-6 border-end">
+                            <h5 class="text-primary">Domicile (Blanc)</h5>
+                            
+                            <label class="small text-muted">Choisir existante...</label>
+                            <select name="select_domicile" class="form-select mb-2" onchange="fillInput(this, 'input_domicile')">
+                                <option value="">-- Nouvelle équipe --</option>
+                                {% for eq in equipes %}
+                                <option value="{{ eq.id }}">{{ eq.nom }}</option>
+                                {% endfor %}
+                            </select>
+                            
+                            <label class="small text-muted">...ou saisir nom</label>
+                            <input type="text" id="input_domicile" name="input_domicile" class="form-control fw-bold" placeholder="Nom équipe A" required>
+                        </div>
+
+                        <div class="col-md-6">
+                            <h5 class="text-primary">Extérieur (Bleu)</h5>
+                            
+                            <label class="small text-muted">Choisir existante...</label>
+                            <select name="select_exterieur" class="form-select mb-2" onchange="fillInput(this, 'input_exterieur')">
+                                <option value="">-- Nouvelle équipe --</option>
+                                {% for eq in equipes %}
+                                <option value="{{ eq.id }}">{{ eq.nom }}</option>
+                                {% endfor %}
+                            </select>
+
+                            <label class="small text-muted">...ou saisir nom</label>
+                            <input type="text" id="input_exterieur" name="input_exterieur" class="form-control fw-bold" placeholder="Nom équipe B" required>
+                        </div>
+                    </div>
+
+                    <div class="bg-light p-3 rounded mb-3">
+                        <h6>⚙️ Paramètres du match</h6>
+                        <div class="row g-2">
+                            <div class="col-3">
+                                <label class="small">Période (min)</label>
+                                <input type="number" name="duree_periode" value="8" class="form-control form-control-sm">
+                            </div>
+                            <div class="col-3">
+                                <label class="small">Possession (s)</label>
+                                <input type="number" name="temps_possession" value="28" class="form-control form-control-sm">
+                            </div>
+                            <div class="col-3">
+                                <label class="small">Exclusion (s)</label>
+                                <input type="number" name="temps_exclusion" value="18" class="form-control form-control-sm">
+                            </div>
+                            <div class="col-3">
+                                <label class="small">Lieu</label>
+                                <input type="text" name="lieu" value="Piscine Municipale" class="form-control form-control-sm">
+                            </div>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100 btn-lg">SUIVANT : COMPOSITION >></button>
+                </form>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card shadow-sm">
+                <div class="card-header">
+                    Base de données Équipes
+                </div>
+                <div class="list-group list-group-flush">
+                    {% for eq in equipes %}
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong>{{ eq.nom }}</strong>
+                            <div class="small text-muted">{{ eq.effectif.count }} joueurs</div>
+                        </div>
+                        <form method="post" onsubmit="return confirm('Supprimer cette équipe ?');">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="supprimer_equipe">
+                            <input type="hidden" name="equipe_id" value="{{ eq.id }}">
+                            <button type="submit" class="btn btn-sm btn-outline-danger">×</button>
+                        </form>
+                    </div>
+                    {% empty %}
+                    <div class="p-3 text-center text-muted">Aucune équipe enregistrée</div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="modalNewTeam" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="creer_equipe">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Ajouter une équipe au catalogue</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <label>Nom de l'équipe</label>
+                        <input type="text" name="nouveau_nom_equipe" class="form-control" required>
+                        <small class="text-muted">Vous pourrez ajouter les joueurs lors de votre premier match avec cette équipe.</small>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="submit" class="btn btn-success">Enregistrer</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function fillInput(selectObj, inputId) {
+            const input = document.getElementById(inputId);
+            if (selectObj.selectedIndex > 0) {
+                // On prend le texte de l'option sélectionnée
+                input.value = selectObj.options[selectObj.selectedIndex].text;
+            } else {
+                input.value = "";
+            }
+        }
+    </script>
 </body>
 </html>

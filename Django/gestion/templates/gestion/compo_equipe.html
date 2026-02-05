@@ -1,82 +1,88 @@
-<!DOCTYPE html>
+{% load custom_tags %} <!DOCTYPE html>
 <html>
 <head>
     <title>Feuille de Match</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
-<body class="bg-light container py-4">
+<body class="bg-light container-fluid py-3">
 
-    <h2 class="text-center mb-4">Composition des équipes</h2>
-    <div class="alert alert-info text-center">
-        Assignez les joueurs à leur numéro de bonnet pour ce match. 
-        <br>Laissez vide si le numéro n'est pas attribué.
-    </div>
-
+    <h3 class="text-center mb-4">Composition des équipes</h3>
+    
     <form method="post">
         {% csrf_token %}
         <div class="row">
-            <div class="col-md-6">
-                <div class="card shadow-sm border-info">
-                    <div class="card-header bg-info text-white text-center">
-                        <h3>{{ match.equipe_domicile.nom }} (Blanc)</h3>
+            <div class="col-6">
+                <div class="card border-info">
+                    <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+                        <span class="fw-bold">{{ match.nom_equipe_domicile }} (BLANC)</span>
+                        {% if match.equipe_domicile_origine %}
+                        <div class="form-check form-switch text-white small">
+                            <input class="form-check-input" type="checkbox" name="update_master_dom" id="updateDom">
+                            <label class="form-check-label" for="updateDom">Sauvegarder ces joueurs pour le futur</label>
+                        </div>
+                        {% endif %}
                     </div>
-                    <div class="card-body p-0">
-                        <table class="table table-striped mb-0">
-                            <thead><tr><th>Bonnet</th><th>Joueur</th></tr></thead>
-                            <tbody>
-                                {% for i in range_15 %}
+                    <table class="table table-sm table-striped mb-0">
+                        <thead><tr><th>Bonnet</th><th>Nom</th><th>Prénom</th></tr></thead>
+                        <tbody>
+                            {% for i in range_15 %}
+                                {% get_item prefill_dom i as joueur_exist %}
                                 <tr>
-                                    <td class="align-middle text-center fw-bold" style="width: 50px;">{{ i }}</td>
+                                    <td class="fw-bold text-center align-middle">{{ i }}</td>
                                     <td>
-                                        <select name="joueur_dom_{{ i }}" class="form-select form-select-sm">
-                                            <option value="">-- Vacant --</option>
-                                            {% for j in effectif_dom %}
-                                            <option value="{{ j.id }}">
-                                                {{ j.nom }} {{ j.prenom }} ({{ j.annee_naissance }})
-                                            </option>
-                                            {% endfor %}
-                                        </select>
+                                        <input type="text" name="nom_dom_{{ i }}" 
+                                               class="form-control form-control-sm" 
+                                               value="{{ joueur_exist.nom|default:'' }}" placeholder="Nom">
+                                    </td>
+                                    <td>
+                                        <input type="text" name="prenom_dom_{{ i }}" 
+                                               class="form-control form-control-sm" 
+                                               value="{{ joueur_exist.prenom|default:'' }}" placeholder="Prénom">
                                     </td>
                                 </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
+                            {% endfor %}
+                        </tbody>
+                    </table>
                 </div>
             </div>
 
-            <div class="col-md-6">
-                <div class="card shadow-sm border-warning">
-                    <div class="card-header bg-warning text-dark text-center">
-                        <h3>{{ match.equipe_exterieur.nom }} (Bleu)</h3>
+            <div class="col-6">
+                <div class="card border-warning">
+                    <div class="card-header bg-warning text-dark d-flex justify-content-between align-items-center">
+                        <span class="fw-bold">{{ match.nom_equipe_exterieur }} (BLEU)</span>
+                        {% if match.equipe_exterieur_origine %}
+                        <div class="form-check form-switch small">
+                            <input class="form-check-input" type="checkbox" name="update_master_ext" id="updateExt">
+                            <label class="form-check-label" for="updateExt">Sauvegarder ces joueurs pour le futur</label>
+                        </div>
+                        {% endif %}
                     </div>
-                    <div class="card-body p-0">
-                        <table class="table table-striped mb-0">
-                            <thead><tr><th>Bonnet</th><th>Joueur</th></tr></thead>
-                            <tbody>
-                                {% for i in range_15 %}
+                    <table class="table table-sm table-striped mb-0">
+                        <thead><tr><th>Bonnet</th><th>Nom</th><th>Prénom</th></tr></thead>
+                        <tbody>
+                            {% for i in range_15 %}
+                                {% get_item prefill_ext i as joueur_exist %}
                                 <tr>
-                                    <td class="align-middle text-center fw-bold" style="width: 50px;">{{ i }}</td>
+                                    <td class="fw-bold text-center align-middle">{{ i }}</td>
                                     <td>
-                                        <select name="joueur_ext_{{ i }}" class="form-select form-select-sm">
-                                            <option value="">-- Vacant --</option>
-                                            {% for j in effectif_ext %}
-                                            <option value="{{ j.id }}">
-                                                {{ j.nom }} {{ j.prenom }} ({{ j.annee_naissance }})
-                                            </option>
-                                            {% endfor %}
-                                        </select>
+                                        <input type="text" name="nom_ext_{{ i }}" 
+                                               class="form-control form-control-sm" 
+                                               value="{{ joueur_exist.nom|default:'' }}" placeholder="Nom">
+                                    </td>
+                                    <td>
+                                        <input type="text" name="prenom_ext_{{ i }}" 
+                                               class="form-control form-control-sm" 
+                                               value="{{ joueur_exist.prenom|default:'' }}" placeholder="Prénom">
                                     </td>
                                 </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
+                            {% endfor %}
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
 
-        <div class="text-center mt-4 mb-5">
+        <div class="text-center mt-4 pb-5">
             <button type="submit" class="btn btn-success btn-lg px-5">VALIDER LA FEUILLE DE MATCH</button>
         </div>
     </form>
