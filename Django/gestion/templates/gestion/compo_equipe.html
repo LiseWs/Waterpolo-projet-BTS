@@ -83,8 +83,26 @@
         </div>
 
         <div class="text-center mt-4 pb-5">
-            <button type="submit" class="btn btn-success btn-lg px-5">VALIDER LA FEUILLE DE MATCH</button>
-        </div>
+    <button type="button" onclick="validerEtLancer()" class="btn btn-success btn-lg px-5">
+        VALIDER ET LANCER LE MATCH (DOUBLE ÉCRAN)
+    </button>
+</div>
+
+<script>
+    function validerEtLancer() {
+        // 1. Ouvrir le Scoreboard dans une nouvelle fenêtre
+        // On calcule l'URL (on suppose que l'ID match est dans l'URL actuelle ou dispo via template)
+        // Astuce Django : on construit l'URL JS
+        const matchId = "{{ match.id }}";
+        const urlScoreboard = `/match/${matchId}/scoreboard/`;
+        
+        // Ouvre une fenêtre popup
+        window.open(urlScoreboard, 'ScoreBoardWindow', 'menubar=no,location=no,status=no,titlebar=no,toolbar=no');
+
+        // 2. Soumettre le formulaire pour aller au Dashboard Arbitre
+        document.querySelector('form').submit();
+    }
+</script>
     </form>
 </body>
 </html>

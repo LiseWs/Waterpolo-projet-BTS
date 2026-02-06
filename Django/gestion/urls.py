@@ -17,4 +17,7 @@ urlpatterns = [
     path('match/<int:match_id>/arbitre/', views.dashboard_arbitre, name='dashboard_arbitre'),
     
     path('api/match/<int:match_id>/', views.api_match_action, name='api_match_action'),
+
+    path('match/<int:match_id>/scoreboard/', views.score_board, name='score_board'),
+    path('api/match/<int:match_id>/state/', views.api_match_state, name='api_match_state'),
 ]
