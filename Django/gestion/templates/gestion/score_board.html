@@ -3,165 +3,205 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SCOREBOARD - WATERPOLO LIVE</title>
+    <title>WATERPOLO LIVE - PREMIUM SCOREBOARD</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Teko:wght@300;400;500;600;700&family=Bebas+Neue&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Righteous&family=Oswald:wght@400;600;700&display=swap" rel="stylesheet">
     
     <style>
         :root {
-            --neon-white: #ffffff;
-            --neon-blue: #00d4ff;
-            --neon-red: #ff0055;
-            --neon-yellow: #ffea00;
-            --neon-green: #00ff88;
-            --bg-dark: #0a0a0f;
-            --bg-darker: #050508;
-            --street-orange: #ff6b35;
+            --primary-cyan: #00E5FF;
+            --primary-blue: #0091EA;
+            --neon-white: #FFFFFF;
+            --bg-dark: #0A0E27;
+            --bg-darker: #050711;
+            --accent-orange: #FF6B35;
+            --water-blue: #1A237E;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
         
         body { 
-            background: radial-gradient(circle at center, #1a1a2e 0%, #0a0a0f 100%);
+            background: linear-gradient(135deg, #050711 0%, #0A0E27 50%, #0D1B2A 100%);
             color: white; 
             overflow: hidden; 
-            font-family: 'Teko', sans-serif;
-            height: 100vh; 
-            display: flex; 
-            flex-direction: column;
+            font-family: 'Oswald', sans-serif;
+            height: 100vh;
             position: relative;
         }
 
-        /* EFFET GRILLE CYBERPUNK */
-        body::before {
-            content: '';
+        /* ===== FOND ANIMÉ EAU ===== */
+        .water-bg {
             position: absolute;
             top: 0; left: 0; right: 0; bottom: 0;
-            background-image: 
-                linear-gradient(rgba(0, 212, 255, 0.03) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(0, 212, 255, 0.03) 1px, transparent 1px);
-            background-size: 50px 50px;
+            background: 
+                radial-gradient(circle at 20% 50%, rgba(0, 145, 234, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 50%, rgba(0, 229, 255, 0.08) 0%, transparent 50%);
             pointer-events: none;
             z-index: 0;
         }
 
-        /* OVERLAY PLEIN ÉCRAN */
+        .water-wave {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 200%;
+            height: 150px;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 120"><path d="M0,50 Q300,20 600,50 T1200,50 L1200,120 L0,120 Z" fill="rgba(0,145,234,0.03)"/></svg>');
+            background-size: 600px 120px;
+            animation: wave 15s linear infinite;
+            opacity: 0.3;
+            pointer-events: none;
+        }
+
+        @keyframes wave {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-600px); }
+        }
+
+        /* ===== OVERLAY FULLSCREEN ===== */
         #fs-overlay { 
             position: fixed; 
             top: 0; left: 0; 
             width: 100%; height: 100%; 
-            background: linear-gradient(135deg, rgba(0,0,0,0.95), rgba(26,26,46,0.95));
-            z-index: 9999; 
+            background: linear-gradient(135deg, rgba(5,7,17,0.98), rgba(10,14,39,0.98));
+            z-index: 10000; 
             display: flex; 
             justify-content: center; 
             align-items: center; 
             cursor: pointer;
-            backdrop-filter: blur(10px);
+            backdrop-filter: blur(20px);
         }
 
         #fs-overlay h1 {
             font-family: 'Bebas Neue', sans-serif;
-            font-size: 4rem;
+            font-size: 5rem;
             text-transform: uppercase;
-            background: linear-gradient(45deg, var(--neon-blue), var(--neon-green));
+            background: linear-gradient(135deg, var(--primary-cyan), var(--primary-blue));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
-            animation: pulse 2s infinite;
-            text-shadow: 0 0 30px rgba(0, 212, 255, 0.5);
+            animation: pulseGlow 2s infinite;
+            letter-spacing: 4px;
         }
 
-        @keyframes pulse {
-            0%, 100% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.8; transform: scale(1.05); }
+        @keyframes pulseGlow {
+            0%, 100% { 
+                filter: drop-shadow(0 0 20px rgba(0,229,255,0.5));
+                transform: scale(1);
+            }
+            50% { 
+                filter: drop-shadow(0 0 40px rgba(0,229,255,0.8));
+                transform: scale(1.03);
+            }
         }
 
-        /* ===== HEADER STREET STYLE ===== */
+        /* ===== HEADER PREMIUM ===== */
         .header-zone { 
-            height: 30vh;
-            background: linear-gradient(180deg, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.6) 100%);
-            border-bottom: 4px solid transparent;
-            border-image: linear-gradient(90deg, var(--neon-blue), var(--neon-green), var(--street-orange)) 1;
-            box-shadow: 0 8px 32px rgba(0, 212, 255, 0.2);
+            height: 35vh;
+            background: linear-gradient(180deg, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0.2) 100%);
+            border-bottom: 3px solid transparent;
+            border-image: linear-gradient(90deg, transparent, var(--primary-cyan), transparent) 1;
+            box-shadow: 0 10px 50px rgba(0,229,255,0.15);
             position: relative;
-            z-index: 1;
+            z-index: 2;
             display: grid;
             grid-template-columns: 1fr auto 1fr;
             align-items: center;
-            padding: 20px 40px;
-            gap: 30px;
+            padding: 30px 60px;
+            gap: 40px;
         }
 
         /* ÉQUIPES */
         .team-section {
             display: flex;
             flex-direction: column;
-            align-items: center;
-            gap: 15px;
+            gap: 20px;
+            position: relative;
         }
 
         .team-section.home {
             align-items: flex-start;
-            text-align: left;
         }
 
         .team-section.away {
             align-items: flex-end;
-            text-align: right;
+        }
+
+        .team-logo {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.05));
+            border: 3px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 5px 20px rgba(0,0,0,0.3);
         }
 
         .team-name {
             font-family: 'Bebas Neue', sans-serif;
-            font-size: 3.5rem;
+            font-size: 4rem;
             text-transform: uppercase;
-            letter-spacing: 3px;
+            letter-spacing: 4px;
             line-height: 1;
-            text-shadow: 0 0 20px currentColor;
+            font-weight: 700;
             position: relative;
         }
 
         .team-name.home {
             color: var(--neon-white);
             text-shadow: 
-                0 0 10px var(--neon-white),
-                0 0 20px var(--neon-white),
-                0 0 30px rgba(255,255,255,0.5);
+                0 0 20px rgba(255,255,255,0.5),
+                0 5px 30px rgba(255,255,255,0.3);
         }
 
         .team-name.away {
-            color: var(--neon-blue);
+            color: var(--primary-cyan);
             text-shadow: 
-                0 0 10px var(--neon-blue),
-                0 0 20px var(--neon-blue),
-                0 0 30px rgba(0,212,255,0.5);
+                0 0 20px var(--primary-cyan),
+                0 5px 30px rgba(0,229,255,0.4);
+        }
+
+        .score-container {
+            position: relative;
         }
 
         .score-display {
             font-family: 'Bebas Neue', sans-serif;
-            font-size: 8rem;
+            font-size: 10rem;
             line-height: 1;
             font-weight: 700;
             position: relative;
-            text-shadow: 0 0 20px currentColor;
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
 
         .score-display.home {
             color: var(--neon-white);
             text-shadow: 
-                0 0 15px var(--neon-white),
-                0 0 30px var(--neon-white),
-                0 5px 40px rgba(255,255,255,0.3);
+                0 0 30px rgba(255,255,255,0.6),
+                0 10px 40px rgba(255,255,255,0.3);
         }
 
         .score-display.away {
-            color: var(--neon-blue);
+            color: var(--primary-cyan);
             text-shadow: 
-                0 0 15px var(--neon-blue),
-                0 0 30px var(--neon-blue),
-                0 5px 40px rgba(0,212,255,0.3);
+                0 0 30px var(--primary-cyan),
+                0 10px 40px rgba(0,229,255,0.4);
+        }
+
+        .score-display.score-flash {
+            animation: scoreFlash 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        @keyframes scoreFlash {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.3); filter: brightness(2); }
+            100% { transform: scale(1); }
         }
 
         /* CHRONO CENTRAL */
@@ -169,58 +209,58 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 10px;
+            gap: 15px;
+            position: relative;
         }
 
         .chrono-main {
             font-family: 'Bebas Neue', sans-serif;
-            font-size: 9rem;
+            font-size: 11rem;
             line-height: 1;
-            color: var(--neon-red);
+            color: #FF3D00;
             text-shadow: 
-                0 0 20px var(--neon-red),
-                0 0 40px var(--neon-red),
-                0 0 60px rgba(255, 0, 85, 0.5);
-            animation: chrono-pulse 2s infinite;
-            letter-spacing: 5px;
+                0 0 30px rgba(255,61,0,0.6),
+                0 0 60px rgba(255,61,0,0.3);
+            letter-spacing: 8px;
+            position: relative;
         }
 
         .chrono-main.running {
-            color: var(--neon-green);
+            color: var(--primary-cyan);
             text-shadow: 
-                0 0 20px var(--neon-green),
-                0 0 40px var(--neon-green),
-                0 0 60px rgba(0, 255, 136, 0.5);
+                0 0 30px var(--primary-cyan),
+                0 0 60px rgba(0,229,255,0.4);
+            animation: chronoPulse 2s infinite;
         }
 
-        @keyframes chrono-pulse {
+        @keyframes chronoPulse {
             0%, 100% { opacity: 1; }
-            50% { opacity: 0.85; }
+            50% { opacity: 0.9; }
         }
 
         .period-badge {
-            font-family: 'Bebas Neue', sans-serif;
-            font-size: 2.5rem;
-            background: linear-gradient(135deg, var(--street-orange), var(--neon-yellow));
-            padding: 5px 30px;
-            border-radius: 25px;
+            font-family: 'Righteous', sans-serif;
+            font-size: 2.2rem;
+            background: linear-gradient(135deg, var(--accent-orange), #FFD700);
+            padding: 8px 35px;
+            border-radius: 30px;
             color: #000;
             font-weight: 700;
             text-transform: uppercase;
             box-shadow: 
-                0 0 20px rgba(255, 107, 53, 0.5),
-                0 5px 15px rgba(0,0,0,0.3);
-            letter-spacing: 2px;
+                0 0 30px rgba(255,107,53,0.5),
+                0 8px 20px rgba(0,0,0,0.4);
+            letter-spacing: 3px;
         }
 
-        /* ===== GRILLE JOUEURS STREET STYLE ===== */
+        /* ===== ZONE JOUEURS PREMIUM ===== */
         .players-zone { 
             flex-grow: 1;
-            padding: 30px 40px;
+            padding: 40px 60px;
             display: flex;
             flex-direction: column;
             justify-content: center;
-            gap: 25px;
+            gap: 30px;
             position: relative;
             z-index: 1;
         }
@@ -228,73 +268,74 @@
         .team-row {
             display: flex;
             align-items: center;
-            gap: 20px;
+            gap: 25px;
         }
 
         .team-label {
             font-family: 'Bebas Neue', sans-serif;
-            font-size: 3rem;
+            font-size: 3.5rem;
             writing-mode: vertical-rl;
             text-orientation: mixed;
-            letter-spacing: 5px;
-            padding: 20px 10px;
-            border-radius: 15px;
+            letter-spacing: 8px;
+            padding: 30px 15px;
+            border-radius: 20px;
             text-align: center;
             position: relative;
-            overflow: hidden;
+            font-weight: 700;
         }
 
         .team-label.white {
             background: linear-gradient(180deg, rgba(255,255,255,0.15), rgba(255,255,255,0.05));
             color: var(--neon-white);
-            border: 3px solid var(--neon-white);
+            border: 4px solid var(--neon-white);
             box-shadow: 
-                0 0 20px rgba(255,255,255,0.3),
-                inset 0 0 20px rgba(255,255,255,0.1);
+                0 0 30px rgba(255,255,255,0.3),
+                inset 0 0 30px rgba(255,255,255,0.1);
         }
 
         .team-label.blue {
-            background: linear-gradient(180deg, rgba(0,212,255,0.15), rgba(0,212,255,0.05));
-            color: var(--neon-blue);
-            border: 3px solid var(--neon-blue);
+            background: linear-gradient(180deg, rgba(0,229,255,0.15), rgba(0,229,255,0.05));
+            color: var(--primary-cyan);
+            border: 4px solid var(--primary-cyan);
             box-shadow: 
-                0 0 20px rgba(0,212,255,0.3),
-                inset 0 0 20px rgba(0,212,255,0.1);
+                0 0 30px rgba(0,229,255,0.3),
+                inset 0 0 30px rgba(0,229,255,0.1);
         }
 
         .players-grid {
             flex: 1;
             display: grid;
             grid-template-columns: repeat(15, 1fr);
-            gap: 12px;
+            gap: 15px;
         }
 
         .player-cell {
-            background: linear-gradient(145deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02));
-            border-radius: 12px;
+            background: linear-gradient(145deg, rgba(255,255,255,0.08), rgba(255,255,255,0.03));
+            border-radius: 16px;
             aspect-ratio: 1;
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
             position: relative;
-            border: 2px solid rgba(255,255,255,0.1);
-            transition: all 0.3s ease;
+            border: 3px solid rgba(255,255,255,0.15);
+            transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
             overflow: hidden;
-            backdrop-filter: blur(5px);
+            backdrop-filter: blur(10px);
         }
 
         .player-cell::before {
             content: '';
             position: absolute;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: linear-gradient(45deg, transparent, rgba(255,255,255,0.05), transparent);
-            transform: translateX(-100%);
-            transition: transform 0.6s;
+            top: -50%; left: -50%;
+            width: 200%; height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            opacity: 0;
+            transition: opacity 0.4s;
         }
 
         .player-cell:hover::before {
-            transform: translateX(100%);
+            opacity: 1;
         }
 
         .player-cell.white {
@@ -302,136 +343,258 @@
         }
 
         .player-cell.blue {
-            border-color: rgba(0,212,255,0.3);
+            border-color: rgba(0,229,255,0.3);
         }
 
         .player-number {
             font-family: 'Bebas Neue', sans-serif;
-            font-size: 2.5rem;
+            font-size: 2.8rem;
             position: absolute;
-            top: 5px;
-            left: 8px;
-            opacity: 0.4;
+            top: 8px;
+            left: 12px;
+            opacity: 0.35;
             font-weight: 700;
         }
 
         .player-status {
             font-family: 'Bebas Neue', sans-serif;
-            font-size: 2rem;
+            font-size: 2.2rem;
             font-weight: 700;
             z-index: 2;
         }
 
         /* ÉTATS JOUEURS */
         .player-cell.excluded {
-            background: linear-gradient(135deg, rgba(255, 0, 85, 0.8), rgba(220, 53, 69, 0.8));
-            border: 3px solid var(--neon-red);
+            background: linear-gradient(135deg, rgba(255,61,0,0.9), rgba(220,53,69,0.9));
+            border: 4px solid #FF3D00;
             box-shadow: 
-                0 0 30px rgba(255, 0, 85, 0.6),
-                inset 0 0 30px rgba(255, 0, 85, 0.3);
-            animation: excluded-pulse 1s infinite;
+                0 0 40px rgba(255,61,0,0.7),
+                inset 0 0 30px rgba(255,61,0,0.3);
+            animation: excludedPulse 1.2s infinite;
         }
 
-        @keyframes excluded-pulse {
+        @keyframes excludedPulse {
             0%, 100% { 
                 transform: scale(1);
                 box-shadow: 
-                    0 0 30px rgba(255, 0, 85, 0.6),
-                    inset 0 0 30px rgba(255, 0, 85, 0.3);
+                    0 0 40px rgba(255,61,0,0.7),
+                    inset 0 0 30px rgba(255,61,0,0.3);
             }
             50% { 
-                transform: scale(1.05);
+                transform: scale(1.08);
                 box-shadow: 
-                    0 0 40px rgba(255, 0, 85, 0.8),
-                    inset 0 0 40px rgba(255, 0, 85, 0.5);
+                    0 0 50px rgba(255,61,0,1),
+                    inset 0 0 40px rgba(255,61,0,0.5);
             }
         }
 
         .player-cell.eda {
             background: #000;
-            border: 4px solid var(--neon-red);
+            border: 5px solid #FF3D00;
             box-shadow: 
-                0 0 30px rgba(255, 0, 85, 0.8),
-                inset 0 0 20px rgba(255, 0, 85, 0.2);
+                0 0 40px rgba(255,61,0,0.9),
+                inset 0 0 30px rgba(255,61,0,0.3);
         }
 
         .player-cell.eda .player-status {
-            color: var(--neon-red);
-            font-size: 1.8rem;
-            text-shadow: 0 0 10px var(--neon-red);
+            color: #FF3D00;
+            font-size: 2rem;
+            text-shadow: 0 0 15px #FF3D00;
         }
 
         .player-cell.fouls .player-status {
-            color: var(--neon-yellow);
-            text-shadow: 0 0 10px var(--neon-yellow);
-            font-size: 1.5rem;
+            color: #FFD700;
+            text-shadow: 0 0 15px #FFD700;
+            font-size: 1.8rem;
         }
 
         .excluded .player-status {
             color: white;
-            font-size: 3rem;
-            text-shadow: 0 0 15px rgba(255,255,255,0.8);
+            font-size: 3.5rem;
+            text-shadow: 0 0 20px rgba(255,255,255,0.9);
             animation: countdown 1s infinite;
         }
 
         @keyframes countdown {
             0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.1); }
+            50% { transform: scale(1.15); }
+        }
+
+        /* ===== ANIMATION BUT - BALLE WATER-POLO ===== */
+        .goal-animation {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 9999;
+            display: none;
+        }
+
+        .goal-animation.active {
+            display: block;
+        }
+
+        .waterpolo-ball {
+            position: absolute;
+            width: 120px;
+            height: 120px;
+            background: 
+                radial-gradient(circle at 30% 30%, #FFD700, #FFA500);
+            border-radius: 50%;
+            box-shadow: 
+                0 0 30px rgba(255,215,0,0.6),
+                inset -10px -10px 20px rgba(0,0,0,0.3),
+                inset 10px 10px 20px rgba(255,255,255,0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transform-origin: center;
+        }
+
+        .waterpolo-ball::before {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: 
+                repeating-conic-gradient(
+                    from 0deg,
+                    transparent 0deg 30deg,
+                    rgba(0,0,0,0.2) 30deg 33deg
+                );
+        }
+
+        .waterpolo-ball::after {
+            content: '';
+            position: absolute;
+            width: 80%;
+            height: 80%;
+            border-radius: 50%;
+            border: 3px solid rgba(0,0,0,0.3);
+        }
+
+        /* SPLASH D'EAU */
+        .water-splash {
+            position: absolute;
+            width: 200px;
+            height: 200px;
+            opacity: 0;
+        }
+
+        .splash-particle {
+            position: absolute;
+            background: linear-gradient(135deg, var(--primary-cyan), var(--primary-blue));
+            border-radius: 50%;
+            box-shadow: 0 0 15px var(--primary-cyan);
+        }
+
+        /* TEXTE "BUUUUT !" */
+        .goal-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 18rem;
+            font-weight: 700;
+            color: var(--primary-cyan);
+            text-transform: uppercase;
+            letter-spacing: 20px;
+            text-shadow: 
+                0 0 40px var(--primary-cyan),
+                0 0 80px var(--primary-cyan),
+                0 10px 50px rgba(0,229,255,0.5);
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .goal-text.animate {
+            animation: goalTextAnimation 2s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
+
+        @keyframes goalTextAnimation {
+            0% {
+                transform: translate(-50%, -50%) scale(0) rotate(-10deg);
+                opacity: 0;
+            }
+            15% {
+                transform: translate(-50%, -50%) scale(1.3) rotate(5deg);
+                opacity: 1;
+            }
+            30% {
+                transform: translate(-50%, -50%) scale(1) rotate(-2deg);
+            }
+            40% {
+                transform: translate(-50%, -50%) scale(1.05) rotate(0deg);
+            }
+            70% {
+                transform: translate(-50%, -50%) scale(1) rotate(0deg);
+                opacity: 1;
+            }
+            100% {
+                transform: translate(-50%, -50%) scale(0.8) rotate(0deg);
+                opacity: 0;
+            }
+        }
+
+        /* FLASH BACKGROUND */
+        .goal-flash {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: radial-gradient(circle, rgba(0,229,255,0.3), transparent);
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .goal-flash.animate {
+            animation: flashAnimation 0.8s ease-out;
+        }
+
+        @keyframes flashAnimation {
+            0%, 100% { opacity: 0; }
+            30% { opacity: 1; }
         }
 
         /* RESPONSIVE */
         @media (max-height: 900px) {
-            .team-name { font-size: 2.8rem; }
-            .score-display { font-size: 6rem; }
-            .chrono-main { font-size: 7rem; }
-            .period-badge { font-size: 2rem; }
-            .team-label { font-size: 2.5rem; }
-        }
-
-        @media (max-width: 1600px) {
-            .players-grid { gap: 8px; }
-            .player-number { font-size: 2rem; }
-            .player-status { font-size: 1.8rem; }
-        }
-
-        /* EFFET SCANLINES STREET */
-        body::after {
-            content: '';
-            position: absolute;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: repeating-linear-gradient(
-                0deg,
-                transparent,
-                transparent 2px,
-                rgba(0, 212, 255, 0.02) 2px,
-                rgba(0, 212, 255, 0.02) 4px
-            );
-            pointer-events: none;
-            z-index: 2;
-            animation: scanlines 10s linear infinite;
-        }
-
-        @keyframes scanlines {
-            0% { transform: translateY(0); }
-            100% { transform: translateY(4px); }
+            .team-name { font-size: 3rem; }
+            .score-display { font-size: 7rem; }
+            .chrono-main { font-size: 8rem; }
+            .goal-text { font-size: 14rem; }
         }
     </style>
 </head>
 <body>
 
+    <!-- FOND ANIMÉ -->
+    <div class="water-bg"></div>
+    <div class="water-wave"></div>
+
     <!-- OVERLAY FULLSCREEN -->
     <div id="fs-overlay" onclick="goFullscreen()">
-        <h1>
-            <i class="fas fa-expand"></i> CLIQUEZ POUR PLEIN ÉCRAN
-        </h1>
+        <h1>▶ CLIQUEZ POUR DÉMARRER</h1>
+    </div>
+
+    <!-- ANIMATION BUT -->
+    <div class="goal-animation" id="goalAnimation">
+        <div class="goal-flash" id="goalFlash"></div>
+        <div class="waterpolo-ball" id="waterpoloBall">
+            <div class="water-splash" id="waterSplash"></div>
+        </div>
+        <div class="goal-text" id="goalText">BUUUUT !</div>
     </div>
 
     <!-- HEADER -->
     <div class="header-zone">
         <!-- ÉQUIPE DOMICILE -->
         <div class="team-section home">
-            <div class="team-name home">{{ match.nom_equipe_domicile|truncatechars:15 }}</div>
-            <div class="score-display home" id="scoreDom">{{ match.score_domicile }}</div>
+            <div class="team-logo">🏊</div>
+            <div class="team-name home">{{ match.nom_equipe_domicile|truncatechars:12 }}</div>
+            <div class="score-container">
+                <div class="score-display home" id="scoreDom">{{ match.score_domicile }}</div>
+            </div>
         </div>
 
         <!-- CHRONO CENTRAL -->
@@ -444,8 +607,11 @@
 
         <!-- ÉQUIPE EXTÉRIEUR -->
         <div class="team-section away">
-            <div class="team-name away">{{ match.nom_equipe_exterieur|truncatechars:15 }}</div>
-            <div class="score-display away" id="scoreExt">{{ match.score_exterieur }}</div>
+            <div class="team-logo">🤽</div>
+            <div class="team-name away">{{ match.nom_equipe_exterieur|truncatechars:12 }}</div>
+            <div class="score-container">
+                <div class="score-display away" id="scoreExt">{{ match.score_exterieur }}</div>
+            </div>
         </div>
     </div>
 
@@ -493,6 +659,8 @@
         let localTime = {{ match.temps_restant|default:"480" }};
         let isRunning = false;
         let localInterval = null;
+        let lastScoreDom = {{ match.score_domicile }};
+        let lastScoreExt = {{ match.score_exterieur }};
 
         // PLEIN ÉCRAN
         function goFullscreen() {
@@ -508,7 +676,7 @@
             return `${m}:${s}`;
         }
 
-        // TIMER LOCAL (Fluide)
+        // TIMER LOCAL
         function startLocalTimer() {
             if (localInterval) clearInterval(localInterval);
             localInterval = setInterval(() => {
@@ -530,20 +698,142 @@
             }
         }
 
-        // SYNCHRONISATION SERVEUR
+        // ===== ANIMATION BUT SPECTACULAIRE ===== //
+        function playGoalAnimation(team) {
+            const animation = document.getElementById('goalAnimation');
+            const ball = document.getElementById('waterpoloBall');
+            const goalText = document.getElementById('goalText');
+            const flash = document.getElementById('goalFlash');
+            const splash = document.getElementById('waterSplash');
+
+            // Activer l'animation
+            animation.classList.add('active');
+
+            // Configuration trajectoire
+            const startX = team === 'dom' ? -150 : window.innerWidth + 150;
+            const endX = team === 'dom' ? window.innerWidth + 150 : -150;
+            const startY = Math.random() * 200 + 100;
+            const peakY = -100;
+
+            // Position initiale balle
+            ball.style.left = startX + 'px';
+            ball.style.top = startY + 'px';
+            ball.style.opacity = '1';
+
+            // Animation balle (trajectoire parabolique)
+            const duration = 1800;
+            const startTime = Date.now();
+
+            function animateBall() {
+                const elapsed = Date.now() - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+
+                // Trajectoire parabolique (arc)
+                const x = startX + (endX - startX) * progress;
+                const t = progress * 2 - 1; // -1 to 1
+                const y = startY + (peakY - startY) * (1 - t * t);
+
+                ball.style.left = x + 'px';
+                ball.style.top = y + 'px';
+
+                // Rotation
+                const rotation = progress * 720 * (team === 'dom' ? 1 : -1);
+                ball.style.transform = `rotate(${rotation}deg)`;
+
+                // Splash au milieu de l'écran
+                if (progress > 0.4 && progress < 0.6 && !splash.classList.contains('shown')) {
+                    createWaterSplash(x, y);
+                    splash.classList.add('shown');
+                }
+
+                if (progress < 1) {
+                    requestAnimationFrame(animateBall);
+                } else {
+                    ball.style.opacity = '0';
+                    splash.classList.remove('shown');
+                }
+            }
+
+            animateBall();
+
+            // Flash background
+            setTimeout(() => {
+                flash.classList.add('animate');
+                setTimeout(() => flash.classList.remove('animate'), 800);
+            }, 600);
+
+            // Texte "BUUUUT !"
+            setTimeout(() => {
+                goalText.classList.add('animate');
+                setTimeout(() => {
+                    goalText.classList.remove('animate');
+                    animation.classList.remove('active');
+                }, 2000);
+            }, 700);
+        }
+
+        // Créer effet splash d'eau
+        function createWaterSplash(x, y) {
+            const splash = document.getElementById('waterSplash');
+            splash.innerHTML = '';
+            splash.style.left = (x - 100) + 'px';
+            splash.style.top = (y - 100) + 'px';
+
+            // Créer 12 particules
+            for (let i = 0; i < 12; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'splash-particle';
+                
+                const size = Math.random() * 15 + 8;
+                particle.style.width = size + 'px';
+                particle.style.height = size + 'px';
+
+                const angle = (i / 12) * 360;
+                const distance = 80 + Math.random() * 40;
+                const rad = angle * Math.PI / 180;
+
+                particle.style.left = '50%';
+                particle.style.top = '50%';
+
+                splash.appendChild(particle);
+
+                // Animation particule
+                setTimeout(() => {
+                    particle.style.transition = 'all 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+                    particle.style.transform = `translate(${Math.cos(rad) * distance}px, ${Math.sin(rad) * distance}px)`;
+                    particle.style.opacity = '0';
+                }, 10);
+
+                setTimeout(() => particle.remove(), 900);
+            }
+
+            splash.style.opacity = '1';
+            setTimeout(() => splash.style.opacity = '0', 800);
+        }
+
+        // SYNCHRONISATION
         async function syncData() {
             try {
                 const res = await fetch(`/api/match/${matchId}/state/`);
                 const data = await res.json();
 
-                // Mise à jour Scores avec animation
+                // Détection BUT
+                if (data.score_dom > lastScoreDom) {
+                    playGoalAnimation('dom');
+                    lastScoreDom = data.score_dom;
+                }
+                if (data.score_ext > lastScoreExt) {
+                    playGoalAnimation('ext');
+                    lastScoreExt = data.score_ext;
+                }
+
+                // Mise à jour scores
                 updateScore('scoreDom', data.score_dom);
                 updateScore('scoreExt', data.score_ext);
                 
-                // Période
                 document.getElementById('periode').innerText = data.periode;
 
-                // Chrono (Resync intelligente)
+                // Chrono
                 if (!isRunning || Math.abs(localTime - data.temps_restant) > 2 || !data.chrono_en_cours) {
                     localTime = data.temps_restant;
                     updateChronoDisplay();
@@ -551,7 +841,7 @@
 
                 isRunning = data.chrono_en_cours;
 
-                // Mise à jour Joueurs
+                // Joueurs
                 updatePlayers(data.players);
 
             } catch (e) { 
@@ -562,23 +852,19 @@
         function updateScore(elementId, newScore) {
             const el = document.getElementById(elementId);
             if (el.innerText !== newScore.toString()) {
-                el.style.transform = 'scale(1.2)';
+                el.classList.add('score-flash');
                 el.innerText = newScore;
-                setTimeout(() => {
-                    el.style.transform = 'scale(1)';
-                }, 300);
+                setTimeout(() => el.classList.remove('score-flash'), 500);
             }
         }
 
         function updatePlayers(playersData) {
-            // Reset toutes les cellules
             document.querySelectorAll('.player-cell').forEach(cell => {
                 cell.classList.remove('excluded', 'eda', 'fouls');
                 const statusSpan = cell.querySelector('.player-status');
                 if (statusSpan) statusSpan.innerText = "";
             });
 
-            // Mise à jour état par joueur
             for (const [pid, info] of Object.entries(playersData)) {
                 if (pMap[pid]) {
                     const map = pMap[pid];
@@ -587,19 +873,16 @@
 
                     if (cell && statusSpan) {
                         if (info.state === 'EXCL') {
-                            // Exclusion temporaire
                             cell.classList.add('excluded');
                             const now = Math.floor(Date.now() / 1000);
                             const left = Math.max(0, Math.floor(info.end_time - now));
                             statusSpan.innerText = left > 0 ? left : "0";
                         } 
                         else if (info.state === 'EDA') {
-                            // Exclusion définitive
                             cell.classList.add('eda');
                             statusSpan.innerText = "EDA";
                         }
                         else if (info.fautes > 0) {
-                            // Fautes personnelles
                             cell.classList.add('fouls');
                             statusSpan.innerText = "●".repeat(Math.min(info.fautes, 3));
                         }
@@ -608,11 +891,9 @@
             }
         }
 
-        // Démarrage
+        // INIT
         startLocalTimer();
         updateChronoDisplay();
-        
-        // Sync toutes les secondes
         setInterval(syncData, 1000);
         syncData();
 
@@ -620,12 +901,12 @@
         window.addEventListener('load', () => {
             document.querySelectorAll('.player-cell').forEach((cell, index) => {
                 cell.style.opacity = '0';
-                cell.style.transform = 'translateY(20px)';
+                cell.style.transform = 'translateY(30px)';
                 setTimeout(() => {
-                    cell.style.transition = 'all 0.3s ease';
+                    cell.style.transition = 'all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)';
                     cell.style.opacity = '1';
                     cell.style.transform = 'translateY(0)';
-                }, index * 20);
+                }, index * 25);
             });
         });
     </script>
