@@ -859,11 +859,16 @@
         }
 
         function updatePlayers(playersData) {
+            // Reset toutes les cellules
             document.querySelectorAll('.player-cell').forEach(cell => {
                 cell.classList.remove('excluded', 'eda', 'fouls');
                 const statusSpan = cell.querySelector('.player-status');
                 if (statusSpan) statusSpan.innerText = "";
             });
+
+            // Debug: afficher les données reçues
+            console.log('Données joueurs reçues:', playersData);
+            console.log('Mapping joueurs:', pMap);
 
             for (const [pid, info] of Object.entries(playersData)) {
                 if (pMap[pid]) {
@@ -871,22 +876,35 @@
                     const cell = document.getElementById(`cell-${map.side}-${map.bonnet}`);
                     const statusSpan = document.getElementById(`status-${map.side}-${map.bonnet}`);
 
+                    console.log(`Joueur ${pid} - Bonnet ${map.bonnet} - Fautes: ${info.fautes} - État: ${info.state}`);
+
                     if (cell && statusSpan) {
-                        if (info.state === 'EXCL') {
+                        // Priorité 1 : Exclusion définitive (EDA)
+                        if (info.state === 'EDA') {
+                            cell.classList.add('eda');
+                            statusSpan.innerText = "EDA";
+                            console.log(`→ Affichage EDA pour bonnet ${map.bonnet}`);
+                        }
+                        // Priorité 2 : Exclusion temporaire
+                        else if (info.state === 'EXCL') {
                             cell.classList.add('excluded');
                             const now = Math.floor(Date.now() / 1000);
                             const left = Math.max(0, Math.floor(info.end_time - now));
                             statusSpan.innerText = left > 0 ? left : "0";
-                        } 
-                        else if (info.state === 'EDA') {
-                            cell.classList.add('eda');
-                            statusSpan.innerText = "EDA";
+                            console.log(`→ Affichage EXCL pour bonnet ${map.bonnet}: ${left}s`);
                         }
+                        // Priorité 3 : Fautes (si pas exclu)
                         else if (info.fautes > 0) {
                             cell.classList.add('fouls');
-                            statusSpan.innerText = "●".repeat(Math.min(info.fautes, 3));
+                            const points = "●".repeat(Math.min(info.fautes, 3));
+                            statusSpan.innerText = points;
+                            console.log(`→ Affichage ${info.fautes} faute(s) pour bonnet ${map.bonnet}: ${points}`);
                         }
+                    } else {
+                        console.warn(`Cellule ou span non trouvé pour ${map.side}-${map.bonnet}`);
                     }
+                } else {
+                    console.warn(`Joueur ${pid} non trouvé dans pMap`);
                 }
             }
         }

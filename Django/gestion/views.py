@@ -194,21 +194,31 @@ def api_match_action(request, match_id):
                     if joueur.equipe_concernee == 'DOM': match.score_domicile += 1
                     else: match.score_exterieur += 1
                 elif action == 'FAUTE':
-                    # Faute ordinaire : on incrémente juste le compteur
+                    # Faute ordinaire : on incrémente le compteur
                     joueur.nb_fautes_personnelles += 1
+                    # Si 3 fautes = exclusion définitive automatique
+                    if joueur.nb_fautes_personnelles >= 3:
+                        joueur.est_exclu_definitif = True
                     joueur.save()
                 elif action == 'PENALTY':
                     # Pénalty : compte comme une faute
                     joueur.nb_fautes_personnelles += 1
+                    # Si 3 fautes = exclusion définitive automatique
+                    if joueur.nb_fautes_personnelles >= 3:
+                        joueur.est_exclu_definitif = True
                     joueur.save()
                 elif action == 'EXCL':
                     # Exclusion 20s
                     joueur.est_exclu = True
                     joueur.nb_fautes_personnelles += 1
                     joueur.fin_exclusion = timezone.now() + timedelta(seconds=match.temps_exclusion)
+                    # Si 3 fautes = exclusion définitive automatique
+                    if joueur.nb_fautes_personnelles >= 3:
+                        joueur.est_exclu_definitif = True
+                        joueur.est_exclu = False  # Plus d'exclusion temporaire si définitive
                     joueur.save()
                 elif action == 'EDA':
-                    # Exclusion définitive avec arbitre
+                    # Exclusion définitive manuelle par l'arbitre
                     joueur.est_exclu_definitif = True
                     joueur.nb_fautes_personnelles += 1
                     joueur.save()
