@@ -130,6 +130,21 @@ def dashboard_arbitre(request, match_id):
 # ==========================================
 # 6. API MATCH ACTION (LE CERVEAU)
 # ==========================================
+def _chrono_payload(match):
+    """
+    Renvoie le bloc 'chrono' à chaque réponse API.
+    Le frontend calcule : frozen_time - (Date.now()/1000 - started_at)
+    server_ts absorbe la latence réseau. Zero setInterval = zero dérive.
+    """
+    now_ts = timezone.now().timestamp()
+    started_at = match.dernier_top_chrono.timestamp() if match.dernier_top_chrono else now_ts
+    return {
+        'running':     match.chrono_en_cours,
+        'frozen_time': float(match.temps_restant),
+        'started_at':  started_at,
+        'server_ts':   now_ts,
+    }
+
 @csrf_exempt
 def api_match_action(request, match_id):
     if request.method == "POST":
@@ -142,25 +157,33 @@ def api_match_action(request, match_id):
                 match.chrono_en_cours = True
                 match.dernier_top_chrono = timezone.now()
                 match.save()
-            return JsonResponse({'status': 'ok'})
+            return JsonResponse({'status': 'ok', 'chrono': _chrono_payload(match)})
             
         elif action == 'stop_timer':
             if match.chrono_en_cours:
                 match.chrono_en_cours = False
+                # On calcule le temps restant côté SERVEUR (source de vérité)
+                # On ignore la valeur envoyée par le client (elle peut dériver)
                 if match.dernier_top_chrono:
                     delta = (timezone.now() - match.dernier_top_chrono).total_seconds()
-                    match.temps_restant = max(0, int(match.temps_restant - delta))
-                    match.dernier_top_chrono = None
-                if data.get('temps_restant'):
-                    match.temps_restant = int(data.get('temps_restant'))
+                    match.temps_restant = max(0, match.temps_restant - delta)
+                match.dernier_top_chrono = None
                 match.save()
-            return JsonResponse({'status': 'ok'})
+            return JsonResponse({'status': 'ok', 'chrono': _chrono_payload(match)})
 
         elif action == 'adjust_time':
             delta = int(data.get('delta', 0))
             match.temps_restant = max(0, match.temps_restant + delta)
             match.save()
-            return JsonResponse({'new_time': match.temps_restant})
+            return JsonResponse({'status': 'ok', 'new_time': match.temps_restant, 'chrono': _chrono_payload(match)})
+
+        elif action == 'reset_period':
+            if match.chrono_en_cours:
+                match.chrono_en_cours = False
+                match.dernier_top_chrono = None
+            match.temps_restant = match.duree_periode * 60
+            match.save()
+            return JsonResponse({'status': 'ok', 'chrono': _chrono_payload(match)})
 
         elif action == 'next_period':
             match.chrono_en_cours = False
@@ -168,7 +191,7 @@ def api_match_action(request, match_id):
             match.temps_restant = match.duree_periode * 60
             match.dernier_top_chrono = None
             match.save()
-            return JsonResponse({'period': match.periode_actuelle, 'time': match.temps_restant})
+            return JsonResponse({'status': 'ok', 'period': match.periode_actuelle, 'time': match.temps_restant, 'chrono': _chrono_payload(match)})
 
         # --- NOUVELLE ACTION : RETOUR EN JEU (DÉBLOQUER JOUEUR) ---
         elif action == 'return_play':
@@ -176,7 +199,7 @@ def api_match_action(request, match_id):
             joueur = Participation.objects.get(id=p_id)
             joueur.est_exclu = False
             joueur.save()
-            return JsonResponse({'status': 'ok'})
+            return JsonResponse({'status': 'ok', 'chrono': _chrono_payload(match)})
 
         # --- ACTIONS DE JEU ---
         elif action in ['BUT', 'EXCL', 'EDA', 'PENALTY', 'TM', 'FAUTE']:
@@ -241,7 +264,7 @@ def api_match_action(request, match_id):
             match.save()
 
         history = list(Evenement.objects.filter(match=match).order_by('-heure_creation')[:20].values('id', 'type_action', 'chrono_match', 'equipe_attribuee', 'joueur__nom', 'joueur__numero_bonnet'))
-        return JsonResponse({'score_dom': match.score_domicile, 'score_ext': match.score_exterieur, 'history': history, 'period': match.periode_actuelle, 'status': 'ok'})
+        return JsonResponse({'score_dom': match.score_domicile, 'score_ext': match.score_exterieur, 'history': history, 'period': match.periode_actuelle, 'status': 'ok', 'chrono': _chrono_payload(match)})
 
     return JsonResponse({'error': 'Bad Request'}, status=400)
 
@@ -257,21 +280,23 @@ def score_board(request, match_id):
 @csrf_exempt
 def api_match_state(request, match_id):
     match = get_object_or_404(Match, id=match_id)
-    temps_reel = match.temps_restant
-    if match.chrono_en_cours and match.dernier_top_chrono:
-        delta = (timezone.now() - match.dernier_top_chrono).total_seconds()
-        temps_reel = max(0, int(match.temps_restant - delta))
-    
+
     players_state = {}
-    parts = Participation.objects.filter(match=match)
-    for p in parts:
+    for p in Participation.objects.filter(match=match):
         state = 'OK'
         end_time = 0
-        if p.est_exclu_definitif: state = 'EDA'
+        if p.est_exclu_definitif:
+            state = 'EDA'
         elif p.est_exclu:
             state = 'EXCL'
-            if p.fin_exclusion: end_time = p.fin_exclusion.timestamp()
-        
+            if p.fin_exclusion:
+                end_time = p.fin_exclusion.timestamp()
         players_state[p.id] = {'state': state, 'end_time': end_time, 'fautes': p.nb_fautes_personnelles}
 
-    return JsonResponse({'score_dom': match.score_domicile, 'score_ext': match.score_exterieur, 'chrono_en_cours': match.chrono_en_cours, 'temps_restant': temps_reel, 'periode': match.periode_actuelle, 'players': players_state})
+    return JsonResponse({
+        'score_dom':  match.score_domicile,
+        'score_ext':  match.score_exterieur,
+        'periode':    match.periode_actuelle,
+        'players':    players_state,
+        'chrono':     _chrono_payload(match),   # source de vérité pour les deux écrans
+    })

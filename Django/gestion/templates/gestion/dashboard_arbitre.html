@@ -729,114 +729,145 @@
 
     <script>
         const matchId = {{ match.id }};
-        let timeLeft = {{ match.temps_restant|default:"480" }};
-        let isRunning = {{ match.chrono_en_cours|yesno:"true,false" }};
         let isProcessing = false;
-        let timerInterval = null;
 
-        // ===== FORMATAGE TEMPS =====
-        function formatTime(seconds) {
-            if (seconds < 0) seconds = 0;
-            const m = Math.floor(seconds / 60).toString().padStart(2, '0');
-            const s = (seconds % 60).toString().padStart(2, '0');
-            return `${m}:${s}`;
+        // ═══════════════════════════════════════════════════════════════
+        // CHRONO SANS DÉRIVE — Principe fondamental :
+        //
+        //   On ne décrémente JAMAIS une variable locale par setInterval.
+        //   setInterval(fn, 1000) ne garantit PAS 1000 ms exactes :
+        //   chaque tick accumule le temps d'exécution JS → dérive croissante.
+        //
+        //   À la place, on mémorise deux valeurs du SERVEUR :
+        //     • frozen_time  : temps restant au moment du dernier start/stop
+        //     • started_at   : timestamp Unix (s) du dernier start_timer
+        //     • server_ts    : timestamp Unix (s) au moment de la réponse API
+        //
+        //   Le temps réel à tout instant t est :
+        //     t_reel = frozen_time - (Date.now()/1000 - started_at)
+        //
+        //   On met à jour l'affichage via requestAnimationFrame (≈60 fps).
+        //   Dérive = 0, même après 2 heures.
+        // ═══════════════════════════════════════════════════════════════
+        let C = {                                      // état chrono
+            running:    {{ match.chrono_en_cours|yesno:"true,false" }},
+            frozenTime: {{ match.temps_restant|default:"480" }},
+            startedAt:  null,
+            alertedEnd: false,
+        };
+
+        // --- utilitaires --------------------------------------------------
+        function fmtTime(sec) {
+            if (sec < 0) sec = 0;
+            const m = Math.floor(sec / 60).toString().padStart(2, '0');
+            const s = Math.floor(sec % 60).toString().padStart(2, '0');
+            return m + ':' + s;
         }
 
-        function updateChronoDisplay() {
-            const display = document.getElementById('chrono');
-            display.innerText = formatTime(timeLeft);
-            if (isRunning) {
-                display.classList.add('running');
-            } else {
-                display.classList.remove('running');
-            }
+        function timeLeft() {  // temps restant calculé à partir de l'ancre serveur
+            if (!C.running || C.startedAt === null) return Math.max(0, C.frozenTime);
+            return Math.max(0, C.frozenTime - (Date.now() / 1000 - C.startedAt));
         }
 
-        // ===== GESTION CHRONO =====
-        function startTimer() {
-            if (timerInterval || isProcessing) return;
-            isRunning = true;
-            updateChronoDisplay();
-            timerInterval = setInterval(() => {
-                if (timeLeft > 0) {
-                    timeLeft--;
-                    updateChronoDisplay();
-                } else {
-                    stopTimer();
-                    alert('⏰ Temps écoulé !');
+        function applyServerChrono(chrono) {
+            if (!chrono) return;
+            // Compensation latence : la réponse a mis ~(now - server_ts)/2 ms
+            const netDelay = (Date.now() / 1000 - chrono.server_ts) / 2;
+            C.running    = chrono.running;
+            C.frozenTime = chrono.frozen_time;
+            C.startedAt  = chrono.running ? (chrono.started_at + netDelay) : null;
+            C.alertedEnd = false;
+        }
+
+        // --- boucle d'affichage (remplace setInterval) --------------------
+        function chronoRaf() {
+            const t   = timeLeft();
+            const el  = document.getElementById('chrono');
+            el.innerText = fmtTime(Math.ceil(t));
+            if (C.running) {
+                el.classList.add('running');
+                if (t <= 0 && !C.alertedEnd) {
+                    C.alertedEnd = true;
+                    internalStop();
+                    setTimeout(() => alert('⏰ Temps écoulé !'), 50);
                 }
-            }, 1000);
-            callApi({ action: 'start_timer' });
-        }
-
-        function stopTimer() {
-            if (timerInterval) {
-                clearInterval(timerInterval);
-                timerInterval = null;
+            } else {
+                el.classList.remove('running');
             }
-            isRunning = false;
-            updateChronoDisplay();
-            callApi({ action: 'stop_timer', temps_restant: timeLeft });
+            requestAnimationFrame(chronoRaf);
         }
 
-        // Clic sur le chrono
+        // --- actions chrono -----------------------------------------------
+        async function startTimer() {
+            if (C.running || isProcessing) return;
+            lockUI(true);
+            try {
+                const res = await callApi({ action: 'start_timer' });
+                applyServerChrono(res.chrono);
+            } finally { lockUI(false); }
+        }
+
+        async function internalStop() {
+            // Stoppe localement sans appel API (utilisé quand t=0)
+            C.running = false;
+            C.frozenTime = 0;
+            C.startedAt = null;
+        }
+
+        async function stopTimer() {
+            if (!C.running || isProcessing) return;
+            lockUI(true);
+            try {
+                const res = await callApi({ action: 'stop_timer' });
+                // Le serveur calcule lui-même le temps restant → on prend sa valeur
+                applyServerChrono(res.chrono);
+            } finally { lockUI(false); }
+        }
+
         document.getElementById('chrono').addEventListener('click', () => {
-            if (!isProcessing) {
-                isRunning ? stopTimer() : startTimer();
-            }
+            if (!isProcessing) { C.running ? stopTimer() : startTimer(); }
         });
 
-        function safeAdjustTime(delta) {
+        async function safeAdjustTime(delta) {
             if (isProcessing) return;
-            timeLeft += delta;
-            if (timeLeft < 0) timeLeft = 0;
-            updateChronoDisplay();
-            callApi({ action: 'adjust_time', delta: delta });
+            lockUI(true);
+            try {
+                const res = await callApi({ action: 'adjust_time', delta: delta });
+                applyServerChrono(res.chrono);
+            } finally { lockUI(false); }
         }
 
         function resetPeriod() {
-            if (confirm('Réinitialiser le chrono à 8:00 ?')) {
-                timeLeft = 480;
-                updateChronoDisplay();
-                callApi({ action: 'adjust_time', delta: 0, temps_restant: 480 });
-            }
+            if (!confirm('Réinitialiser le chrono à 8:00 ?')) return;
+            callApi({ action: 'reset_period' }).then(res => applyServerChrono(res.chrono));
         }
 
         function nextPeriod() {
             if (isProcessing) return;
-            if (confirm('Passer à la période suivante ?')) {
-                lockUI(true);
-                callApi({ action: 'next_period' }).then(res => {
-                    timeLeft = res.time;
-                    document.getElementById('periodeDisplay').innerText = res.period;
-                    stopTimer();
-                    // Reset toutes les exclusions
-                    document.querySelectorAll('.player-card').forEach(c => {
-                        c.dataset.exclEnd = '0';
-                        c.dataset.eda = 'false';
-                    });
-                    checkExclusions();
-                    lockUI(false);
+            if (!confirm('Passer à la période suivante ?')) return;
+            lockUI(true);
+            callApi({ action: 'next_period' }).then(res => {
+                applyServerChrono(res.chrono);
+                document.getElementById('periodeDisplay').innerText = res.period;
+                document.querySelectorAll('.player-card').forEach(c => {
+                    c.dataset.exclEnd = '0';
+                    c.dataset.eda     = 'false';
                 });
-            }
+                checkExclusions();
+                lockUI(false);
+            });
         }
 
-        // ===== GESTION ACTIONS =====
+        // ===== GESTION ACTIONS =============================================
         document.addEventListener('click', (e) => {
-            // Actions joueur
             if (e.target.classList.contains('action-btn') || e.target.closest('.action-btn')) {
                 if (isProcessing) return;
-                const btn = e.target.classList.contains('action-btn') ? e.target : e.target.closest('.action-btn');
+                const btn  = e.target.classList.contains('action-btn') ? e.target : e.target.closest('.action-btn');
                 const type = btn.dataset.action;
-                const pid = btn.dataset.pid;
-                
-                // Confirmation pour EDA
+                const pid  = btn.dataset.pid;
                 if (type === 'EDA' && !confirm('⚠️ CONFIRMER EXCLUSION DÉFINITIVE ?')) return;
-                
                 sendAction(type, pid);
             }
-
-            // Time-out équipe
             if (e.target.classList.contains('btn-tm') || e.target.closest('.btn-tm')) {
                 if (isProcessing) return;
                 const btn = e.target.classList.contains('btn-tm') ? e.target : e.target.closest('.btn-tm');
@@ -851,101 +882,74 @@
                     action: type,
                     participation_id: pId,
                     equipe: equipe,
-                    chrono_display: formatTime(timeLeft)
+                    chrono_display: fmtTime(Math.ceil(timeLeft()))   // pour l'historique
                 });
-
                 if (res.status === 'ok') {
                     updateUI(res);
-
-                    // Gestion des exclusions
                     if (type === 'EXCL' && pId) {
-                        const card = document.getElementById('card-' + pId);
-                        card.dataset.exclEnd = Math.floor(Date.now() / 1000) + 20;
+                        document.getElementById('card-' + pId).dataset.exclEnd =
+                            Math.floor(Date.now() / 1000) + 20;
                         checkExclusions();
                     }
-
                     if (type === 'EDA' && pId) {
-                        const card = document.getElementById('card-' + pId);
-                        card.dataset.eda = 'true';
+                        document.getElementById('card-' + pId).dataset.eda = 'true';
                         checkExclusions();
                     }
-
-                    // Feedback visuel
-                    if (type === 'BUT') {
-                        showFeedback('⚽ BUT !');
-                    }
+                    if (type === 'BUT') showFeedback('⚽ BUT !');
                 }
             } catch (err) {
                 console.error(err);
                 alert('❌ Erreur serveur !');
-            } finally {
-                lockUI(false);
-            }
+            } finally { lockUI(false); }
         }
 
-        // ===== RETOUR EN JEU =====
+        // ===== RETOUR EN JEU ===============================================
         function tryReturnPlayer(pId) {
             const overlay = document.getElementById('overlay-' + pId);
             if (overlay.classList.contains('ready')) {
                 lockUI(true);
                 callApi({ action: 'return_play', participation_id: pId }).then(() => {
-                    const card = document.getElementById('card-' + pId);
-                    card.dataset.exclEnd = '0';
+                    document.getElementById('card-' + pId).dataset.exclEnd = '0';
                     checkExclusions();
                     lockUI(false);
                 });
             }
         }
 
-        // ===== ANNULATION ACTION =====
+        // ===== ANNULATION ACTION ===========================================
         async function deleteEvent(evtId, type) {
             if (isProcessing || !confirm('❌ Annuler cette action ?')) return;
             lockUI(true);
             try {
                 const res = await callApi({ action: 'delete_event', event_id: evtId });
                 updateUI(res);
-                // Rafraîchir si exclusion pour être sûr
-                if (['EXCL', 'EDA'].includes(type)) {
-                    setTimeout(() => location.reload(), 500);
-                }
-            } catch (err) {
-                alert('❌ Erreur !');
-            } finally {
-                lockUI(false);
-            }
+                if (['EXCL', 'EDA'].includes(type)) setTimeout(() => location.reload(), 500);
+            } catch (err) { alert('❌ Erreur !'); }
+            finally { lockUI(false); }
         }
 
-        // ===== MISE À JOUR UI =====
+        // ===== MISE À JOUR UI ==============================================
         function updateUI(res) {
-            if (res.score_dom !== undefined) {
-                document.getElementById('scoreDom').innerText = res.score_dom;
-            }
-            if (res.score_ext !== undefined) {
-                document.getElementById('scoreExt').innerText = res.score_ext;
-            }
-
+            if (res.score_dom !== undefined) document.getElementById('scoreDom').innerText = res.score_dom;
+            if (res.score_ext !== undefined) document.getElementById('scoreExt').innerText = res.score_ext;
             const list = document.getElementById('historyList');
-            list.innerHTML = "";
-
+            list.innerHTML = '';
             if (res.history && res.history.length > 0) {
                 document.getElementById('eventCount').innerText = res.history.length;
-                
                 res.history.forEach(evt => {
                     const teamClass = evt.equipe_attribuee === 'DOM' ? 'home' : 'away';
-                    const label = evt.joueur__nom 
-                        ? `N°${evt.joueur__numero_bonnet} ${evt.joueur__nom}` 
+                    const label = evt.joueur__nom
+                        ? 'N°' + evt.joueur__numero_bonnet + ' ' + evt.joueur__nom
                         : 'ÉQUIPE';
-
                     const item = document.createElement('div');
-                    item.className = `history-item ${teamClass}`;
-                    item.innerHTML = `
-                        <div class="history-info">
-                            <span class="history-time">${evt.chrono_match || '00:00'}</span>
-                            <span class="history-action action-${evt.type_action}">${evt.type_action}</span>
-                            <span class="text-white-50">${label}</span>
-                        </div>
-                        <i class="fas fa-times history-delete" onclick="deleteEvent(${evt.id}, '${evt.type_action}')"></i>
-                    `;
+                    item.className = 'history-item ' + teamClass;
+                    item.innerHTML =
+                        '<div class="history-info">' +
+                        '<span class="history-time">' + (evt.chrono_match || '00:00') + '</span>' +
+                        '<span class="history-action action-' + evt.type_action + '">' + evt.type_action + '</span>' +
+                        '<span class="text-white-50">' + label + '</span>' +
+                        '</div>' +
+                        '<i class="fas fa-times history-delete" onclick="deleteEvent(' + evt.id + ',\'' + evt.type_action + '\')"></i>';
                     list.appendChild(item);
                 });
             } else {
@@ -954,33 +958,28 @@
             }
         }
 
-        // ===== GESTION EXCLUSIONS =====
+        // ===== EXCLUSIONS ==================================================
         function checkExclusions() {
-            const now = Math.floor(Date.now() / 1000);
+            const nowSec = Date.now() / 1000;
             document.querySelectorAll('.player-card').forEach(card => {
                 const overlay = card.querySelector('.player-overlay');
-                const txt = overlay.querySelector('span');
-
-                // EDA
+                const txt     = overlay.querySelector('span');
                 if (card.dataset.eda === 'true') {
                     overlay.style.display = 'flex';
                     overlay.className = 'player-overlay eda';
-                    txt.innerText = "EDA";
+                    txt.innerText = 'EDA';
                     return;
                 }
-
-                // Exclusion temporaire
-                const endTimestamp = parseInt(card.dataset.exclEnd);
-                if (endTimestamp > 0) {
+                const endTs = parseFloat(card.dataset.exclEnd || 0);
+                if (endTs > 0) {
                     overlay.style.display = 'flex';
-                    const remaining = endTimestamp - now;
-
+                    const remaining = endTs - nowSec;
                     if (remaining > 0) {
                         overlay.className = 'player-overlay exclusion';
-                        txt.innerText = remaining + 's';
+                        txt.innerText = Math.ceil(remaining) + 's';
                     } else {
                         overlay.className = 'player-overlay ready';
-                        txt.innerText = "✓ CLIQUER";
+                        txt.innerText = '✓ CLIQUER';
                     }
                 } else {
                     overlay.style.display = 'none';
@@ -990,53 +989,40 @@
 
         setInterval(checkExclusions, 500);
 
-        // ===== API =====
+        // ===== API =========================================================
         async function callApi(data) {
-            const response = await fetch(`/api/match/${matchId}/`, {
+            const r = await fetch('/api/match/' + matchId + '/', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(data)
             });
-            return await response.json();
+            return r.json();
         }
 
         function lockUI(locked) {
             isProcessing = locked;
             document.body.style.cursor = locked ? 'wait' : 'default';
-            if (locked) {
-                document.body.classList.add('disabled-ui');
-            } else {
-                document.body.classList.remove('disabled-ui');
-            }
+            document.body.classList.toggle('disabled-ui', locked);
         }
 
-        // ===== FEEDBACK VISUEL =====
-        function showFeedback(message) {
-            const feedback = document.createElement('div');
-            feedback.style.cssText = `
-                position: fixed;
-                top: 50%;
-                left: 50%;
-                transform: translate(-50%, -50%);
-                background: rgba(0,0,0,0.9);
-                color: white;
-                padding: 30px 60px;
-                border-radius: 20px;
-                font-size: 3rem;
-                font-weight: 900;
-                z-index: 10000;
-                animation: fadeOut 1.5s forwards;
-            `;
-            feedback.innerText = message;
-            document.body.appendChild(feedback);
-            setTimeout(() => feedback.remove(), 1500);
+        function showFeedback(msg) {
+            const d = document.createElement('div');
+            d.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(0,0,0,.9);color:#fff;padding:30px 60px;border-radius:20px;font-size:3rem;font-weight:900;z-index:10000;animation:fadeOut 1.5s forwards';
+            d.innerText = msg;
+            document.body.appendChild(d);
+            setTimeout(() => d.remove(), 1500);
         }
 
-        // ===== INIT =====
-        updateChronoDisplay();
+        // ===== INIT ========================================================
+        // 1. Lancer la boucle RAF immédiatement (affichage fluide)
+        chronoRaf();
         checkExclusions();
-        if (isRunning) startTimer();
-        callApi({ action: 'refresh' }).then(res => updateUI(res)).catch(() => {});
+
+        // 2. Récupérer l'état serveur au démarrage pour caler l'ancre
+        callApi({ action: 'refresh' }).then(res => {
+            applyServerChrono(res.chrono);   // cale startedAt sur le serveur
+            updateUI(res);
+        }).catch(console.error);
     </script>
 </body>
 </html>
