@@ -3,887 +3,844 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Dashboard Arbitre - WaterPolo Pro</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <title>Arbitre – {{ match.nom_equipe_domicile }} vs {{ match.nom_equipe_exterieur }}</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
     <style>
+        /* ==========================================================================
+           1. VARIABLES ET RESET
+           ========================================================================== */
         :root {
-            --color-white-team: #ffffff;
-            --color-blue-team: #0d6efd;
-            --color-danger: #dc3545;
-            --color-warning: #ffc107;
-            --color-success: #198754;
-            --color-dark: #121212;
-            --color-card-bg: #1e1e1e;
+            /* Couleurs principales */
+            --bg-body: #0b0b0f;
+            --bg-panel: #13131a;
+            --bg-card: #1c1c26;
+            --bg-card-hover: #262635;
+            
+            /* Bordures et séparateurs */
+            --border-color: #2a2a38;
+            
+            /* Identité des équipes */
+            --color-domicile: #ffffff;
+            --color-exterieur: #2979ff;
+            
+            /* Couleurs d'action et d'états */
+            --color-success: #00e676; /* But */
+            --color-warning: #ffea00; /* Faute */
+            --color-danger: #ff1744;  /* Exclusion */
+            --color-penalty: #ff9100; /* Penalty */
+            --color-info: #7c4dff;    /* Neutre / Période */
+            
+            /* Typographie */
+            --text-main: #f5f5f5;
+            --text-muted: #888899;
+            --font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            --font-mono: 'Courier New', Courier, monospace;
+            
+            /* Dimensions */
+            --header-height: 110px;
+            --radius-sm: 6px;
+            --radius-md: 10px;
         }
 
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        
-        body { 
-            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 100%);
-            color: white; 
-            height: 100vh; 
-            overflow: hidden;
-            font-family: 'Segoe UI', system-ui, sans-serif;
-            user-select: none; 
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html, body {
+            height: 100%;
+            width: 100%;
+            overflow: hidden; /* Empêche le scroll global */
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            font-family: var(--font-family);
+            user-select: none; /* Évite la sélection de texte sur mobile */
+        }
+
+        body {
             display: flex;
             flex-direction: column;
         }
 
-        /* ===== HEADER AMÉLIORÉ ===== */
-        .header-zone { 
-            background: linear-gradient(180deg, #1e1e1e 0%, #2a2a2a 100%);
-            padding: 15px 20px;
-            border-bottom: 3px solid #333;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+        /* Scrollbars personnalisées pour les zones défilantes */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb { background: #444; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #666; }
+
+        /* ==========================================================================
+           2. HEADER (Scores, Chrono, Contrôles globaux)
+           ========================================================================== */
+        .app-header {
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            padding: 10px 15px;
+            background: #0e0e16;
+            border-bottom: 2px solid var(--border-color);
+            height: var(--header-height);
+            z-index: 10;
         }
 
-        .score-section {
-            display: grid;
-            grid-template-columns: 1fr auto 1fr;
+        .score-board {
+            display: flex;
+            justify-content: space-between;
             align-items: center;
-            gap: 30px;
-            margin-bottom: 15px;
+            height: 50px;
         }
 
-        .team-score {
+        .team-info {
             display: flex;
             align-items: center;
-            justify-content: center;
             gap: 15px;
+            width: 35%;
         }
-
-        .team-score.home { flex-direction: row; }
-        .team-score.away { flex-direction: row-reverse; }
+        .team-info.ext {
+            flex-direction: row-reverse;
+        }
 
         .team-name {
-            font-size: 1.5rem;
+            font-size: clamp(0.9rem, 1.5vw, 1.2rem);
             font-weight: 700;
             text-transform: uppercase;
-            letter-spacing: 1px;
+            letter-spacing: 0.5px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
+        .team-info.dom .team-name { color: var(--color-domicile); }
+        .team-info.ext .team-name { color: var(--color-exterieur); }
 
-        .score-display {
-            font-size: 4rem;
+        .score-number {
+            font-size: clamp(2rem, 4vw, 3rem);
             font-weight: 900;
-            min-width: 100px;
+            line-height: 1;
+            padding: 4px 20px;
+            border-radius: var(--radius-md);
+            border: 2px solid;
+            background: rgba(255, 255, 255, 0.05);
+            transition: transform 0.15s ease-out;
+            min-width: 70px;
             text-align: center;
-            background: rgba(255,255,255,0.1);
-            border-radius: 15px;
-            padding: 10px 20px;
-            box-shadow: inset 0 2px 10px rgba(0,0,0,0.3);
-            transition: all 0.3s ease;
         }
+        .team-info.dom .score-number { color: var(--color-domicile); border-color: var(--color-domicile); }
+        .team-info.ext .score-number { color: var(--color-exterieur); border-color: var(--color-exterieur); }
+        .score-number.bump { transform: scale(1.2); }
 
-        .score-display.home { color: var(--color-white-team); border: 3px solid var(--color-white-team); }
-        .score-display.away { color: var(--color-blue-team); border: 3px solid var(--color-blue-team); }
-
-        /* CHRONO CENTRAL */
-        .chrono-center {
-            text-align: center;
-            position: relative;
+        .chrono-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
         }
 
         .chrono-display {
-            font-family: 'Courier New', monospace;
-            font-size: 5rem;
+            font-family: var(--font-mono);
+            font-size: clamp(2.5rem, 5vw, 3.5rem);
             font-weight: 900;
-            color: #ff4444;
+            line-height: 0.9;
+            color: var(--color-danger);
             cursor: pointer;
-            text-shadow: 0 0 20px rgba(255, 68, 68, 0.5);
-            transition: all 0.2s ease;
-            line-height: 1;
+            text-shadow: 0 0 10px rgba(255, 23, 68, 0.4);
+            transition: all 0.3s;
         }
-
-        .chrono-display:hover { transform: scale(1.05); }
-        .chrono-display.running { 
-            color: #00ff00; 
-            text-shadow: 0 0 20px rgba(0, 255, 0, 0.5);
+        .chrono-display.running {
+            color: var(--color-success);
+            text-shadow: 0 0 15px rgba(0, 230, 118, 0.6);
             animation: pulse-glow 2s infinite;
         }
-
         @keyframes pulse-glow {
-            0%, 100% { text-shadow: 0 0 20px rgba(0, 255, 0, 0.5); }
-            50% { text-shadow: 0 0 30px rgba(0, 255, 0, 0.8); }
-        }
-
-        .period-info {
-            margin-top: 10px;
-            font-size: 1.2rem;
-            color: #999;
-            font-weight: 600;
+            0%, 100% { text-shadow: 0 0 10px rgba(0, 230, 118, 0.4); }
+            50% { text-shadow: 0 0 25px rgba(0, 230, 118, 0.9); }
         }
 
         .period-badge {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 5px 20px;
-            border-radius: 20px;
-            display: inline-block;
+            margin-top: 4px;
+            background: var(--color-info);
+            padding: 2px 12px;
+            border-radius: 12px;
+            font-size: 0.75rem;
             font-weight: 700;
+            color: #fff;
         }
 
-        /* CONTROLS RAPIDES */
-        .quick-controls {
+        /* Barre de contrôles */
+        .global-controls {
             display: flex;
-            gap: 10px;
+            align-items: center;
             justify-content: center;
-            padding-top: 10px;
+            gap: 6px;
+            overflow-x: auto;
+            padding-bottom: 2px;
         }
+        .global-controls::-webkit-scrollbar { display: none; } /* Cache la scrollbar horizontale */
 
-        .btn-quick {
-            padding: 8px 16px;
-            border-radius: 8px;
+        .ctrl-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            height: 30px;
+            padding: 0 12px;
             border: none;
-            font-weight: 600;
+            border-radius: var(--radius-sm);
+            font-weight: 700;
+            font-size: 0.7rem;
+            text-transform: uppercase;
             cursor: pointer;
-            transition: all 0.2s;
-            font-size: 0.9rem;
+            text-decoration: none;
+            white-space: nowrap;
+            transition: opacity 0.15s, transform 0.1s;
         }
+        .ctrl-btn:hover { opacity: 0.85; transform: translateY(-1px); }
+        .ctrl-btn:active { transform: scale(0.95); }
 
-        .btn-quick:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
-        .btn-quick:active { transform: translateY(0); }
+        .btn-start { background: #1b5e20; color: #fff; }
+        .btn-stop { background: #b71c1c; color: #fff; }
+        .btn-adj { background: #262635; color: #ccc; border: 1px solid #3a3a4a; }
+        .btn-period { background: var(--color-info); color: #fff; }
+        .btn-tool { background: #37474f; color: #fff; }
+        .ctrl-sep { width: 1px; height: 20px; background: var(--border-color); margin: 0 4px; flex-shrink: 0; }
 
-        /* ===== ZONE PRINCIPALE ===== */
-        .main-zone {
+        /* ==========================================================================
+           3. LAYOUT PRINCIPAL (3 Colonnes)
+           ========================================================================== */
+        .app-main {
             flex: 1;
             display: grid;
-            grid-template-columns: 2fr 3fr 2fr;
-            gap: 15px;
-            padding: 15px;
+            grid-template-columns: 1fr 220px 1fr;
+            gap: 10px;
+            padding: 10px;
+            min-height: 0; /* Crucial pour le fonctionnement de flex/grid sur la hauteur */
+        }
+
+        .team-section {
+            display: flex;
+            flex-direction: column;
+            background: var(--bg-panel);
+            border-radius: var(--radius-md);
             overflow: hidden;
+            border-top: 4px solid;
+            min-height: 0; /* Empêche le dépassement */
         }
-
-        /* COLONNES ÉQUIPES */
-        .team-column {
-            background: var(--color-card-bg);
-            border-radius: 12px;
-            padding: 15px;
-            overflow-y: auto;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-        }
-
-        .team-column.home { border-top: 4px solid var(--color-white-team); }
-        .team-column.away { border-top: 4px solid var(--color-blue-team); }
+        .team-section.dom { border-top-color: var(--color-domicile); }
+        .team-section.ext { border-top-color: var(--color-exterieur); }
 
         .team-header {
-            text-align: center;
-            margin-bottom: 15px;
-            padding-bottom: 10px;
-            border-bottom: 2px solid #333;
-        }
-
-        .team-title {
-            font-size: 1.3rem;
-            font-weight: 700;
-            margin-bottom: 10px;
-        }
-
-        .team-actions {
-            display: flex;
-            gap: 8px;
-            justify-content: center;
-            margin-top: 10px;
-        }
-
-        /* CARTES JOUEURS OPTIMISÉES */
-        .player-card {
-            background: linear-gradient(145deg, #2a2a2a, #1a1a1a);
-            border-radius: 10px;
-            padding: 12px;
-            margin-bottom: 10px;
-            position: relative;
-            border: 2px solid transparent;
-            transition: all 0.2s ease;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-        }
-
-        .player-card:hover {
-            border-color: #555;
-            transform: translateX(5px);
-            box-shadow: 0 4px 16px rgba(0,0,0,0.5);
-        }
-
-        .player-header {
+            flex-shrink: 0;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 10px;
+            padding: 8px 12px;
+            background: rgba(0, 0, 0, 0.2);
+            border-bottom: 1px solid var(--border-color);
+        }
+        .team-header-title {
+            font-size: 0.8rem;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+        .team-section.dom .team-header-title { color: var(--color-domicile); }
+        .team-section.ext .team-header-title { color: var(--color-exterieur); }
+
+        .timeout-btn {
+            background: transparent;
+            border: 1px solid;
+            border-radius: var(--radius-sm);
+            padding: 4px 8px;
+            font-size: 0.65rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .team-section.dom .timeout-btn { color: #ccc; border-color: #666; }
+        .team-section.dom .timeout-btn:hover { background: rgba(255,255,255,0.1); }
+        .team-section.ext .timeout-btn { color: var(--color-exterieur); border-color: var(--color-exterieur); }
+        .team-section.ext .timeout-btn:hover { background: rgba(41,121,255,0.15); }
+
+        /* Liste des joueurs (Scrollable) */
+        .player-list {
+            flex: 1;
+            overflow-y: auto;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            align-content: start;
+            gap: 6px;
+            padding: 6px;
+        }
+
+        /* ==========================================================================
+           4. CARTES JOUEURS
+           ========================================================================== */
+        .player-card {
+            position: relative;
+            display: flex;
+            background: var(--bg-card);
+            border-radius: var(--radius-sm);
+            border: 1px solid transparent;
+            overflow: hidden;
+            transition: border-color 0.15s, background 0.15s;
+        }
+        .player-card:hover {
+            border-color: #3a3a50;
+            background: var(--bg-card-hover);
         }
 
         .player-number {
-            font-size: 2rem;
-            font-weight: 900;
-            width: 50px;
-            height: 50px;
+            width: 34px;
             display: flex;
             align-items: center;
             justify-content: center;
-            border-radius: 50%;
-            background: rgba(255,255,255,0.1);
-        }
-
-        .home .player-number { 
-            color: var(--color-white-team); 
-            border: 3px solid var(--color-white-team);
-        }
-
-        .away .player-number { 
-            color: var(--color-blue-team); 
-            border: 3px solid var(--color-blue-team);
-        }
-
-        .player-name {
-            flex: 1;
-            margin-left: 12px;
             font-size: 1.1rem;
-            font-weight: 600;
-            text-transform: uppercase;
+            font-weight: 900;
+            background: rgba(255, 255, 255, 0.03);
+            border-right: 1px solid var(--border-color);
+            flex-shrink: 0;
         }
+        .team-section.dom .player-number { color: var(--color-domicile); }
+        .team-section.ext .player-number { color: var(--color-exterieur); }
 
-        .player-stats {
+        .player-details {
+            flex: 1;
             display: flex;
-            gap: 5px;
-            align-items: center;
+            flex-direction: column;
+            padding: 4px;
+            min-width: 0; /* Permet le text-overflow */
         }
 
-        .foul-indicator {
-            width: 10px;
-            height: 10px;
+        .player-info-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 4px;
+        }
+        
+        .player-name {
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            padding-right: 4px;
+        }
+
+        .player-fouls {
+            display: flex;
+            gap: 2px;
+            flex-shrink: 0;
+        }
+        .foul-dot {
+            width: 6px;
+            height: 6px;
             border-radius: 50%;
             background: var(--color-warning);
-            display: inline-block;
-            box-shadow: 0 0 5px var(--color-warning);
+            box-shadow: 0 0 3px var(--color-warning);
         }
 
-        /* ACTIONS JOUEUR */
         .player-actions {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
-            gap: 6px;
-            margin-top: 10px;
+            gap: 3px;
         }
-
+        
         .action-btn {
-            padding: 10px 4px;
+            height: 24px;
             border: none;
-            border-radius: 6px;
-            font-weight: 700;
-            font-size: 0.85rem;
+            border-radius: 4px;
+            font-size: 0.6rem;
+            font-weight: 800;
+            color: #fff;
             cursor: pointer;
-            transition: all 0.15s ease;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+            transition: transform 0.1s, opacity 0.15s;
         }
+        .action-btn:hover { opacity: 0.85; transform: translateY(-1px); }
+        .action-btn:active { transform: scale(0.95); }
+        
+        .btn-but { background: var(--color-success); color: #000; }
+        .btn-faute { background: var(--color-warning); color: #000; }
+        .btn-excl { background: var(--color-danger); }
+        .btn-pen { background: var(--color-penalty); }
 
-        .action-btn:hover { 
-            transform: translateY(-2px); 
-            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
-        }
-
-        .action-btn:active { 
-            transform: translateY(0); 
-            box-shadow: 0 1px 3px rgba(0,0,0,0.3);
-        }
-
-        .btn-goal { 
-            background: linear-gradient(135deg, #198754 0%, #20c997 100%); 
-            color: white; 
-        }
-
-        .btn-foul { 
-            background: linear-gradient(135deg, #ffc107 0%, #ffb300 100%); 
-            color: #000; 
-        }
-
-        .btn-exclusion { 
-            background: linear-gradient(135deg, #dc3545 0%, #ff6b6b 100%); 
-            color: white; 
-        }
-
-        .btn-penalty { 
-            background: linear-gradient(135deg, #fd7e14 0%, #ff922b 100%); 
-            color: white; 
-        }
-
-        /* OVERLAYS ÉTAT JOUEUR */
+        /* Overlays (Exclusion / EDA) */
         .player-overlay {
             position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(220, 53, 69, 0.95);
-            border-radius: 10px;
+            inset: 0;
             display: none;
             align-items: center;
             justify-content: center;
-            font-size: 2rem;
+            font-size: 1rem;
             font-weight: 900;
-            z-index: 10;
+            z-index: 5;
+            border-radius: var(--radius-sm);
+        }
+        .player-overlay.excl {
+            display: flex;
+            background: rgba(183, 28, 28, 0.95);
             cursor: not-allowed;
-            animation: fadeIn 0.3s;
+            color: #fff;
         }
-
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-
-        .player-overlay.exclusion {
-            background: linear-gradient(135deg, rgba(220, 53, 69, 0.95), rgba(255, 0, 0, 0.95));
-        }
-
         .player-overlay.ready {
-            background: linear-gradient(135deg, rgba(25, 135, 84, 0.95), rgba(32, 201, 151, 0.95));
+            display: flex;
+            background: rgba(0, 200, 83, 0.95);
             cursor: pointer;
+            color: #000;
             animation: pulse-ready 1.5s infinite;
         }
-
+        .player-overlay.eda {
+            display: flex;
+            background: rgba(0, 0, 0, 0.85);
+            color: var(--color-danger);
+            border: 2px solid var(--color-danger);
+            cursor: not-allowed;
+        }
         @keyframes pulse-ready {
             0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.05); }
+            50% { transform: scale(1.02); }
         }
 
-        .player-overlay.eda {
-            background: #000;
-            color: var(--color-danger);
-            border: 4px solid var(--color-danger);
-        }
-
-        /* ===== PANNEAU CENTRAL ===== */
-        .center-panel {
+        /* ==========================================================================
+           5. SECTION CENTRALE (Ajustements & Historique)
+           ========================================================================== */
+        .center-section {
             display: flex;
             flex-direction: column;
-            gap: 15px;
+            gap: 10px;
+            min-height: 0;
         }
 
-        .control-panel {
-            background: var(--color-card-bg);
-            border-radius: 12px;
-            padding: 20px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        .adjust-panel {
+            background: var(--bg-panel);
+            border-radius: var(--radius-md);
+            padding: 8px;
+            flex-shrink: 0;
         }
 
-        .control-grid {
+        .adjust-grid {
             display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 12px;
-            margin-bottom: 15px;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 4px;
+            margin-bottom: 6px;
         }
 
-        .control-btn {
-            padding: 15px;
-            border: none;
-            border-radius: 10px;
-            font-size: 1.1rem;
+        .adjust-btn {
+            height: 32px;
+            background: #1e1e2e;
+            border: 1px solid #333;
+            border-radius: var(--radius-sm);
+            color: #ccc;
+            font-size: 0.75rem;
             font-weight: 700;
             cursor: pointer;
-            transition: all 0.2s;
-            text-transform: uppercase;
-            letter-spacing: 1px;
+            transition: background 0.2s, color 0.2s;
         }
+        .adjust-btn:hover { background: #2a2a3e; color: #fff; }
 
-        .control-btn:hover { transform: scale(1.05); }
-        .control-btn:active { transform: scale(0.98); }
-
-        .btn-start { background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white; }
-        .btn-stop { background: linear-gradient(135deg, #dc3545 0%, #fd7e14 100%); color: white; }
-        .btn-time { background: linear-gradient(135deg, #6c757d 0%, #495057 100%); color: white; }
-        .btn-period { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
-
-        .time-adjust {
-            display: flex;
-            gap: 10px;
-            justify-content: center;
+        .period-controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4px;
         }
-
-        .btn-time-adj {
-            width: 60px;
-            height: 60px;
-            border-radius: 50%;
+        .period-btn {
+            height: 36px;
             border: none;
-            font-size: 1.5rem;
-            font-weight: 900;
+            border-radius: var(--radius-sm);
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
             cursor: pointer;
-            transition: all 0.2s;
-            background: linear-gradient(135deg, #495057 0%, #343a40 100%);
-            color: white;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            color: #fff;
         }
+        .period-btn.next { background: var(--color-info); }
+        .period-btn.reset { background: #263238; color: #ccc; }
 
-        .btn-time-adj:hover { transform: scale(1.1); }
-        .btn-time-adj:active { transform: scale(0.95); }
-
-        /* HISTORIQUE */
+        /* Historique (Scrollable) */
         .history-panel {
             flex: 1;
-            background: var(--color-card-bg);
-            border-radius: 12px;
-            padding: 15px;
-            overflow-y: auto;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            background: var(--bg-panel);
+            border-radius: var(--radius-md);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            min-height: 0;
         }
 
-        .history-title {
-            font-size: 1.2rem;
-            font-weight: 700;
-            margin-bottom: 15px;
-            padding-bottom: 10px;
-            border-bottom: 2px solid #333;
+        .history-header {
+            flex-shrink: 0;
+            padding: 8px 12px;
+            border-bottom: 1px solid var(--border-color);
             display: flex;
             justify-content: space-between;
             align-items: center;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .history-count {
+            background: #2a2a38;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.7rem;
+        }
+
+        .history-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 6px;
         }
 
         .history-item {
-            background: rgba(255,255,255,0.05);
-            border-radius: 8px;
-            padding: 12px;
-            margin-bottom: 8px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            transition: all 0.2s;
-            border-left: 4px solid transparent;
+            padding: 6px 8px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: var(--radius-sm);
+            margin-bottom: 4px;
+            border-left: 3px solid transparent;
+            font-size: 0.7rem;
         }
+        .history-item.dom { border-left-color: var(--color-domicile); }
+        .history-item.ext { border-left-color: var(--color-exterieur); }
 
-        .history-item:hover {
-            background: rgba(255,255,255,0.1);
-            transform: translateX(5px);
+        .hist-time { font-family: var(--font-mono); color: var(--text-muted); margin-right: 6px; }
+        .hist-badge { 
+            display: inline-block; 
+            padding: 2px 6px; 
+            border-radius: 4px; 
+            font-weight: 800; 
+            margin-right: 6px; 
+            font-size: 0.65rem;
         }
+        .badge-BUT { background: var(--color-success); color: #000; }
+        .badge-EXCL { background: var(--color-danger); color: #fff; }
+        .badge-PENALTY { background: var(--color-penalty); color: #000; }
+        .badge-EDA { background: #000; color: var(--color-danger); border: 1px solid var(--color-danger); }
+        .badge-TM { background: #546e7a; color: #fff; }
+        .badge-FAUTE { background: var(--color-warning); color: #000; }
 
-        .history-item.home { border-left-color: var(--color-white-team); }
-        .history-item.away { border-left-color: var(--color-blue-team); }
-
-        .history-info {
-            flex: 1;
-        }
-
-        .history-time {
-            font-family: 'Courier New', monospace;
-            font-weight: 700;
-            color: #999;
-            font-size: 0.9rem;
-        }
-
-        .history-action {
-            display: inline-block;
-            padding: 4px 12px;
-            border-radius: 6px;
-            font-weight: 700;
-            font-size: 0.85rem;
-            margin: 0 8px;
-        }
-
-        .action-BUT { background: var(--color-success); color: white; }
-        .action-EXCL { background: var(--color-danger); color: white; }
-        .action-PENALTY { background: var(--color-warning); color: black; }
-        .action-EDA { background: #000; color: var(--color-danger); border: 2px solid var(--color-danger); }
-        .action-TM { background: #6c757d; color: white; }
-        .action-FAUTE { background: var(--color-warning); color: black; }
-
-        .history-delete {
+        .hist-delete {
             color: var(--color-danger);
             cursor: pointer;
-            font-size: 1.3rem;
-            padding: 8px;
-            border-radius: 50%;
-            transition: all 0.2s;
+            padding: 4px;
+            opacity: 0.6;
+            transition: opacity 0.2s;
+        }
+        .hist-delete:hover { opacity: 1; }
+
+        .empty-history {
+            text-align: center;
+            color: var(--text-muted);
+            padding: 20px;
+            font-size: 0.8rem;
         }
 
-        .history-delete:hover {
-            background: rgba(220, 53, 69, 0.2);
-            transform: rotate(90deg);
-        }
-
-        /* ÉTATS UI */
-        .disabled-ui {
+        /* Verrouillage de l'UI pendant les requêtes */
+        .ui-locked {
             opacity: 0.5;
             pointer-events: none;
-            filter: grayscale(50%);
+            filter: grayscale(0.3);
         }
 
-        /* SCROLLBAR */
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: #1a1a1a; }
-        ::-webkit-scrollbar-thumb { 
-            background: #444; 
-            border-radius: 4px; 
+        /* Animation Flash BUT */
+        @keyframes flashGoal {
+            0% { opacity: 1; transform: translate(-50%, -50%) scale(0.8); }
+            20% { opacity: 1; transform: translate(-50%, -50%) scale(1.1); }
+            80% { opacity: 1; }
+            100% { opacity: 0; transform: translate(-50%, -50%) scale(1.3); }
         }
-        ::-webkit-scrollbar-thumb:hover { background: #666; }
 
-        /* RESPONSIVE */
-        @media (max-height: 800px) {
-            .chrono-display { font-size: 4rem; }
-            .score-display { font-size: 3rem; }
+        /* ==========================================================================
+           6. RESPONSIVE DESIGN
+           ========================================================================== */
+        @media (max-width: 1100px) {
+            .app-main { grid-template-columns: 1fr 200px 1fr; }
+            .player-list { grid-template-columns: 1fr; } /* 1 joueur par ligne si manque d'espace */
+        }
+
+        @media (max-width: 850px) {
+            :root { --header-height: 100px; }
+            .app-main {
+                grid-template-columns: 1fr 1fr;
+                grid-template-rows: auto 1fr;
+                grid-template-areas: 
+                    "dom ext"
+                    "center center";
+            }
+            .team-section.dom { grid-area: dom; }
+            .team-section.ext { grid-area: ext; }
+            .center-section { 
+                grid-area: center; 
+                flex-direction: row; 
+                height: 160px; /* Fixe la hauteur en bas */
+            }
+            .adjust-panel { width: 220px; }
+            .history-panel { flex: 1; }
+            .player-list { grid-template-columns: repeat(2, 1fr); } /* Retour à 2 colonnes car plus de largeur */
+            .ctrl-sep { display: none; }
+        }
+
+        @media (max-width: 600px) {
+            .team-info { width: 30%; }
+            .team-name { display: none; } /* Cache le nom complet sur très petit écran */
+            .player-list { grid-template-columns: 1fr; }
+            .center-section { flex-direction: column; height: auto; }
+            .adjust-panel { width: 100%; }
         }
     </style>
 </head>
 <body>
 
-    <!-- HEADER -->
-    <div class="header-zone">
-        <div class="score-section">
-            <!-- Équipe Domicile -->
-            <div class="team-score home">
-                <div class="team-name" style="color: var(--color-white-team);">
-                    {{ match.nom_equipe_domicile|truncatechars:12 }}
-                </div>
-                <div class="score-display home" id="scoreDom">{{ match.score_domicile }}</div>
+    <header class="app-header">
+        <div class="score-board">
+            <div class="team-info dom">
+                <div class="score-number dom" id="scoreDom">{{ match.score_domicile }}</div>
+                <div class="team-name">{{ match.nom_equipe_domicile }}</div>
             </div>
 
-            <!-- Chrono Central -->
-            <div class="chrono-center">
-                <div id="chrono" class="chrono-display" title="Cliquer pour démarrer/arrêter">
-                    --:--
-                </div>
-                <div class="period-info">
-                    <span class="period-badge">PÉRIODE <span id="periodeDisplay">{{ match.periode_actuelle }}</span></span>
+            <div class="chrono-wrapper">
+                <div id="chrono" class="chrono-display" title="Clic = start / pause">--:--</div>
+                <div class="period-badge">
+                    Période <span id="periodeDisplay">{{ match.periode_actuelle }}</span> / {{ match.nb_periodes }}
                 </div>
             </div>
 
-            <!-- Équipe Extérieur -->
-            <div class="team-score away">
-                <div class="score-display away" id="scoreExt">{{ match.score_exterieur }}</div>
-                <div class="team-name" style="color: var(--color-blue-team);">
-                    {{ match.nom_equipe_exterieur|truncatechars:12 }}
-                </div>
+            <div class="team-info ext">
+                <div class="score-number ext" id="scoreExt">{{ match.score_exterieur }}</div>
+                <div class="team-name">{{ match.nom_equipe_exterieur }}</div>
             </div>
         </div>
 
-        <div class="quick-controls">
-            <button class="btn-quick bg-success text-white" onclick="startTimer()">
-                <i class="fas fa-play"></i> DÉMARRER
-            </button>
-            <button class="btn-quick bg-danger text-white" onclick="stopTimer()">
-                <i class="fas fa-pause"></i> PAUSE
-            </button>
-            <button class="btn-quick bg-warning text-dark" onclick="safeAdjustTime(-60)">
-                <i class="fas fa-minus"></i> 1 min
-            </button>
-            <button class="btn-quick bg-warning text-dark" onclick="safeAdjustTime(60)">
-                <i class="fas fa-plus"></i> 1 min
-            </button>
-            <button class="btn-quick bg-info text-white" onclick="nextPeriod()">
-                <i class="fas fa-forward"></i> PÉRIODE SUIVANTE
-            </button>
-            <a href="{% url 'score_board' match.id %}" target="_blank"
-               class="btn-quick bg-secondary text-white text-decoration-none">
-                <i class="fas fa-tv"></i> SCOREBOARD
-            </a>
-            <a href="{% url 'export_excel' match.id %}"
-               class="btn-quick text-white text-decoration-none"
-               style="background: linear-gradient(135deg,#155724,#28a745);">
-                <i class="fas fa-file-excel"></i> EXPORT EXCEL
-            </a>
+        <div class="global-controls">
+            <button class="ctrl-btn btn-start" onclick="startTimer()"><i class="fas fa-play"></i> Start</button>
+            <button class="ctrl-btn btn-stop" onclick="stopTimer()"><i class="fas fa-pause"></i> Stop</button>
+            <div class="ctrl-sep"></div>
+            <button class="ctrl-btn btn-adj" onclick="safeAdjustTime(-60)">-1m</button>
+            <button class="ctrl-btn btn-adj" onclick="safeAdjustTime(-10)">-10s</button>
+            <button class="ctrl-btn btn-adj" onclick="safeAdjustTime(10)">+10s</button>
+            <button class="ctrl-btn btn-adj" onclick="safeAdjustTime(60)">+1m</button>
+            <div class="ctrl-sep"></div>
+            <a href="{% url 'score_board' match.id %}" target="_blank" class="ctrl-btn btn-tool"><i class="fas fa-tv"></i> Écran</a>
+            <a href="{% url 'export_excel' match.id %}" class="ctrl-btn btn-tool"><i class="fas fa-file-excel"></i> Excel</a>
         </div>
-    </div>
+    </header>
 
-    <!-- ZONE PRINCIPALE -->
-    <div class="main-zone">
-        <!-- ÉQUIPE DOMICILE (Blanc) -->
-        <div class="team-column home">
-            <div class="team-header">
-                <div class="team-title" style="color: var(--color-white-team);">
-                    <i class="fas fa-users"></i> BONNETS BLANCS
-                </div>
-                <div class="team-actions">
-                    <button class="btn btn-sm btn-outline-light btn-tm" data-equipe="DOM">
-                        <i class="fas fa-hand-paper"></i> TIME-OUT
-                    </button>
-                </div>
-            </div>
+    <main class="app-main" id="appMain">
 
-            {% for p in joueurs_dom %}
-            <div class="player-card" id="card-{{ p.id }}" 
-                 data-excl-end="{{ p.fin_exclusion|date:'U'|default:'0' }}"
-                 data-eda="{{ p.est_exclu_definitif|yesno:'true,false' }}">
-                
-                <div class="player-overlay" id="overlay-{{ p.id }}" onclick="tryReturnPlayer({{ p.id }})">
-                    <span id="txt-{{ p.id }}">20</span>
-                </div>
+        <section class="team-section dom">
+            <header class="team-header">
+                <span class="team-header-title">⬜ {{ match.nom_equipe_domicile|truncatechars:18 }}</span>
+                <button class="timeout-btn" data-equipe="DOM">TIME-OUT</button>
+            </header>
 
-                <div class="player-header">
-                    <div class="player-number">{{ p.numero_bonnet }}</div>
-                    <div class="player-name">{{ p.nom }} {{ p.prenom|truncatechars:8 }}</div>
-                    <div class="player-stats">
-                        {% for i in "xxx" %}
-                            {% if forloop.counter <= p.nb_fautes_personnelles %}
-                            <span class="foul-indicator"></span>
-                            {% endif %}
-                        {% endfor %}
+            <div class="player-list">
+                {% for p in joueurs_dom %}
+                <article class="player-card" id="card-{{ p.id }}" 
+                         data-excl-end="{{ p.fin_exclusion|date:'U'|default:'0' }}" 
+                         data-eda="{{ p.est_exclu_definitif|yesno:'true,false' }}">
+                    
+                    <div class="player-overlay {% if p.est_exclu_definitif %}eda{% endif %}" 
+                         id="overlay-{{ p.id }}" onclick="tryReturnPlayer({{ p.id }})">
+                        <span id="txt-{{ p.id }}">{% if p.est_exclu_definitif %}EDA{% endif %}</span>
                     </div>
-                </div>
 
-                <div class="player-actions">
-                    <button class="action-btn btn-goal" data-action="BUT" data-pid="{{ p.id }}">
-                        <i class="fas fa-futbol"></i> BUT
-                    </button>
-                    <button class="action-btn btn-foul" data-action="FAUTE" data-pid="{{ p.id }}">
-                        <i class="fas fa-flag"></i> FAUTE
-                    </button>
-                    <button class="action-btn btn-exclusion" data-action="EXCL" data-pid="{{ p.id }}">
-                        <i class="fas fa-user-times"></i> {{ match.duree_exclusion }}s
-                    </button>
-                    <button class="action-btn btn-penalty" data-action="PENALTY" data-pid="{{ p.id }}">
-                        <i class="fas fa-exclamation-triangle"></i> PÉNALTY
-                    </button>
-                </div>
+                    <div class="player-number">{{ p.numero_bonnet }}</div>
+                    
+                    <div class="player-details">
+                        <div class="player-info-row">
+                            <span class="player-name" title="{{ p.nom }} {{ p.prenom }}">{{ p.nom }} {{ p.prenom|first }}.</span>
+                            <div class="player-fouls">
+                                {% for i in "xxx" %}{% if forloop.counter <= p.nb_fautes_personnelles %}<span class="foul-dot"></span>{% endif %}{% endfor %}
+                            </div>
+                        </div>
+                        <div class="player-actions">
+                            <button class="action-btn btn-but" data-action="BUT" data-pid="{{ p.id }}">BUT</button>
+                            <button class="action-btn btn-faute" data-action="FAUTE" data-pid="{{ p.id }}">FT</button>
+                            <button class="action-btn btn-excl" data-action="EXCL" data-pid="{{ p.id }}">{{ match.duree_exclusion }}s</button>
+                            <button class="action-btn btn-pen" data-action="PENALTY" data-pid="{{ p.id }}">PEN</button>
+                        </div>
+                    </div>
+                </article>
+                {% endfor %}
             </div>
-            {% endfor %}
-        </div>
+        </section>
 
-        <!-- PANNEAU CENTRAL -->
-        <div class="center-panel">
-            <!-- Contrôles -->
-            <div class="control-panel">
-                <h5 class="text-center mb-3">
-                    <i class="fas fa-cogs"></i> CONTRÔLES MATCH
-                </h5>
-                
-                <div class="time-adjust mb-3">
-                    <button class="btn-time-adj" onclick="safeAdjustTime(-10)" title="Retirer 10 secondes">
-                        -10s
-                    </button>
-                    <button class="btn-time-adj" onclick="safeAdjustTime(-1)" title="Retirer 1 seconde">
-                        -1s
-                    </button>
-                    <button class="btn-time-adj" onclick="safeAdjustTime(1)" title="Ajouter 1 seconde">
-                        +1s
-                    </button>
-                    <button class="btn-time-adj" onclick="safeAdjustTime(10)" title="Ajouter 10 secondes">
-                        +10s
-                    </button>
+        <section class="center-section">
+            
+            <div class="adjust-panel">
+                <div class="adjust-grid">
+                    <button class="adjust-btn" onclick="safeAdjustTime(-10)">-10s</button>
+                    <button class="adjust-btn" onclick="safeAdjustTime(-1)">-1s</button>
+                    <button class="adjust-btn" onclick="safeAdjustTime(1)">+1s</button>
+                    <button class="adjust-btn" onclick="safeAdjustTime(10)">+10s</button>
                 </div>
-
-                <div class="control-grid">
-                    <button class="control-btn btn-period" onclick="nextPeriod()">
-                        <i class="fas fa-step-forward"></i> Période Suivante
-                    </button>
-                    <button class="control-btn btn-time" onclick="resetPeriod()">
-                        <i class="fas fa-redo"></i> Reset Chrono
-                    </button>
+                <div class="period-controls">
+                    <button class="period-btn next" onclick="nextPeriod()"><i class="fas fa-step-forward"></i> Période Suiv.</button>
+                    <button class="period-btn reset" onclick="resetPeriod()"><i class="fas fa-redo"></i> Reset Time</button>
                 </div>
             </div>
 
-            <!-- Historique -->
             <div class="history-panel">
-                <div class="history-title">
-                    <span><i class="fas fa-history"></i> HISTORIQUE</span>
-                    <span class="badge bg-secondary" id="eventCount">0</span>
+                <header class="history-header">
+                    <span><i class="fas fa-history"></i> Historique</span>
+                    <span class="history-count" id="eventCount">0</span>
+                </header>
+                <div class="history-body" id="historyList">
+                    <div class="empty-history"><i class="fas fa-inbox fa-2x"></i><br><br>Aucun événement</div>
                 </div>
-                <div id="historyList">
-                    <div class="text-center text-muted mt-3">
-                        <i class="fas fa-inbox"></i><br>Aucune action
+            </div>
+
+        </section>
+
+        <section class="team-section ext">
+            <header class="team-header">
+                <button class="timeout-btn" data-equipe="EXT">TIME-OUT</button>
+                <span class="team-header-title">🔵 {{ match.nom_equipe_exterieur|truncatechars:18 }}</span>
+            </header>
+
+            <div class="player-list">
+                {% for p in joueurs_ext %}
+                <article class="player-card" id="card-{{ p.id }}" 
+                         data-excl-end="{{ p.fin_exclusion|date:'U'|default:'0' }}" 
+                         data-eda="{{ p.est_exclu_definitif|yesno:'true,false' }}">
+                    
+                    <div class="player-overlay {% if p.est_exclu_definitif %}eda{% endif %}" 
+                         id="overlay-{{ p.id }}" onclick="tryReturnPlayer({{ p.id }})">
+                        <span id="txt-{{ p.id }}">{% if p.est_exclu_definitif %}EDA{% endif %}</span>
                     </div>
-                </div>
-            </div>
-        </div>
 
-        <!-- ÉQUIPE EXTÉRIEUR (Bleu) -->
-        <div class="team-column away">
-            <div class="team-header">
-                <div class="team-title" style="color: var(--color-blue-team);">
-                    <i class="fas fa-users"></i> BONNETS BLEUS
-                </div>
-                <div class="team-actions">
-                    <button class="btn btn-sm btn-outline-primary btn-tm" data-equipe="EXT">
-                        <i class="fas fa-hand-paper"></i> TIME-OUT
-                    </button>
-                </div>
-            </div>
-
-            {% for p in joueurs_ext %}
-            <div class="player-card" id="card-{{ p.id }}" 
-                 data-excl-end="{{ p.fin_exclusion|date:'U'|default:'0' }}"
-                 data-eda="{{ p.est_exclu_definitif|yesno:'true,false' }}">
-                
-                <div class="player-overlay" id="overlay-{{ p.id }}" onclick="tryReturnPlayer({{ p.id }})">
-                    <span id="txt-{{ p.id }}">20</span>
-                </div>
-
-                <div class="player-header">
                     <div class="player-number">{{ p.numero_bonnet }}</div>
-                    <div class="player-name">{{ p.nom }} {{ p.prenom|truncatechars:8 }}</div>
-                    <div class="player-stats">
-                        {% for i in "xxx" %}
-                            {% if forloop.counter <= p.nb_fautes_personnelles %}
-                            <span class="foul-indicator"></span>
-                            {% endif %}
-                        {% endfor %}
+                    
+                    <div class="player-details">
+                        <div class="player-info-row">
+                            <span class="player-name" title="{{ p.nom }} {{ p.prenom }}">{{ p.nom }} {{ p.prenom|first }}.</span>
+                            <div class="player-fouls">
+                                {% for i in "xxx" %}{% if forloop.counter <= p.nb_fautes_personnelles %}<span class="foul-dot"></span>{% endif %}{% endfor %}
+                            </div>
+                        </div>
+                        <div class="player-actions">
+                            <button class="action-btn btn-but" data-action="BUT" data-pid="{{ p.id }}">BUT</button>
+                            <button class="action-btn btn-faute" data-action="FAUTE" data-pid="{{ p.id }}">FT</button>
+                            <button class="action-btn btn-excl" data-action="EXCL" data-pid="{{ p.id }}">{{ match.duree_exclusion }}s</button>
+                            <button class="action-btn btn-pen" data-action="PENALTY" data-pid="{{ p.id }}">PEN</button>
+                        </div>
                     </div>
-                </div>
-
-                <div class="player-actions">
-                    <button class="action-btn btn-goal" data-action="BUT" data-pid="{{ p.id }}">
-                        <i class="fas fa-futbol"></i> BUT
-                    </button>
-                    <button class="action-btn btn-foul" data-action="FAUTE" data-pid="{{ p.id }}">
-                        <i class="fas fa-flag"></i> FAUTE
-                    </button>
-                    <button class="action-btn btn-exclusion" data-action="EXCL" data-pid="{{ p.id }}">
-                        <i class="fas fa-user-times"></i> {{ match.duree_exclusion }}s
-                    </button>
-                    <button class="action-btn btn-penalty" data-action="PENALTY" data-pid="{{ p.id }}">
-                        <i class="fas fa-exclamation-triangle"></i> PÉNALTY
-                    </button>
-                </div>
+                </article>
+                {% endfor %}
             </div>
-            {% endfor %}
-        </div>
-    </div>
+        </section>
+
+    </main>
 
     <script>
-        const matchId      = {{ match.id }};
-        const dureeExclusion = {{ match.duree_exclusion }};  // valeur réelle du match, pas 20s en dur
+        const matchId = {{ match.id }};
+        const dureeExclusion = {{ match.duree_exclusion }};
         let isProcessing = false;
 
-        // ═══════════════════════════════════════════════════════════════
-        // CHRONO SANS DÉRIVE — Principe fondamental :
-        //
-        //   On ne décrémente JAMAIS une variable locale par setInterval.
-        //   setInterval(fn, 1000) ne garantit PAS 1000 ms exactes :
-        //   chaque tick accumule le temps d'exécution JS → dérive croissante.
-        //
-        //   À la place, on mémorise deux valeurs du SERVEUR :
-        //     • frozen_time  : temps restant au moment du dernier start/stop
-        //     • started_at   : timestamp Unix (s) du dernier start_timer
-        //     • server_ts    : timestamp Unix (s) au moment de la réponse API
-        //
-        //   Le temps réel à tout instant t est :
-        //     t_reel = frozen_time - (Date.now()/1000 - started_at)
-        //
-        //   On met à jour l'affichage via requestAnimationFrame (≈60 fps).
-        //   Dérive = 0, même après 2 heures.
-        // ═══════════════════════════════════════════════════════════════
-        let C = {                                      // état chrono
-            running:    {{ match.chrono_en_cours|yesno:"true,false" }},
+        /* --- Gestion du Chrono --- */
+        let C = {
+            running: {{ match.chrono_en_cours|yesno:"true,false" }},
             frozenTime: {{ match.temps_restant|default:"480" }},
-            startedAt:  null,
+            startedAt: null,
             alertedEnd: false,
         };
 
-        // --- utilitaires --------------------------------------------------
-        function fmtTime(sec) {
-            if (sec < 0) sec = 0;
-            const m = Math.floor(sec / 60).toString().padStart(2, '0');
-            const s = Math.floor(sec % 60).toString().padStart(2, '0');
-            return m + ':' + s;
-        }
+        const fmt = s => {
+            if (s < 0) s = 0;
+            return String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(Math.floor(s % 60)).padStart(2, '0');
+        };
 
-        function timeLeft() {  // temps restant calculé à partir de l'ancre serveur
-            if (!C.running || C.startedAt === null) return Math.max(0, C.frozenTime);
-            return Math.max(0, C.frozenTime - (Date.now() / 1000 - C.startedAt));
-        }
+        const timeLeft = () => (!C.running || C.startedAt === null)
+            ? Math.max(0, C.frozenTime)
+            : Math.max(0, C.frozenTime - (Date.now() / 1000 - C.startedAt));
 
-        function applyServerChrono(chrono) {
-            if (!chrono) return;
-            // Compensation latence : la réponse a mis ~(now - server_ts)/2 ms
-            const netDelay = (Date.now() / 1000 - chrono.server_ts) / 2;
-            C.running    = chrono.running;
-            C.frozenTime = chrono.frozen_time;
-            C.startedAt  = chrono.running ? (chrono.started_at + netDelay) : null;
+        const applyServerChrono = ch => {
+            if (!ch) return;
+            const lag = (Date.now() / 1000 - ch.server_ts) / 2;
+            C.running = ch.running;
+            C.frozenTime = ch.frozen_time;
+            C.startedAt = ch.running ? (ch.started_at + lag) : null;
             C.alertedEnd = false;
-        }
+        };
 
-        // --- boucle d'affichage (remplace setInterval) --------------------
+        const chronoEl = document.getElementById('chrono');
         function chronoRaf() {
-            const t   = timeLeft();
-            const el  = document.getElementById('chrono');
-            el.innerText = fmtTime(Math.ceil(t));
-            if (C.running) {
-                el.classList.add('running');
-                if (t <= 0 && !C.alertedEnd) {
-                    C.alertedEnd = true;
-                    internalStop();
-                    setTimeout(() => alert('⏰ Temps écoulé !'), 50);
-                }
-            } else {
-                el.classList.remove('running');
+            const t = timeLeft();
+            chronoEl.textContent = fmt(Math.ceil(t));
+            chronoEl.classList.toggle('running', C.running);
+            
+            if (C.running && t <= 0 && !C.alertedEnd) {
+                C.alertedEnd = true;
+                C.running = false; 
+                C.frozenTime = 0; 
+                C.startedAt = null;
+                setTimeout(() => alert('⏰ Temps écoulé !'), 50);
             }
             requestAnimationFrame(chronoRaf);
         }
 
-        // --- actions chrono -----------------------------------------------
+        /* --- Actions Chrono --- */
         async function startTimer() {
             if (C.running || isProcessing) return;
             lockUI(true);
-            try {
-                const res = await callApi({ action: 'start_timer' });
-                applyServerChrono(res.chrono);
-            } finally { lockUI(false); }
+            try { applyServerChrono((await callApi({ action: 'start_timer' })).chrono); }
+            finally { lockUI(false); }
         }
-
-        async function internalStop() {
-            // Stoppe localement sans appel API (utilisé quand t=0)
-            C.running = false;
-            C.frozenTime = 0;
-            C.startedAt = null;
-        }
-
         async function stopTimer() {
             if (!C.running || isProcessing) return;
             lockUI(true);
-            try {
-                const res = await callApi({ action: 'stop_timer' });
-                // Le serveur calcule lui-même le temps restant → on prend sa valeur
-                applyServerChrono(res.chrono);
-            } finally { lockUI(false); }
+            try { applyServerChrono((await callApi({ action: 'stop_timer' })).chrono); }
+            finally { lockUI(false); }
         }
-
-        document.getElementById('chrono').addEventListener('click', () => {
-            if (!isProcessing) { C.running ? stopTimer() : startTimer(); }
+        
+        chronoEl.addEventListener('click', () => { 
+            if (!isProcessing) C.running ? stopTimer() : startTimer(); 
         });
 
-        async function safeAdjustTime(delta) {
+        async function safeAdjustTime(d) {
             if (isProcessing) return;
             lockUI(true);
-            try {
-                const res = await callApi({ action: 'adjust_time', delta: delta });
-                applyServerChrono(res.chrono);
-            } finally { lockUI(false); }
+            try { applyServerChrono((await callApi({ action: 'adjust_time', delta: d })).chrono); }
+            finally { lockUI(false); }
         }
 
         function resetPeriod() {
-            const duree = {{ match.duree_periode }};
-            if (!confirm(`Réinitialiser le chrono à ${duree}:00 ?`)) return;
-            callApi({ action: 'reset_period' }).then(res => applyServerChrono(res.chrono));
+            const d = {{ match.duree_periode }};
+            if (!confirm(`Réinitialiser le chrono à ${String(d).padStart(2, '0')}:00 ?`)) return;
+            callApi({ action: 'reset_period' }).then(r => applyServerChrono(r.chrono));
         }
 
         function nextPeriod() {
             if (isProcessing) return;
             if (!confirm('Passer à la période suivante ?')) return;
             lockUI(true);
-            callApi({ action: 'next_period' }).then(res => {
-                applyServerChrono(res.chrono);
-                document.getElementById('periodeDisplay').innerText = res.period;
-                document.querySelectorAll('.player-card').forEach(c => {
-                    c.dataset.exclEnd = '0';
-                    c.dataset.eda     = 'false';
+            callApi({ action: 'next_period' }).then(r => {
+                applyServerChrono(r.chrono);
+                document.getElementById('periodeDisplay').textContent = r.period;
+                document.querySelectorAll('.player-card').forEach(c => { 
+                    c.dataset.exclEnd = '0'; 
+                    c.dataset.eda = 'false'; 
                 });
                 checkExclusions();
                 lockUI(false);
             });
         }
 
-        // ===== GESTION ACTIONS =============================================
-        document.addEventListener('click', (e) => {
-            if (e.target.classList.contains('action-btn') || e.target.closest('.action-btn')) {
-                if (isProcessing) return;
-                const btn  = e.target.classList.contains('action-btn') ? e.target : e.target.closest('.action-btn');
-                const type = btn.dataset.action;
-                const pid  = btn.dataset.pid;
+        /* --- Actions Événements (Délégation d'événements) --- */
+        document.addEventListener('click', e => {
+            const actionBtn = e.target.closest('.action-btn');
+            if (actionBtn && !isProcessing) {
+                const type = actionBtn.dataset.action;
+                const pid = actionBtn.dataset.pid;
                 if (type === 'EDA' && !confirm('⚠️ CONFIRMER EXCLUSION DÉFINITIVE ?')) return;
                 sendAction(type, pid);
+                return;
             }
-            if (e.target.classList.contains('btn-tm') || e.target.closest('.btn-tm')) {
-                if (isProcessing) return;
-                const btn = e.target.classList.contains('btn-tm') ? e.target : e.target.closest('.btn-tm');
-                sendAction('TM', null, btn.dataset.equipe);
-            }
+            const tmBtn = e.target.closest('.timeout-btn');
+            if (tmBtn && !isProcessing) sendAction('TM', null, tmBtn.dataset.equipe);
         });
 
         async function sendAction(type, pId, equipe = null) {
@@ -892,148 +849,159 @@
                 const res = await callApi({
                     action: type,
                     participation_id: pId,
-                    equipe: equipe,
-                    chrono_display: fmtTime(Math.ceil(timeLeft()))   // pour l'historique
+                    equipe,
+                    chrono_display: fmt(Math.ceil(timeLeft())),
                 });
-                if (res.status === 'ok') {
-                    updateUI(res);
-                    if (type === 'EXCL' && pId) {
-                        document.getElementById('card-' + pId).dataset.exclEnd =
-                            Math.floor(Date.now() / 1000) + dureeExclusion;
-                        checkExclusions();
-                    }
-                    if (type === 'EDA' && pId) {
-                        document.getElementById('card-' + pId).dataset.eda = 'true';
-                        checkExclusions();
-                    }
-                    if (type === 'BUT') showFeedback('⚽ BUT !');
+                
+                if (res.status !== 'ok') return;
+                refreshUI(res);
+                
+                if (type === 'EXCL' && pId) {
+                    document.getElementById('card-' + pId).dataset.exclEnd = Math.floor(Date.now() / 1000) + dureeExclusion;
+                    checkExclusions();
                 }
-            } catch (err) {
-                console.error(err);
-                alert('❌ Erreur serveur !');
+                if (type === 'EDA' && pId) {
+                    document.getElementById('card-' + pId).dataset.eda = 'true';
+                    checkExclusions();
+                }
+                if (type === 'BUT') flashBut(pId);
+                
+            } catch (err) { 
+                console.error(err); 
+                alert('❌ Erreur serveur'); 
             } finally { lockUI(false); }
         }
 
-        // ===== RETOUR EN JEU ===============================================
         function tryReturnPlayer(pId) {
-            const overlay = document.getElementById('overlay-' + pId);
-            if (overlay.classList.contains('ready')) {
-                lockUI(true);
-                callApi({ action: 'return_play', participation_id: pId }).then(() => {
-                    document.getElementById('card-' + pId).dataset.exclEnd = '0';
-                    checkExclusions();
-                    lockUI(false);
-                });
-            }
+            const ov = document.getElementById('overlay-' + pId);
+            if (!ov.classList.contains('ready')) return;
+            lockUI(true);
+            callApi({ action: 'return_play', participation_id: pId }).then(() => {
+                document.getElementById('card-' + pId).dataset.exclEnd = '0';
+                checkExclusions();
+                lockUI(false);
+            });
         }
 
-        // ===== ANNULATION ACTION ===========================================
         async function deleteEvent(evtId, type) {
             if (isProcessing || !confirm('❌ Annuler cette action ?')) return;
             lockUI(true);
             try {
                 const res = await callApi({ action: 'delete_event', event_id: evtId });
-                updateUI(res);
-                if (['EXCL', 'EDA'].includes(type)) setTimeout(() => location.reload(), 500);
-            } catch (err) { alert('❌ Erreur !'); }
+                refreshUI(res);
+                if (['EXCL', 'EDA'].includes(type)) setTimeout(() => location.reload(), 400);
+            } catch { alert('❌ Erreur'); }
             finally { lockUI(false); }
         }
 
-        // ===== MISE À JOUR UI ==============================================
-        function updateUI(res) {
-            if (res.score_dom !== undefined) document.getElementById('scoreDom').innerText = res.score_dom;
-            if (res.score_ext !== undefined) document.getElementById('scoreExt').innerText = res.score_ext;
-            const list = document.getElementById('historyList');
-            list.innerHTML = '';
-            if (res.history && res.history.length > 0) {
-                document.getElementById('eventCount').innerText = res.history.length;
-                res.history.forEach(evt => {
-                    const teamClass = evt.equipe_attribuee === 'DOM' ? 'home' : 'away';
-                    const label = evt.joueur__nom
-                        ? 'N°' + evt.joueur__numero_bonnet + ' ' + evt.joueur__nom
-                        : 'ÉQUIPE';
-                    const item = document.createElement('div');
-                    item.className = 'history-item ' + teamClass;
-                    item.innerHTML =
-                        '<div class="history-info">' +
-                        '<span class="history-time">' + (evt.chrono_match || '00:00') + '</span>' +
-                        '<span class="history-action action-' + evt.type_action + '">' + evt.type_action + '</span>' +
-                        '<span class="text-white-50">' + label + '</span>' +
-                        '</div>' +
-                        '<i class="fas fa-times history-delete" onclick="deleteEvent(' + evt.id + ',\'' + evt.type_action + '\')"></i>';
-                    list.appendChild(item);
-                });
-            } else {
-                list.innerHTML = '<div class="text-center text-muted mt-3"><i class="fas fa-inbox"></i><br>Aucune action</div>';
-                document.getElementById('eventCount').innerText = '0';
-            }
+        /* --- Mise à jour Interface --- */
+        function refreshUI(res) {
+            if (res.score_dom !== undefined) document.getElementById('scoreDom').textContent = res.score_dom;
+            if (res.score_ext !== undefined) document.getElementById('scoreExt').textContent = res.score_ext;
+            if (res.history !== undefined) renderHistory(res.history);
         }
 
-        // ===== EXCLUSIONS ==================================================
+        function renderHistory(history) {
+            const list = document.getElementById('historyList');
+            if (!history || !history.length) {
+                list.innerHTML = '<div class="empty-history"><i class="fas fa-inbox fa-2x"></i><br><br>Aucun événement</div>';
+                document.getElementById('eventCount').textContent = '0';
+                return;
+            }
+            
+            document.getElementById('eventCount').textContent = history.length;
+            list.innerHTML = history.map(evt => {
+                const tc = evt.equipe_attribuee === 'DOM' ? 'dom' : 'ext';
+                const lbl = evt.joueur__nom ? 'N°' + evt.joueur__numero_bonnet + ' ' + evt.joueur__nom : 'ÉQUIPE';
+                return `
+                <div class="history-item ${tc}">
+                    <span>
+                        <span class="hist-time">${evt.chrono_match || '00:00'}</span>
+                        <span class="hist-badge badge-${evt.type_action}">${evt.type_action}</span>
+                        <span>${lbl}</span>
+                    </span>
+                    <span class="hist-delete" onclick="deleteEvent(${evt.id}, '${evt.type_action}')">
+                        <i class="fas fa-times"></i>
+                    </span>
+                </div>`;
+            }).join('');
+        }
+
+        /* --- Gestion des overlays d'exclusion --- */
         function checkExclusions() {
-            const nowSec = Date.now() / 1000;
+            const now = Date.now() / 1000;
             document.querySelectorAll('.player-card').forEach(card => {
-                const overlay = card.querySelector('.player-overlay');
-                const txt     = overlay.querySelector('span');
+                const ov = card.querySelector('.player-overlay');
+                const txt = ov.querySelector('span');
+                if (!ov || !txt) return;
+
                 if (card.dataset.eda === 'true') {
-                    overlay.style.display = 'flex';
-                    overlay.className = 'player-overlay eda';
-                    txt.innerText = 'EDA';
+                    ov.className = 'player-overlay eda'; 
+                    txt.textContent = 'EDA'; 
                     return;
                 }
-                const endTs = parseFloat(card.dataset.exclEnd || 0);
-                if (endTs > 0) {
-                    overlay.style.display = 'flex';
-                    const remaining = endTs - nowSec;
-                    if (remaining > 0) {
-                        overlay.className = 'player-overlay exclusion';
-                        txt.innerText = Math.ceil(remaining) + 's';
+                
+                const end = parseFloat(card.dataset.exclEnd || 0);
+                if (end > 0) {
+                    const rem = end - now;
+                    if (rem > 0) {
+                        ov.className = 'player-overlay excl';
+                        txt.textContent = Math.ceil(rem) + 's';
                     } else {
-                        overlay.className = 'player-overlay ready';
-                        txt.innerText = '✓ CLIQUER';
+                        ov.className = 'player-overlay ready';
+                        txt.textContent = '✓ OK';
                     }
                 } else {
-                    overlay.style.display = 'none';
+                    ov.className = 'player-overlay'; // Disparaît
                 }
             });
         }
+        setInterval(checkExclusions, 400);
 
-        setInterval(checkExclusions, 500);
+        /* --- Effet visuel lors d'un but --- */
+        function flashBut(pId) {
+            const card = document.getElementById('card-' + pId);
+            const el = card && card.closest('.team-section.dom')
+                ? document.getElementById('scoreDom')
+                : document.getElementById('scoreExt');
+                
+            if (el) { 
+                el.classList.add('bump'); 
+                setTimeout(() => el.classList.remove('bump'), 300); 
+            }
 
-        // ===== API =========================================================
-        async function callApi(data) {
-            const r = await fetch('/api/match/' + matchId + '/', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data)
-            });
-            return r.json();
-        }
-
-        function lockUI(locked) {
-            isProcessing = locked;
-            document.body.style.cursor = locked ? 'wait' : 'default';
-            document.body.classList.toggle('disabled-ui', locked);
-        }
-
-        function showFeedback(msg) {
             const d = document.createElement('div');
-            d.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(0,0,0,.9);color:#fff;padding:30px 60px;border-radius:20px;font-size:3rem;font-weight:900;z-index:10000;animation:fadeOut 1.5s forwards';
-            d.innerText = msg;
+            d.style.cssText = 'position:fixed;inset:0;display:flex;align-items:center;justify-content:center;'
+                + 'background:rgba(0,0,0,0.8);font-size:clamp(3rem,8vw,5rem);font-weight:900;'
+                + 'color:var(--color-success);z-index:9999;pointer-events:none;'
+                + 'animation:flashGoal 1.2s forwards;';
+            d.innerHTML = '<i class="fas fa-futbol"></i> &nbsp; BUT !';
             document.body.appendChild(d);
-            setTimeout(() => d.remove(), 1500);
+            setTimeout(() => d.remove(), 1200);
         }
 
-        // ===== INIT ========================================================
-        // 1. Lancer la boucle RAF immédiatement (affichage fluide)
+        /* --- API Call --- */
+        const callApi = data => fetch('/api/match/' + matchId + '/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data),
+        }).then(r => r.json());
+
+        function lockUI(on) {
+            isProcessing = on;
+            document.body.style.cursor = on ? 'wait' : 'default';
+            document.getElementById('appMain').classList.toggle('ui-locked', on);
+            document.querySelector('.global-controls').classList.toggle('ui-locked', on);
+        }
+
+        /* --- Initialisation --- */
         chronoRaf();
         checkExclusions();
-
-        // 2. Récupérer l'état serveur au démarrage pour caler l'ancre
-        callApi({ action: 'refresh' }).then(res => {
-            applyServerChrono(res.chrono);   // cale startedAt sur le serveur
-            updateUI(res);
+        callApi({ action: 'refresh' }).then(r => {
+            applyServerChrono(r.chrono);
+            refreshUI(r);
         }).catch(console.error);
+
     </script>
 </body>
 </html>
