@@ -2,150 +2,422 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>WaterPolo Manager</title>
+    <title>WaterPolo Manager - Accueil</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
     <style>
-        .team-badge { cursor: pointer; transition: 0.2s; }
-        .team-badge:hover { background-color: #0d6efd !important; color: white !important; }
+        body {
+            background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+            min-height: 100vh; padding-bottom: 60px;
+        }
+        .main-header {
+            background: linear-gradient(135deg, #1976d2 0%, #2196f3 100%);
+            color: white; padding: 25px 0;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            margin-bottom: 30px;
+        }
+        .card { border: none; box-shadow: 0 4px 20px rgba(0,0,0,0.08); border-radius: 12px; }
+        .param-group {
+            background: white; border-radius: 8px; padding: 15px;
+            margin-bottom: 15px; border-left: 4px solid #2196f3;
+        }
+        .param-group h6 {
+            color: #1976d2; font-weight: 700; margin-bottom: 15px;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .officials-group {
+            background: white; border-radius: 8px; padding: 15px;
+            margin-bottom: 15px; border-left: 4px solid #7c3aed;
+        }
+        .officials-group h6 {
+            color: #7c3aed; font-weight: 700; margin-bottom: 15px;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .badge-ffn {
+            background: linear-gradient(135deg, #1976d2 0%, #2196f3 100%);
+            color: white; padding: 5px 15px; border-radius: 20px;
+            font-size: 0.75rem; font-weight: 600;
+        }
+        .form-control:focus, .form-select:focus {
+            border-color: #2196f3;
+            box-shadow: 0 0 0 0.2rem rgba(33, 150, 243, 0.25);
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #1976d2 0%, #2196f3 100%);
+            border: none; padding: 15px 30px; font-weight: 700; letter-spacing: 0.5px;
+        }
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #1565c0 0%, #1976d2 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(25, 118, 210, 0.4);
+        }
+        .iuf-field { font-size: 0.85rem; }
     </style>
 </head>
-<body class="bg-light container py-4">
-    
-    <div class="d-flex justify-content-between align-items-center mb-5">
-        <h1>WaterPolo Manager</h1>
-        <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#modalNewTeam">
-            + Ajouter une équipe en base
-        </button>
-    </div>
+<body>
 
+<div class="main-header">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="mb-1"><i class="bi bi-water"></i> WaterPolo Manager</h1>
+                <p class="mb-0 opacity-75">Système professionnel de gestion de matchs</p>
+            </div>
+            <button class="btn btn-light" data-bs-toggle="modal" data-bs-target="#modalNewTeam">
+                <i class="bi bi-plus-circle"></i> Nouvelle équipe
+            </button>
+        </div>
+    </div>
+</div>
+
+<div class="container">
     <div class="row">
-        <div class="col-md-8">
-            <div class="card shadow p-4">
-                <h3 class="mb-4">Nouveau Match</h3>
-                <form method="post">
+        <div class="col-lg-8">
+            <div class="card p-4">
+                <h3 class="mb-4">
+                    <i class="bi bi-trophy"></i> Nouveau Match
+                    <span class="badge-ffn">FFN 2026</span>
+                </h3>
+
+                <form method="post" id="formMatch">
                     {% csrf_token %}
                     <input type="hidden" name="action" value="lancer_match">
 
+                    <!-- ══════════════════════════════════════════════════ -->
+                    <!-- ÉQUIPES                                            -->
+                    <!-- ══════════════════════════════════════════════════ -->
                     <div class="row mb-4">
                         <div class="col-md-6 border-end">
-                            <h5 class="text-primary">Domicile (Blanc)</h5>
-                            
-                            <label class="small text-muted">Choisir existante...</label>
-                            <select name="select_domicile" class="form-select mb-2" onchange="fillInput(this, 'input_domicile')">
+                            <h5 class="text-primary mb-3">
+                                <i class="bi bi-house-fill"></i> Domicile (Bonnets Blancs)
+                            </h5>
+                            <label class="small text-muted mb-1">Équipe existante</label>
+                            <select name="select_domicile" class="form-select mb-3"
+                                    onchange="fillInput(this, 'input_domicile')">
                                 <option value="">-- Nouvelle équipe --</option>
                                 {% for eq in equipes %}
                                 <option value="{{ eq.id }}">{{ eq.nom }}</option>
                                 {% endfor %}
                             </select>
-                            
-                            <label class="small text-muted">...ou saisir nom</label>
-                            <input type="text" id="input_domicile" name="input_domicile" class="form-control fw-bold" placeholder="Nom équipe A" required>
+                            <label class="small text-muted mb-1">Ou saisir le nom</label>
+                            <input type="text" id="input_domicile" name="input_domicile"
+                                   class="form-control fw-bold" placeholder="Ex: Paris Aquatique" required>
                         </div>
 
                         <div class="col-md-6">
-                            <h5 class="text-primary">Extérieur (Bleu)</h5>
-                            
-                            <label class="small text-muted">Choisir existante...</label>
-                            <select name="select_exterieur" class="form-select mb-2" onchange="fillInput(this, 'input_exterieur')">
+                            <h5 class="text-primary mb-3">
+                                <i class="bi bi-airplane-fill"></i> Extérieur (Bonnets Bleus)
+                            </h5>
+                            <label class="small text-muted mb-1">Équipe existante</label>
+                            <select name="select_exterieur" class="form-select mb-3"
+                                    onchange="fillInput(this, 'input_exterieur')">
                                 <option value="">-- Nouvelle équipe --</option>
                                 {% for eq in equipes %}
                                 <option value="{{ eq.id }}">{{ eq.nom }}</option>
                                 {% endfor %}
                             </select>
-
-                            <label class="small text-muted">...ou saisir nom</label>
-                            <input type="text" id="input_exterieur" name="input_exterieur" class="form-control fw-bold" placeholder="Nom équipe B" required>
+                            <label class="small text-muted mb-1">Ou saisir le nom</label>
+                            <input type="text" id="input_exterieur" name="input_exterieur"
+                                   class="form-control fw-bold" placeholder="Ex: Marseille WP" required>
                         </div>
                     </div>
 
-                    <div class="bg-light p-3 rounded mb-3">
-                        <h6>⚙️ Paramètres du match</h6>
-                        <div class="row g-2">
-                            <div class="col-3">
-                                <label class="small">Période (min)</label>
-                                <input type="number" name="duree_periode" value="8" class="form-control form-control-sm">
+                    <!-- ══════════════════════════════════════════════════ -->
+                    <!-- PARAMÈTRES FFN                                     -->
+                    <!-- ══════════════════════════════════════════════════ -->
+                    <div class="mb-4">
+                        <h5 class="mb-3">
+                            <i class="bi bi-gear-fill"></i> Paramètres du Match
+                            <small class="text-muted ms-2">(Règlement FFN 2026)</small>
+                        </h5>
+
+                        <!-- Infos générales -->
+                        <div class="param-group">
+                            <h6><i class="bi bi-geo-alt-fill"></i> Informations générales</h6>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="small fw-bold mb-1">Compétition</label>
+                                    <input type="text" name="competition"
+                                           class="form-control"
+                                           placeholder="Ex: Championnat de France N3 Occitanie">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="small fw-bold mb-1">Lieu</label>
+                                    <input type="text" name="lieu" value="Piscine Municipale"
+                                           class="form-control">
+                                </div>
                             </div>
-                            <div class="col-3">
-                                <label class="small">Possession (s)</label>
-                                <input type="number" name="temps_possession" value="28" class="form-control form-control-sm">
+                        </div>
+
+                        <!-- Temps de jeu -->
+                        <div class="param-group">
+                            <h6><i class="bi bi-clock-history"></i> Temps de jeu</h6>
+                            <div class="row g-3">
+                                <div class="col-md-4">
+                                    <label class="small fw-bold mb-1">Durée période (min)</label>
+                                    <input type="number" name="duree_periode" value="8"
+                                           min="1" max="20" class="form-control" required>
+                                    <small class="text-muted">Senior: 8 min | Junior: 7 min</small>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="small fw-bold mb-1">Nombre de périodes</label>
+                                    <input type="number" name="nb_periodes" value="4"
+                                           min="2" max="6" class="form-control" required>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="small fw-bold mb-1">Temps d'attaque (s)</label>
+                                    <input type="number" name="temps_possession" value="30"
+                                           min="20" max="45" class="form-control" required>
+                                    <small class="text-muted">FFN 2024+: 30 s</small>
+                                </div>
                             </div>
-                            <div class="col-3">
-                                <label class="small">Exclusion (s)</label>
-                                <input type="number" name="temps_exclusion" value="18" class="form-control form-control-sm">
+                        </div>
+
+                        <!-- Exclusions & Fautes -->
+                        <div class="param-group">
+                            <h6><i class="bi bi-exclamation-triangle-fill"></i> Exclusions &amp; Fautes</h6>
+                            <div class="row g-3">
+                                <div class="col-md-4">
+                                    <label class="small fw-bold mb-1">Durée exclusion (s)</label>
+                                    <input type="number" name="duree_exclusion" value="20"
+                                           min="15" max="30" class="form-control" required>
+                                    <small class="text-muted">FFN: 20 s</small>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="small fw-bold mb-1">Fautes → EDA</label>
+                                    <input type="number" name="max_fautes_perso" value="3"
+                                           min="2" max="5" class="form-control" required>
+                                    <small class="text-muted">3 fautes = sortie définitive</small>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="small fw-bold mb-1">Temps morts / équipe</label>
+                                    <input type="number" name="nb_temps_morts" value="2"
+                                           min="0" max="5" class="form-control" required>
+                                </div>
                             </div>
-                            <div class="col-3">
-                                <label class="small">Lieu</label>
-                                <input type="text" name="lieu" value="Piscine Municipale" class="form-control form-control-sm">
+                        </div>
+
+                        <!-- Composition -->
+                        <div class="param-group">
+                            <h6><i class="bi bi-people-fill"></i> Composition</h6>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="small fw-bold mb-1">Remplaçants autorisés</label>
+                                    <input type="number" name="nb_remplacants" value="6"
+                                           min="3" max="13" class="form-control" required>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- ══════════════════════════════════════════════ -->
+                        <!-- OFFICIELS                                      -->
+                        <!-- ══════════════════════════════════════════════ -->
+                        <div class="officials-group">
+                            <h6><i class="bi bi-person-badge-fill"></i> Officiels (requis pour feuille de match)</h6>
+
+                            <!-- Arbitres -->
+                            <p class="small fw-bold text-secondary mb-2">Arbitres</p>
+                            <div class="row g-2 mb-3">
+                                <div class="col-md-5">
+                                    <input type="text" name="arbitre1_nom"
+                                           class="form-control" placeholder="Arbitre 1 – Nom Prénom">
+                                </div>
+                                <div class="col-md-3">
+                                    <input type="text" name="arbitre1_iuf"
+                                           class="form-control iuf-field" placeholder="IUF N°">
+                                </div>
+                                <div class="col-md-4"></div>
+                                <div class="col-md-5">
+                                    <input type="text" name="arbitre2_nom"
+                                           class="form-control" placeholder="Arbitre 2 – Nom Prénom">
+                                </div>
+                                <div class="col-md-3">
+                                    <input type="text" name="arbitre2_iuf"
+                                           class="form-control iuf-field" placeholder="IUF N°">
+                                </div>
+                            </div>
+
+                            <!-- Table de marque -->
+                            <p class="small fw-bold text-secondary mb-2">Table de marque</p>
+                            <div class="row g-2 mb-3">
+                                <div class="col-md-5">
+                                    <input type="text" name="secretaire_nom"
+                                           class="form-control" placeholder="Secrétaire – Nom Prénom">
+                                </div>
+                                <div class="col-md-3">
+                                    <input type="text" name="secretaire_iuf"
+                                           class="form-control iuf-field" placeholder="IUF N°">
+                                </div>
+                                <div class="col-md-4"></div>
+                                <div class="col-md-5">
+                                    <input type="text" name="chrono_nom"
+                                           class="form-control" placeholder="Chronométreur – Nom Prénom">
+                                </div>
+                                <div class="col-md-3">
+                                    <input type="text" name="chrono_iuf"
+                                           class="form-control iuf-field" placeholder="IUF N°">
+                                </div>
+                            </div>
+
+                            <!-- Juges de but -->
+                            <p class="small fw-bold text-secondary mb-2">Juges de but</p>
+                            <div class="row g-2 mb-3">
+                                <div class="col-md-5">
+                                    <input type="text" name="juge_but1_nom"
+                                           class="form-control" placeholder="Juge de but 1">
+                                </div>
+                                <div class="col-md-3">
+                                    <input type="text" name="juge_but1_iuf"
+                                           class="form-control iuf-field" placeholder="IUF N°">
+                                </div>
+                                <div class="col-md-4"></div>
+                                <div class="col-md-5">
+                                    <input type="text" name="juge_but2_nom"
+                                           class="form-control" placeholder="Juge de but 2">
+                                </div>
+                                <div class="col-md-3">
+                                    <input type="text" name="juge_but2_iuf"
+                                           class="form-control iuf-field" placeholder="IUF N°">
+                                </div>
+                            </div>
+
+                            <!-- Délégués -->
+                            <p class="small fw-bold text-secondary mb-2">Délégués</p>
+                            <div class="row g-2">
+                                <div class="col-md-5">
+                                    <input type="text" name="delegue_dom_nom"
+                                           class="form-control" placeholder="Délégué Blancs – Nom Prénom">
+                                </div>
+                                <div class="col-md-4"></div>
+                                <div class="col-md-5">
+                                    <input type="text" name="delegue_ext_nom"
+                                           class="form-control" placeholder="Délégué Noirs – Nom Prénom">
+                                </div>
+                                <div class="col-md-4"></div>
+                                <div class="col-md-5">
+                                    <input type="text" name="delegue_ffn_nom"
+                                           class="form-control" placeholder="Délégué FFN – Nom Prénom">
+                                </div>
+                                <div class="col-md-3">
+                                    <input type="text" name="delegue_ffn_iuf"
+                                           class="form-control iuf-field" placeholder="IUF N°">
+                                </div>
                             </div>
                         </div>
                     </div>
 
-                    <button type="submit" class="btn btn-primary w-100 btn-lg">SUIVANT : COMPOSITION >></button>
+                    <button type="submit" class="btn btn-primary w-100 btn-lg">
+                        <i class="bi bi-arrow-right-circle-fill"></i> SUIVANT : COMPOSITION DES ÉQUIPES
+                    </button>
                 </form>
             </div>
         </div>
 
-        <div class="col-md-4">
-            <div class="card shadow-sm">
-                <div class="card-header">
-                    Base de données Équipes
+        <!-- BASE ÉQUIPES -->
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <i class="bi bi-database-fill"></i> Équipes enregistrées
                 </div>
-                <div class="list-group list-group-flush">
+                <div class="list-group list-group-flush" style="max-height: 650px; overflow-y: auto;">
                     {% for eq in equipes %}
                     <div class="list-group-item d-flex justify-content-between align-items-center">
                         <div>
-                            <strong>{{ eq.nom }}</strong>
-                            <div class="small text-muted">{{ eq.effectif.count }} joueurs</div>
+                            <strong class="d-block">{{ eq.nom }}</strong>
+                            <small class="text-muted">
+                                <i class="bi bi-people"></i>
+                                {{ eq.effectif.count }} joueur{{ eq.effectif.count|pluralize }}
+                            </small>
                         </div>
-                        <form method="post" onsubmit="return confirm('Supprimer cette équipe ?');">
+                        <form method="post"
+                              onsubmit="return confirm('⚠️ Supprimer {{ eq.nom }} ?');"
+                              class="d-inline">
                             {% csrf_token %}
                             <input type="hidden" name="action" value="supprimer_equipe">
                             <input type="hidden" name="equipe_id" value="{{ eq.id }}">
-                            <button type="submit" class="btn btn-sm btn-outline-danger">×</button>
+                            <button type="submit" class="btn btn-sm btn-outline-danger">
+                                <i class="bi bi-trash"></i>
+                            </button>
                         </form>
                     </div>
                     {% empty %}
-                    <div class="p-3 text-center text-muted">Aucune équipe enregistrée</div>
+                    <div class="p-4 text-center text-muted">
+                        <i class="bi bi-inbox" style="font-size: 3rem; opacity: 0.3;"></i>
+                        <p class="mt-2 mb-0">Aucune équipe enregistrée</p>
+                    </div>
                     {% endfor %}
+                </div>
+            </div>
+
+            <div class="card mt-3">
+                <div class="card-header bg-info text-white">
+                    <i class="bi bi-info-circle-fill"></i> Aide rapide
+                </div>
+                <div class="card-body small">
+                    <p class="mb-2"><strong>Valeurs recommandées FFN :</strong></p>
+                    <ul class="mb-0">
+                        <li>Senior : 4×8 min, attaque 30 s, excl. 20 s</li>
+                        <li>Junior : 4×7 min, attaque 30 s, excl. 20 s</li>
+                        <li>Cadet : 4×6 min, attaque 30 s, excl. 20 s</li>
+                    </ul>
                 </div>
             </div>
         </div>
     </div>
+</div>
 
-    <div class="modal fade" id="modalNewTeam" tabindex="-1">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <form method="post">
-                    {% csrf_token %}
-                    <input type="hidden" name="action" value="creer_equipe">
-                    <div class="modal-header">
-                        <h5 class="modal-title">Ajouter une équipe au catalogue</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                    </div>
-                    <div class="modal-body">
-                        <label>Nom de l'équipe</label>
-                        <input type="text" name="nouveau_nom_equipe" class="form-control" required>
-                        <small class="text-muted">Vous pourrez ajouter les joueurs lors de votre premier match avec cette équipe.</small>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="submit" class="btn btn-success">Enregistrer</button>
-                    </div>
-                </form>
-            </div>
+<!-- MODAL NOUVELLE ÉQUIPE -->
+<div class="modal fade" id="modalNewTeam" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="creer_equipe">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title">
+                        <i class="bi bi-plus-circle"></i> Nouvelle équipe
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white"
+                            data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <label class="fw-bold mb-2">Nom de l'équipe</label>
+                    <input type="text" name="nouveau_nom_equipe" class="form-control"
+                           placeholder="Ex: Paris Water-Polo Club" required>
+                    <small class="text-muted d-block mt-2">
+                        <i class="bi bi-info-circle"></i>
+                        Les joueurs seront ajoutés lors de la composition du premier match.
+                    </small>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary"
+                            data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-circle"></i> Enregistrer
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
+</div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        function fillInput(selectObj, inputId) {
-            const input = document.getElementById(inputId);
-            if (selectObj.selectedIndex > 0) {
-                // On prend le texte de l'option sélectionnée
-                input.value = selectObj.options[selectObj.selectedIndex].text;
-            } else {
-                input.value = "";
-            }
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    function fillInput(selectObj, inputId) {
+        const input = document.getElementById(inputId);
+        input.value = selectObj.selectedIndex > 0
+            ? selectObj.options[selectObj.selectedIndex].text
+            : '';
+    }
+
+    document.getElementById('formMatch').addEventListener('submit', function (e) {
+        const dom = document.getElementById('input_domicile').value.trim();
+        const ext = document.getElementById('input_exterieur').value.trim();
+        if (dom && ext && dom === ext) {
+            e.preventDefault();
+            alert('⚠️ Les deux équipes doivent avoir des noms différents !');
         }
-    </script>
+    });
+</script>
 </body>
 </html>

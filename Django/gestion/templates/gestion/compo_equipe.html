@@ -1,108 +1,275 @@
-{% load custom_tags %} <!DOCTYPE html>
-<html>
+<!DOCTYPE html>
+<html lang="fr">
 <head>
-    <title>Feuille de Match</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Composition – {{ match.nom_equipe_domicile }} vs {{ match.nom_equipe_exterieur }}</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-</head>
-<body class="bg-light container-fluid py-3">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <style>
+        body { background: #f0f4f8; }
 
-    <h3 class="text-center mb-4">Composition des équipes</h3>
-    
+        .main-header {
+            background: linear-gradient(135deg, #1976d2 0%, #2196f3 100%);
+            color: white; padding: 20px 0; margin-bottom: 25px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+        }
+
+        .team-card { border: none; box-shadow: 0 4px 15px rgba(0,0,0,0.08); border-radius: 12px; overflow: hidden; }
+        .team-card.dom { border-top: 5px solid #9e9e9e; }
+        .team-card.ext { border-top: 5px solid #1565c0; }
+
+        .player-row {
+            display: flex; align-items: center; gap: 8px;
+            background: #fafafa; border-radius: 8px;
+            padding: 8px 10px; margin-bottom: 7px; transition: box-shadow 0.15s;
+        }
+        .player-row:hover { box-shadow: 0 2px 10px rgba(0,0,0,0.1); background: #fff; }
+
+        .bonnet-badge {
+            width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 900; font-size: 1rem;
+        }
+        .bonnet-dom { background: #f5f5f5; border: 2px solid #bbb; color: #333; }
+        .bonnet-ext { background: #1565c0; border: 2px solid #1565c0; color: white; }
+
+        .col-nom      { flex: 2.5; min-width: 0; }
+        .col-prenom   { flex: 2;   min-width: 0; }
+        .col-licence  { width: 90px; flex-shrink: 0; }
+        .col-naissance { width: 72px; flex-shrink: 0; }
+
+        .input-sm { font-size: 0.84rem; padding: 5px 8px; border-radius: 6px; }
+
+        .col-header {
+            display: flex; gap: 8px; padding: 4px 10px 6px;
+            font-size: 0.68rem; font-weight: 700; color: #9e9e9e;
+            text-transform: uppercase; letter-spacing: 0.5px;
+        }
+
+        .staff-section {
+            background: #f0f4ff; border-radius: 8px;
+            padding: 14px; margin-top: 14px; border-left: 3px solid #2196f3;
+        }
+        .staff-section h6 { color: #1565c0; font-weight: 700; margin-bottom: 12px; }
+
+        .btn-validate {
+            background: linear-gradient(135deg, #1565c0 0%, #2196f3 100%);
+            border: none; font-weight: 700; letter-spacing: 0.5px;
+        }
+        .btn-validate:hover {
+            background: linear-gradient(135deg, #0d47a1 0%, #1976d2 100%);
+            transform: translateY(-1px);
+        }
+    </style>
+</head>
+<body>
+
+<div class="main-header">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h2 class="mb-0"><i class="bi bi-people-fill"></i> Composition des équipes</h2>
+                <small class="opacity-75">{{ match.nom_equipe_domicile }} vs {{ match.nom_equipe_exterieur }}</small>
+            </div>
+            <a href="{% url 'accueil' %}" class="btn btn-outline-light btn-sm">
+                <i class="bi bi-arrow-left"></i> Retour
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="container pb-5">
     <form method="post">
         {% csrf_token %}
-        <div class="row">
-            <div class="col-6">
-                <div class="card border-info">
-                    <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
-                        <span class="fw-bold">{{ match.nom_equipe_domicile }} (BLANC)</span>
-                        {% if match.equipe_domicile_origine %}
-                        <div class="form-check form-switch text-white small">
-                            <input class="form-check-input" type="checkbox" name="update_master_dom" id="updateDom">
-                            <label class="form-check-label" for="updateDom">Sauvegarder ces joueurs pour le futur</label>
-                        </div>
-                        {% endif %}
-                    </div>
-                    <table class="table table-sm table-striped mb-0">
-                        <thead><tr><th>Bonnet</th><th>Nom</th><th>Prénom</th></tr></thead>
-                        <tbody>
-                            {% for i in range_15 %}
-                                {% get_item prefill_dom i as joueur_exist %}
-                                <tr>
-                                    <td class="fw-bold text-center align-middle">{{ i }}</td>
-                                    <td>
-                                        <input type="text" name="nom_dom_{{ i }}" 
-                                               class="form-control form-control-sm" 
-                                               value="{{ joueur_exist.nom|default:'' }}" placeholder="Nom">
-                                    </td>
-                                    <td>
-                                        <input type="text" name="prenom_dom_{{ i }}" 
-                                               class="form-control form-control-sm" 
-                                               value="{{ joueur_exist.prenom|default:'' }}" placeholder="Prénom">
-                                    </td>
-                                </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
 
-            <div class="col-6">
-                <div class="card border-warning">
-                    <div class="card-header bg-warning text-dark d-flex justify-content-between align-items-center">
-                        <span class="fw-bold">{{ match.nom_equipe_exterieur }} (BLEU)</span>
-                        {% if match.equipe_exterieur_origine %}
-                        <div class="form-check form-switch small">
-                            <input class="form-check-input" type="checkbox" name="update_master_ext" id="updateExt">
-                            <label class="form-check-label" for="updateExt">Sauvegarder ces joueurs pour le futur</label>
-                        </div>
-                        {% endif %}
-                    </div>
-                    <table class="table table-sm table-striped mb-0">
-                        <thead><tr><th>Bonnet</th><th>Nom</th><th>Prénom</th></tr></thead>
-                        <tbody>
-                            {% for i in range_15 %}
-                                {% get_item prefill_ext i as joueur_exist %}
-                                <tr>
-                                    <td class="fw-bold text-center align-middle">{{ i }}</td>
-                                    <td>
-                                        <input type="text" name="nom_ext_{{ i }}" 
-                                               class="form-control form-control-sm" 
-                                               value="{{ joueur_exist.nom|default:'' }}" placeholder="Nom">
-                                    </td>
-                                    <td>
-                                        <input type="text" name="prenom_ext_{{ i }}" 
-                                               class="form-control form-control-sm" 
-                                               value="{{ joueur_exist.prenom|default:'' }}" placeholder="Prénom">
-                                    </td>
-                                </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <small class="text-muted">
+                <i class="bi bi-info-circle"></i>
+                Remplissez les joueurs puis validez. Les champs vides sont ignorés.
+            </small>
+            <div class="d-flex gap-2">
+                <a href="{% url 'dashboard_arbitre' match.id %}" class="btn btn-outline-secondary btn-sm">
+                    <i class="bi bi-skip-forward"></i> Passer sans enregistrer
+                </a>
+                <button type="submit" class="btn btn-validate text-white btn-sm px-4">
+                    <i class="bi bi-check-circle-fill"></i> Valider et démarrer
+                </button>
             </div>
         </div>
 
-        <div class="text-center mt-4 pb-5">
-    <button type="button" onclick="validerEtLancer()" class="btn btn-success btn-lg px-5">
-        VALIDER ET LANCER LE MATCH (DOUBLE ÉCRAN)
-    </button>
+        <div class="row g-4">
+
+            <!-- ══════════════════════════ DOMICILE ══════════════════════════ -->
+            <div class="col-lg-6">
+                <div class="team-card card dom">
+                    <div class="card-body p-4">
+                        <h5 class="mb-3 fw-bold" style="color:#424242;">
+                            ⬜ {{ match.nom_equipe_domicile }}
+                            <small class="text-muted fw-normal fs-6">— Bonnets Blancs</small>
+                        </h5>
+
+                        <div class="col-header">
+                            <div style="width:36px;"></div>
+                            <div class="col-nom">Nom</div>
+                            <div class="col-prenom">Prénom</div>
+                            <div class="col-licence">Licence IUF</div>
+                            <div class="col-naissance">Né(e)</div>
+                        </div>
+
+                        {% for slot in slots_dom %}
+                        <div class="player-row">
+                            <div class="bonnet-badge bonnet-dom">{{ slot.bonnet }}</div>
+                            <div class="col-nom">
+                                <input type="text" name="nom_dom_{{ slot.bonnet }}"
+                                       value="{{ slot.nom }}"
+                                       class="form-control input-sm" placeholder="NOM">
+                            </div>
+                            <div class="col-prenom">
+                                <input type="text" name="prenom_dom_{{ slot.bonnet }}"
+                                       value="{{ slot.prenom }}"
+                                       class="form-control input-sm" placeholder="Prénom">
+                            </div>
+                            <div class="col-licence">
+                                <input type="text" name="licence_dom_{{ slot.bonnet }}"
+                                       value="{{ slot.numero_licence }}"
+                                       class="form-control input-sm" placeholder="IUF">
+                            </div>
+                            <div class="col-naissance">
+                                <input type="number" name="naissance_dom_{{ slot.bonnet }}"
+                                       value="{{ slot.annee_naissance }}"
+                                       class="form-control input-sm" placeholder="AAAA"
+                                       min="1960" max="2015">
+                            </div>
+                        </div>
+                        {% endfor %}
+
+                        <div class="staff-section">
+                            <h6><i class="bi bi-person-lines-fill"></i> Staff</h6>
+                            <div class="mb-2">
+                                <label class="form-label small fw-semibold mb-1">Entraîneur</label>
+                                <input type="text" name="entraineur_dom"
+                                       value="{{ match.entraineur_dom }}"
+                                       class="form-control input-sm" placeholder="Nom Prénom">
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label small fw-semibold mb-1">Entraîneur adjoint</label>
+                                <input type="text" name="entraineur_adj_dom"
+                                       value="{{ match.entraineur_adj_dom }}"
+                                       class="form-control input-sm" placeholder="Nom Prénom">
+                            </div>
+                            <div>
+                                <label class="form-label small fw-semibold mb-1">Suppléant</label>
+                                <input type="text" name="suppleant_dom"
+                                       value="{{ match.suppleant_dom }}"
+                                       class="form-control input-sm" placeholder="Nom Prénom">
+                            </div>
+                        </div>
+
+                        {% if match.equipe_domicile_origine %}
+                        <div class="form-check mt-3">
+                            <input class="form-check-input" type="checkbox"
+                                   name="update_master_dom" id="chk_dom" value="on">
+                            <label class="form-check-label small" for="chk_dom">
+                                <i class="bi bi-cloud-upload"></i>
+                                Mettre à jour le catalogue «&nbsp;{{ match.equipe_domicile_origine.nom }}&nbsp;»
+                            </label>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- ══════════════════════════ EXTÉRIEUR ══════════════════════════ -->
+            <div class="col-lg-6">
+                <div class="team-card card ext">
+                    <div class="card-body p-4">
+                        <h5 class="mb-3 fw-bold text-primary">
+                            🔵 {{ match.nom_equipe_exterieur }}
+                            <small class="text-muted fw-normal fs-6">— Bonnets Bleus</small>
+                        </h5>
+
+                        <div class="col-header">
+                            <div style="width:36px;"></div>
+                            <div class="col-nom">Nom</div>
+                            <div class="col-prenom">Prénom</div>
+                            <div class="col-licence">Licence IUF</div>
+                            <div class="col-naissance">Né(e)</div>
+                        </div>
+
+                        {% for slot in slots_ext %}
+                        <div class="player-row">
+                            <div class="bonnet-badge bonnet-ext">{{ slot.bonnet }}</div>
+                            <div class="col-nom">
+                                <input type="text" name="nom_ext_{{ slot.bonnet }}"
+                                       value="{{ slot.nom }}"
+                                       class="form-control input-sm" placeholder="NOM">
+                            </div>
+                            <div class="col-prenom">
+                                <input type="text" name="prenom_ext_{{ slot.bonnet }}"
+                                       value="{{ slot.prenom }}"
+                                       class="form-control input-sm" placeholder="Prénom">
+                            </div>
+                            <div class="col-licence">
+                                <input type="text" name="licence_ext_{{ slot.bonnet }}"
+                                       value="{{ slot.numero_licence }}"
+                                       class="form-control input-sm" placeholder="IUF">
+                            </div>
+                            <div class="col-naissance">
+                                <input type="number" name="naissance_ext_{{ slot.bonnet }}"
+                                       value="{{ slot.annee_naissance }}"
+                                       class="form-control input-sm" placeholder="AAAA"
+                                       min="1960" max="2015">
+                            </div>
+                        </div>
+                        {% endfor %}
+
+                        <div class="staff-section">
+                            <h6><i class="bi bi-person-lines-fill"></i> Staff</h6>
+                            <div class="mb-2">
+                                <label class="form-label small fw-semibold mb-1">Entraîneur</label>
+                                <input type="text" name="entraineur_ext"
+                                       value="{{ match.entraineur_ext }}"
+                                       class="form-control input-sm" placeholder="Nom Prénom">
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label small fw-semibold mb-1">Entraîneur adjoint</label>
+                                <input type="text" name="entraineur_adj_ext"
+                                       value="{{ match.entraineur_adj_ext }}"
+                                       class="form-control input-sm" placeholder="Nom Prénom">
+                            </div>
+                            <div>
+                                <label class="form-label small fw-semibold mb-1">Suppléant</label>
+                                <input type="text" name="suppleant_ext"
+                                       value="{{ match.suppleant_ext }}"
+                                       class="form-control input-sm" placeholder="Nom Prénom">
+                            </div>
+                        </div>
+
+                        {% if match.equipe_exterieur_origine %}
+                        <div class="form-check mt-3">
+                            <input class="form-check-input" type="checkbox"
+                                   name="update_master_ext" id="chk_ext" value="on">
+                            <label class="form-check-label small" for="chk_ext">
+                                <i class="bi bi-cloud-upload"></i>
+                                Mettre à jour le catalogue «&nbsp;{{ match.equipe_exterieur_origine.nom }}&nbsp;»
+                            </label>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+        </div><!-- /row -->
+
+        <div class="d-flex justify-content-center mt-5">
+            <button type="submit" class="btn btn-validate text-white px-5 py-3 fs-5 shadow">
+                <i class="bi bi-check-circle-fill me-2"></i>Valider la composition et démarrer
+            </button>
+        </div>
+    </form>
 </div>
 
-<script>
-    function validerEtLancer() {
-        // 1. Ouvrir le Scoreboard dans une nouvelle fenêtre
-        // On calcule l'URL (on suppose que l'ID match est dans l'URL actuelle ou dispo via template)
-        // Astuce Django : on construit l'URL JS
-        const matchId = "{{ match.id }}";
-        const urlScoreboard = `/match/${matchId}/scoreboard/`;
-        
-        // Ouvre une fenêtre popup
-        window.open(urlScoreboard, 'ScoreBoardWindow', 'menubar=no,location=no,status=no,titlebar=no,toolbar=no');
-
-        // 2. Soumettre le formulaire pour aller au Dashboard Arbitre
-        document.querySelector('form').submit();
-    }
-</script>
-    </form>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

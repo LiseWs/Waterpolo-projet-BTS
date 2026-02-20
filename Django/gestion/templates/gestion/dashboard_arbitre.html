@@ -538,7 +538,7 @@
             <!-- Chrono Central -->
             <div class="chrono-center">
                 <div id="chrono" class="chrono-display" title="Cliquer pour démarrer/arrêter">
-                    {{ match.temps_restant|default:"480" }}
+                    --:--
                 </div>
                 <div class="period-info">
                     <span class="period-badge">PÉRIODE <span id="periodeDisplay">{{ match.periode_actuelle }}</span></span>
@@ -570,6 +570,15 @@
             <button class="btn-quick bg-info text-white" onclick="nextPeriod()">
                 <i class="fas fa-forward"></i> PÉRIODE SUIVANTE
             </button>
+            <a href="{% url 'score_board' match.id %}" target="_blank"
+               class="btn-quick bg-secondary text-white text-decoration-none">
+                <i class="fas fa-tv"></i> SCOREBOARD
+            </a>
+            <a href="{% url 'export_excel' match.id %}"
+               class="btn-quick text-white text-decoration-none"
+               style="background: linear-gradient(135deg,#155724,#28a745);">
+                <i class="fas fa-file-excel"></i> EXPORT EXCEL
+            </a>
         </div>
     </div>
 
@@ -617,7 +626,7 @@
                         <i class="fas fa-flag"></i> FAUTE
                     </button>
                     <button class="action-btn btn-exclusion" data-action="EXCL" data-pid="{{ p.id }}">
-                        <i class="fas fa-user-times"></i> 20s
+                        <i class="fas fa-user-times"></i> {{ match.duree_exclusion }}s
                     </button>
                     <button class="action-btn btn-penalty" data-action="PENALTY" data-pid="{{ p.id }}">
                         <i class="fas fa-exclamation-triangle"></i> PÉNALTY
@@ -716,7 +725,7 @@
                         <i class="fas fa-flag"></i> FAUTE
                     </button>
                     <button class="action-btn btn-exclusion" data-action="EXCL" data-pid="{{ p.id }}">
-                        <i class="fas fa-user-times"></i> 20s
+                        <i class="fas fa-user-times"></i> {{ match.duree_exclusion }}s
                     </button>
                     <button class="action-btn btn-penalty" data-action="PENALTY" data-pid="{{ p.id }}">
                         <i class="fas fa-exclamation-triangle"></i> PÉNALTY
@@ -728,7 +737,8 @@
     </div>
 
     <script>
-        const matchId = {{ match.id }};
+        const matchId      = {{ match.id }};
+        const dureeExclusion = {{ match.duree_exclusion }};  // valeur réelle du match, pas 20s en dur
         let isProcessing = false;
 
         // ═══════════════════════════════════════════════════════════════
@@ -838,7 +848,8 @@
         }
 
         function resetPeriod() {
-            if (!confirm('Réinitialiser le chrono à 8:00 ?')) return;
+            const duree = {{ match.duree_periode }};
+            if (!confirm(`Réinitialiser le chrono à ${duree}:00 ?`)) return;
             callApi({ action: 'reset_period' }).then(res => applyServerChrono(res.chrono));
         }
 
@@ -888,7 +899,7 @@
                     updateUI(res);
                     if (type === 'EXCL' && pId) {
                         document.getElementById('card-' + pId).dataset.exclEnd =
-                            Math.floor(Date.now() / 1000) + 20;
+                            Math.floor(Date.now() / 1000) + dureeExclusion;
                         checkExclusions();
                     }
                     if (type === 'EDA' && pId) {

@@ -1,23 +1,21 @@
+"""
+urls.py — Ajouter la route export_excel aux URL existantes.
+Exemple de fichier urls.py complet pour l'application 'gestion' :
+"""
 from django.urls import path
-from . import views  # C'est cette ligne qui manquait dans l'autre fichier !
+from . import views
 
 urlpatterns = [
-    # Page 1 : Accueil (Création match)
-    path('', views.accueil, name='accueil'),
-    
-    # Page 2 : Composition d'équipe (Nouveau !)
-    path('match/<int:match_id>/compo/', views.compo_equipe, name='compo_equipe'),
-    
-    # Page 3 : Tableau de bord (Match en cours)
-    path('match/<int:match_id>/', views.tableau_bord, name='tableau_bord'),
-    
-    # Action (Clic bouton)
-    path('match/<int:match_id>/action/<int:participation_id>/<str:type_action>/', views.ajouter_action, name='ajouter_action'),
+    path('',                                 views.accueil,           name='accueil'),
+    path('match/<int:match_id>/compo/',      views.compo_equipe,      name='compo_equipe'),
+    path('match/<int:match_id>/dashboard/',  views.dashboard_arbitre, name='dashboard_arbitre'),
+    path('match/<int:match_id>/scoreboard/', views.score_board,       name='score_board'),
+    path('match/<int:match_id>/legacy/',     views.tableau_bord,      name='tableau_bord'),
 
-    path('match/<int:match_id>/arbitre/', views.dashboard_arbitre, name='dashboard_arbitre'),
-    
-    path('api/match/<int:match_id>/', views.api_match_action, name='api_match_action'),
+    # API JSON
+    path('api/match/<int:match_id>/',        views.api_match_action,  name='api_match_action'),
+    path('api/match/<int:match_id>/state/',  views.api_match_state,   name='api_match_state'),
 
-    path('match/<int:match_id>/scoreboard/', views.score_board, name='score_board'),
-    path('api/match/<int:match_id>/state/', views.api_match_state, name='api_match_state'),
+    # Export Excel (feuille de match officielle FFN)
+    path('match/<int:match_id>/export/',     views.export_excel,      name='export_excel'),
 ]
