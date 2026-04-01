@@ -215,6 +215,13 @@ if (isset($_GET['id_match'])) {
   ?>
     </article>
   </section>
+
+  <div style="margin: 20px 0; text-align: center;">
+    <a href="generer_excel.php?id=<?php echo $id_match; ?>" 
+       style="background-color: #28a745; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block; border: 1px solid #1e7e34;">
+       📥 Générer la Feuille de Match Excel
+    </a>
+</div>
   <footer>
     <div class="style_footer">
       <img class="imgfooter" src="images/footer_wave.svg" alt="imgfooter">

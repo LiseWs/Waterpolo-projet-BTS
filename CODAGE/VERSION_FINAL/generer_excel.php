@@ -1,113 +1,99 @@
 <?php
 require 'vendor/autoload.php';
-
 use PhpOffice\PhpSpreadsheet\IOFactory;
-use PhpOffice\PhpSpreadsheet\Spreadsheet;
 
-// 1. Configuration de la base de données (basée sur votre fichier SQL)
+// 1. Configuration de la connexion
 $host = 'localhost';
 $db   = 'site_waterpolo';
 $user = 'odd';
 $pass = 'odd';
-$charset = 'utf8mb4';
-
-$dsn = "mysql:host=$host;dbname=$db;charset=$charset";
-$options = [
-    PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
-    PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-    PDO::ATTR_EMULATE_PREPARES   => false,
-];
 
 try {
-    $pdo = new PDO($dsn, $user, $pass, $options);
+    $pdo = new PDO("mysql:host=$host;dbname=$db;charset=utf8mb4", $user, $pass);
+    $id_match = isset($_GET['id']) ? (int)$_GET['id'] : die("ID Match non spécifié.");
 
-    // 2. Récupération de l'ID du match (ID 3 par défaut selon vos données)
-    $id_match = isset($_GET['id']) ? (int)$_GET['id'] : 3;
-
-    // 3. Requête principale pour les infos du match
+    // 2. Requête ultra-complète pour ne laisser aucune case vide
     $sqlMatch = "SELECT m.*, 
                  ed.nom_equipe AS dom_nom, ev.nom_equipe AS vis_nom,
-                 a.nom_arbitre, a.prenom_arbitre, s.nom_structure
+                 ed.id_equipe AS id_dom, ev.id_equipe AS id_vis,
+                 a.nom_arbitre, a.prenom_arbitre, 
+                 s.nom_structure, s.lieu_structure,
+                 c.nom_championnat, sn.saison
                  FROM matchs m
                  JOIN equipe ed ON m.id_equipe_domicile = ed.id_equipe
                  JOIN equipe ev ON m.id_equipe_visiteur = ev.id_equipe
                  JOIN arbitre a ON m.id_arbitre = a.id_arbitre
                  JOIN structure s ON m.id_structure = s.id_structure
+                 JOIN championnat c ON m.id_championnat = c.id_championnat
+                 JOIN saison sn ON c.id_saison = sn.id_saison
                  WHERE m.id_matchs = ?";
     
     $stmt = $pdo->prepare($sqlMatch);
     $stmt->execute([$id_match]);
-    $matchData = $stmt->fetch();
+    $matchData = $stmt->fetch(PDO::FETCH_ASSOC);
 
-    if (!$matchData) {
-        die("Erreur : Match non trouvé dans la base de données.");
-    }
+    if (!$matchData) die("Match introuvable.");
 
-    // 4. Initialisation du tableur (Charger un template si vous en avez un)
+    // 3. Chargement du template Excel
     $spreadsheet = IOFactory::load("Feuille_de_match_Excel 44.xlsx");
     $sheet = $spreadsheet->getActiveSheet();
-    $sheet->setTitle("Feuille de Match");
 
-    // 5. Remplissage des En-têtes (Positions basées sur votre script de lecture)
-    $sheet->setCellValue('C3', $matchData['dom_nom']);      // Équipe Lion
-    $sheet->setCellValue('C29', $matchData['vis_nom']);     // Équipe Aigle Royal
-    $sheet->setCellValue('AI5', $matchData['date_matchs']); // Date (Cellule AH5/AI5)
-    $sheet->setCellValue('AM5', $matchData['heure_matchs']);// Heure
-    $sheet->setCellValue('AK43', $matchData['nom_arbitre']);// Arbitre
+    // 4. Remplissage des En-têtes (Identité du match)
+    $sheet->setCellValue('C3', $matchData['dom_nom']);          // Équipe Domicile
+    $sheet->setCellValue('C29', $matchData['vis_nom']);         // Équipe Visiteur
+    $sheet->setCellValue('C5', $matchData['nom_championnat']);  // Compétition
+    $sheet->setCellValue('N5', $matchData['lieu_structure']);   // Lieu (Piscine)
+    $sheet->setCellValue('AI5', $matchData['date_matchs']);     // Date
+    $sheet->setCellValue('AM5', $matchData['heure_matchs']);    // Heure
+    $sheet->setCellValue('AK43', $matchData['nom_arbitre'] . " " . $matchData['prenom_arbitre']); // Arbitre principal
 
-    // 6. Fonction pour remplir les joueurs et compter leurs buts
-    function insererJoueurs($pdo, $sheet, $id_match, $id_equipe, $ligneDebut) {
-        $sqlJ = "SELECT id_joueur, nom_joueur, prenom_joueur, numero_licence, annee_naissance 
-                 FROM joueur 
-                 WHERE id_equipe = ?";
+    // 5. Fonction pour remplir les listes de joueurs (Bonnets, Licences, Noms, Buts)
+    function remplirListeJoueurs($pdo, $sheet, $id_match, $id_equipe, $ligneDebut) {
+        $sqlJ = "SELECT * FROM joueur WHERE id_equipe = ? ORDER BY numero_bonnet ASC";
         $stmtJ = $pdo->prepare($sqlJ);
         $stmtJ->execute([$id_equipe]);
-        $joueurs = $stmtJ->fetchAll();
+        $joueurs = $stmtJ->fetchAll(PDO::FETCH_ASSOC);
 
         $ligne = $ligneDebut;
         $scoreTotal = 0;
 
         foreach ($joueurs as $j) {
-            // Comptage des buts pour ce match précis
+            // On compte les buts marqués par ce joueur dans CE match
             $stmtB = $pdo->prepare("SELECT COUNT(*) FROM but WHERE id_joueur = ? AND id_matchs = ?");
             $stmtB->execute([$j['id_joueur'], $id_match]);
-            $nbButs = $stmtB->fetchColumn();
+            $nbButs = (int)$stmtB->fetchColumn();
 
-            // Injection dans les colonnes correspondantes
-            $sheet->setCellValue('B' . $ligne, $j['numero_licence']); // IUF (B)
-            $sheet->setCellValue('C' . $ligne, $j['nom_joueur'] . " " . $j['prenom_joueur']); // Nom (C)
-            $sheet->setCellValue('N' . $ligne, $j['annee_naissance']); // Année (N)
-            $sheet->setCellValue('S' . $ligne, $nbButs > 0 ? $nbButs : 0); // Buts (S)
+            // Injection dans les colonnes du template
+            $sheet->setCellValue('A' . $ligne, $j['numero_bonnet']);   // Bonnet
+            $sheet->setCellValue('B' . $ligne, $j['numero_licence']);  // Licence
+            $sheet->setCellValue('C' . $ligne, strtoupper($j['nom_joueur']) . " " . $j['prenom_joueur']);
+            $sheet->setCellValue('N' . $ligne, $j['annee_naissance']); // Année naissance
+            $sheet->setCellValue('S' . $ligne, $nbButs);               // Buts
 
             $scoreTotal += $nbButs;
             $ligne++;
-            
-            // Limite de la feuille (15 joueurs max par équipe)
-            if ($ligne > ($ligneDebut + 14)) break;
+            if ($ligne > ($ligneDebut + 14)) break; // Limite de 15 joueurs par équipe
         }
         return $scoreTotal;
     }
 
-    // 7. Exécution pour les deux équipes
-    // Zone Domicile : Lignes 9 à 23
-    $totalDom = insererJoueurs($pdo, $sheet, $id_match, $matchData['id_equipe_domicile'], 9);
-    $sheet->setCellValue('AE3', $totalDom); // Score total domicile
+    // 6. Remplissage effectif
+    $totalDom = remplirListeJoueurs($pdo, $sheet, $id_match, $matchData['id_dom'], 9);  // Domicile commence ligne 9
+    $totalVis = remplirListeJoueurs($pdo, $sheet, $id_match, $matchData['id_vis'], 35); // Visiteur commence ligne 35
 
-    // Zone Visiteur : Lignes 35 à 49
-    $totalVis = insererJoueurs($pdo, $sheet, $id_match, $matchData['id_equipe_visiteur'], 35);
-    $sheet->setCellValue('AE5', $totalVis); // Score total visiteur
+    // Scores finaux en haut de page
+    $sheet->setCellValue('AE3', $totalDom);
+    $sheet->setCellValue('AE5', $totalVis);
 
-    // 8. Envoi du fichier pour téléchargement
+    // 7. Sortie du fichier
     header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-    header('Content-Disposition: attachment;filename="Match_' . $id_match . '.xlsx"');
+    header('Content-Disposition: attachment;filename="Feuille_Match_' . $id_match . '.xlsx"');
     header('Cache-Control: max-age=0');
 
     $writer = IOFactory::createWriter($spreadsheet, 'Xlsx');
     $writer->save('php://output');
     exit;
 
-} catch (PDOException $e) {
-    die("Erreur de base de données : " . $e->getMessage());
 } catch (Exception $e) {
-    die("Erreur générale : " . $e->getMessage());
+    die("Erreur technique : " . $e->getMessage());
 }
