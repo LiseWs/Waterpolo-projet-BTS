@@ -38,7 +38,7 @@
         <li class="bouton"><a href="règle_water-polo.php">Réglement</a></li> <!-- Lien vers la page du règlement -->
         <li class="bouton"><a href="affichage_feuille_match.php">Feuille de Match</a></li> <!-- Lien vers la page du affichage feuille de match -->
         <li class="bouton"><a href="upload_match.php">Upload feuille de match dans la BDD</a></li> <!-- Upload de la feuille de match sur la BDD -->
-        <li class="bouton"><a href="generer_excel.php">Exporter</a></li>
+        
       </ul>
     </nav> 
     <article>
