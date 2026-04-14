@@ -1,9 +1,12 @@
+import json
+import os
+from datetime import timedelta
+
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import JsonResponse, HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.utils import timezone
-import json
-from datetime import timedelta
+
 from .models import Match, Equipe, Joueur, Participation, Evenement, ScorePeriode
 
 

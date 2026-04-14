@@ -1,9 +1,7 @@
 <?php
 require_once __DIR__ . '/db.php';
-ini_set('display_errors', 1);
-error_reporting(E_ALL);
-header('Content-Type: application/json');
-$pdo = new PDO('mysql:host=localhost;dbname=site_waterpolo;charset=utf8', 'root', '');
+header('Content-Type: application/json; charset=utf-8');
+$pdo = getPDO();
 $data = json_decode(file_get_contents('php://input'), true);
 
 if (!$data) {

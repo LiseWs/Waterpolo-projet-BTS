@@ -135,12 +135,7 @@ button:hover {
   color: #111827;
   white-space: pre-wrap;
   overflow-y: auto;
-  max-height: 96px;
-}
-
-#goalInfo {
-  max-height: calc(100vh - 300px); /* hauteur max adaptée à ton écran */
-  overflow-y: auto;
+  max-height: calc(100vh - 300px);
   display: flex;
   flex-direction: column;
 }

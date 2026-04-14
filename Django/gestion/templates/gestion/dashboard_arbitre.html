@@ -156,6 +156,34 @@
             50% { text-shadow: 0 0 25px rgba(0, 230, 118, 0.9); }
         }
 
+        /* Shot Clock */
+        .shot-clock-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .shot-clock-label {
+            font-size: 0.55rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 2px;
+            font-weight: 700;
+        }
+        .shot-clock-display {
+            font-family: var(--font-mono);
+            font-size: clamp(2rem, 3.5vw, 2.8rem);
+            font-weight: 900;
+            line-height: 0.9;
+            color: var(--color-penalty);
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+        .shot-clock-display.warning {
+            color: var(--color-danger);
+            animation: pulse-glow 0.5s infinite;
+        }
+
         .period-badge {
             margin-top: 4px;
             background: var(--color-info);
@@ -545,13 +573,6 @@
             filter: grayscale(0.3);
         }
 
-        /* Animation Flash BUT */
-        @keyframes flashGoal {
-            0% { opacity: 1; transform: translate(-50%, -50%) scale(0.8); }
-            20% { opacity: 1; transform: translate(-50%, -50%) scale(1.1); }
-            80% { opacity: 1; }
-            100% { opacity: 0; transform: translate(-50%, -50%) scale(1.3); }
-        }
 
         /* ==========================================================================
            6. RESPONSIVE DESIGN
@@ -602,7 +623,13 @@
             </div>
 
             <div class="chrono-wrapper">
-                <div id="chrono" class="chrono-display" title="Clic = start / pause">--:--</div>
+                <div style="display:flex;align-items:center;gap:20px;">
+                    <div id="chrono" class="chrono-display" title="Clic = start / pause">--:--</div>
+                    <div class="shot-clock-wrapper">
+                        <div class="shot-clock-label">Shot Clock</div>
+                        <div id="shotClock" class="shot-clock-display" title="Clic = reset possession">{{ match.temps_possession }}</div>
+                    </div>
+                </div>
                 <div class="period-badge">
                     Période <span id="periodeDisplay">{{ match.periode_actuelle }}</span> / {{ match.nb_periodes }}
                 </div>
@@ -617,11 +644,6 @@
         <div class="global-controls">
             <button class="ctrl-btn btn-start" onclick="startTimer()"><i class="fas fa-play"></i> Start</button>
             <button class="ctrl-btn btn-stop" onclick="stopTimer()"><i class="fas fa-pause"></i> Stop</button>
-            <div class="ctrl-sep"></div>
-            <button class="ctrl-btn btn-adj" onclick="safeAdjustTime(-60)">-1m</button>
-            <button class="ctrl-btn btn-adj" onclick="safeAdjustTime(-10)">-10s</button>
-            <button class="ctrl-btn btn-adj" onclick="safeAdjustTime(10)">+10s</button>
-            <button class="ctrl-btn btn-adj" onclick="safeAdjustTime(60)">+1m</button>
             <div class="ctrl-sep"></div>
             <a href="{% url 'score_board' match.id %}" target="_blank" class="ctrl-btn btn-tool"><i class="fas fa-tv"></i> Écran</a>
             <a href="{% url 'export_excel' match.id %}" class="ctrl-btn btn-tool"><i class="fas fa-file-excel"></i> Excel</a>
@@ -671,12 +693,6 @@
         <section class="center-section">
             
             <div class="adjust-panel">
-                <div class="adjust-grid">
-                    <button class="adjust-btn" onclick="safeAdjustTime(-10)">-10s</button>
-                    <button class="adjust-btn" onclick="safeAdjustTime(-1)">-1s</button>
-                    <button class="adjust-btn" onclick="safeAdjustTime(1)">+1s</button>
-                    <button class="adjust-btn" onclick="safeAdjustTime(10)">+10s</button>
-                </div>
                 <div class="period-controls">
                     <button class="period-btn next" onclick="nextPeriod()"><i class="fas fa-step-forward"></i> Période Suiv.</button>
                     <button class="period-btn reset" onclick="resetPeriod()"><i class="fas fa-redo"></i> Reset Time</button>
@@ -782,22 +798,63 @@
             requestAnimationFrame(chronoRaf);
         }
 
+        /* --- Shot Clock --- */
+        const SHOT_CLOCK = {{ match.temps_possession|default:30 }};
+        let scValue = SHOT_CLOCK;
+        let scInterval = null;
+        const scEl = document.getElementById('shotClock');
+
+        function scUpdate() {
+            scEl.textContent = scValue;
+            scEl.classList.toggle('warning', scValue <= 5 && scValue > 0);
+        }
+        function scStart() {
+            if (scInterval) return;
+            scInterval = setInterval(() => {
+                if (!C.running) { scStop(); return; }
+                scValue--;
+                if (scValue <= 0) scValue = SHOT_CLOCK; // reset automatique
+                scUpdate();
+            }, 1000);
+        }
+        function scStop() {
+            clearInterval(scInterval);
+            scInterval = null;
+        }
+        function scReset() {
+            scStop();
+            scValue = SHOT_CLOCK;
+            scUpdate();
+            if (C.running) scStart();
+        }
+        scEl.addEventListener('click', scReset);
+        scUpdate();
+
         /* --- Actions Chrono --- */
         async function startTimer() {
             if (C.running || isProcessing) return;
             lockUI(true);
-            try { applyServerChrono((await callApi({ action: 'start_timer' })).chrono); }
+            try { applyServerChrono((await callApi({ action: 'start_timer' })).chrono); scStart(); }
             finally { lockUI(false); }
         }
         async function stopTimer() {
             if (!C.running || isProcessing) return;
             lockUI(true);
-            try { applyServerChrono((await callApi({ action: 'stop_timer' })).chrono); }
+            try { applyServerChrono((await callApi({ action: 'stop_timer' })).chrono); scStop(); }
             finally { lockUI(false); }
         }
-        
-        chronoEl.addEventListener('click', () => { 
-            if (!isProcessing) C.running ? stopTimer() : startTimer(); 
+
+        chronoEl.addEventListener('click', () => {
+            if (!isProcessing) C.running ? stopTimer() : startTimer();
+        });
+
+        // Barre d'espace = start / stop
+        document.addEventListener('keydown', e => {
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+            if (e.code === 'Space') {
+                e.preventDefault();
+                if (!isProcessing) C.running ? stopTimer() : startTimer();
+            }
         });
 
         async function safeAdjustTime(d) {
@@ -964,20 +1021,10 @@
             const el = card && card.closest('.team-section.dom')
                 ? document.getElementById('scoreDom')
                 : document.getElementById('scoreExt');
-                
-            if (el) { 
-                el.classList.add('bump'); 
-                setTimeout(() => el.classList.remove('bump'), 300); 
+            if (el) {
+                el.classList.add('bump');
+                setTimeout(() => el.classList.remove('bump'), 300);
             }
-
-            const d = document.createElement('div');
-            d.style.cssText = 'position:fixed;inset:0;display:flex;align-items:center;justify-content:center;'
-                + 'background:rgba(0,0,0,0.8);font-size:clamp(3rem,8vw,5rem);font-weight:900;'
-                + 'color:var(--color-success);z-index:9999;pointer-events:none;'
-                + 'animation:flashGoal 1.2s forwards;';
-            d.innerHTML = '<i class="fas fa-futbol"></i> &nbsp; BUT !';
-            document.body.appendChild(d);
-            setTimeout(() => d.remove(), 1200);
         }
 
         /* --- API Call --- */
@@ -1000,6 +1047,7 @@
         callApi({ action: 'refresh' }).then(r => {
             applyServerChrono(r.chrono);
             refreshUI(r);
+            if (C.running) scStart();
         }).catch(console.error);
 
     </script>
