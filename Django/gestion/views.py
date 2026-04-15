@@ -46,13 +46,26 @@ def accueil(request):
 
             duree_periode = int(request.POST.get('duree_periode', 8))
 
+            heure_raw = request.POST.get('heure_debut', '').strip()
+            heure_val = None
+            if heure_raw:
+                try:
+                    from datetime import time as dtime
+                    h, m = heure_raw.split(':')
+                    heure_val = dtime(int(h), int(m))
+                except (ValueError, TypeError):
+                    pass
+
             match = Match.objects.create(
                 nom_equipe_domicile=nom_dom,
                 equipe_domicile_origine=eq_dom_obj,
+                couleur_bonnet_dom=request.POST.get('couleur_bonnet_dom', 'BLANC'),
                 nom_equipe_exterieur=nom_ext,
                 equipe_exterieur_origine=eq_ext_obj,
+                couleur_bonnet_ext=request.POST.get('couleur_bonnet_ext', 'BLEU'),
                 lieu=request.POST.get('lieu', 'Piscine'),
                 competition=request.POST.get('competition', ''),
+                heure_debut=heure_val,
                 # Règles
                 duree_periode=duree_periode,
                 nb_periodes=int(request.POST.get('nb_periodes', 4)),
@@ -486,10 +499,7 @@ def api_match_state(request, match_id):
 def export_excel(request, match_id):
     """
     Génère et télécharge la feuille de match officielle FFN en .xlsx.
-    On charge le template fourni et on remplit les cellules identifiées.
-
-    Prérequis : installer openpyxl dans le virtualenv du projet :
-        pip install openpyxl
+    Mapping précis calé sur la structure réelle du template FFN.
     """
     import os
 
@@ -497,49 +507,33 @@ def export_excel(request, match_id):
         from openpyxl import load_workbook
     except ImportError:
         return HttpResponse(
-            "❌ Module manquant : openpyxl\n\n"
-            "Installez-le dans votre virtualenv :\n"
-            "    pip install openpyxl\n\n"
-            "Puis redémarrez le serveur Django.",
+            "❌ Module manquant : openpyxl\n\npip install openpyxl",
             status=500,
             content_type='text/plain; charset=utf-8',
         )
 
     match = get_object_or_404(Match, id=match_id)
 
-    # Chemin vers le template (à placer dans staticfiles ou MEDIA_ROOT)
     template_path = os.path.join(
         os.path.dirname(os.path.dirname(__file__)),
         'static', 'gestion', 'feuille_match_template.xlsx'
     )
-
     if not os.path.exists(template_path):
         return HttpResponse(
-            'Template Excel introuvable. Placez le fichier dans '
-            'static/gestion/feuille_match_template.xlsx',
-            status=500,
-            content_type='text/plain',
+            'Template Excel introuvable : static/gestion/feuille_match_template.xlsx',
+            status=500, content_type='text/plain',
         )
 
     wb = load_workbook(template_path)
-    ws = wb['Feuile de Match']   # note : typo intentionnelle du template
+    ws = wb['Feuile de Match']   # typo intentionnelle du template FFN
 
     def w(row, col, value):
-        """
-        Écrit une valeur dans une cellule du template.
-
-        Le template FFN contient de nombreuses cellules fusionnées.
-        openpyxl rend les cellules secondaires d'une fusion en lecture seule
-        (MergedCell). Cette fonction remonte automatiquement à la cellule
-        maître (coin haut-gauche de la plage fusionnée) si nécessaire.
-        """
+        """Écrit dans une cellule, remonte à la cellule maître si fusionnée."""
         if value is None or value == '':
             return
         from openpyxl.cell.cell import MergedCell
         cell = ws.cell(row=row, column=col)
         if isinstance(cell, MergedCell):
-            # Trouver la plage fusionnée qui contient cette cellule
-            # et écrire dans sa cellule maître (haut-gauche)
             for merged_range in ws.merged_cells.ranges:
                 if (merged_range.min_row <= row <= merged_range.max_row
                         and merged_range.min_col <= col <= merged_range.max_col):
@@ -549,117 +543,119 @@ def export_excel(request, match_id):
                     )
                     break
             else:
-                return  # Cellule fusionnée orpheline, on ignore
+                return
         cell.value = value
 
     # ── Infos générales ──────────────────────────────────────────────────────
-    w(2, 3,  match.nom_equipe_domicile)
-    w(2, 38, match.competition)
-    w(3, 35, match.lieu)
-    if match.date_match:
-        w(4, 35, match.date_match.strftime('%d/%m/%Y'))
+    # Nom équipe 1 : C3 (fusion C3:Q3)
+    w(3, 3,  match.nom_equipe_domicile)
+    # Compétition : AK3 (fusion AK3:AP3)
+    w(3, 37, match.competition)
+    # Lieu : AI4
+    w(4, 35, match.lieu)
+    # Date : AI5 (écrase la formule =TODAY() du template)
+    w(5, 35, match.date_match.strftime('%d/%m/%Y'))
+    # Heure : AN5
     if match.heure_debut:
-        w(4, 40, match.heure_debut.strftime('%H:%M'))
+        w(5, 40, match.heure_debut.strftime('%H:%M'))
+    # Nom équipe 2 : C29 (fusion C29:Q29)
+    w(29, 3, match.nom_equipe_exterieur)
 
-    # ── Secrétaire / Chrono / Juges de but ───────────────────────────────────
-    # Ces infos sont intégrées dans les cellules-libellés du template (ligne 5)
-    if match.secretaire_nom:
-        w(5, 34, f"SECRÉTAIRE : {match.secretaire_nom}")
-    if match.secretaire_iuf:
-        w(5, 38, f"IUF N° : {match.secretaire_iuf}")
-    if match.chrono_nom:
-        w(5, 40, f"CHRONO : {match.chrono_nom}")
-    if match.chrono_iuf:
-        w(5, 45, f"IUF N° : {match.chrono_iuf}")
+    # ── Officiels – haut droite (lignes 8-10) ────────────────────────────────
+    # Ligne 8 : Secrétaire (AH8) + IUF (AN8) | Chrono (AQ8) + IUF (AW8)
+    w(8, 34, f"SECRETAIRE : {match.secretaire_nom}" if match.secretaire_nom else "SECRETAIRE :")
+    w(8, 40, f"IUF N° : {match.secretaire_iuf}" if match.secretaire_iuf else "IUF N° :")
+    w(8, 43, f"CHRONO : {match.chrono_nom}" if match.chrono_nom else "CHRONO :")
+    w(8, 49, f"IUF N° : {match.chrono_iuf}" if match.chrono_iuf else "IUF N° :")
+    # Ligne 9 : règles 30'/20' (AQ9)
+    w(9, 43, f"30' / 20' : {match.temps_possession}'' / {match.duree_exclusion}''")
+    # Ligne 10 : Juge de but 1 (AH10) + IUF (AN10) | Juge de but 2 (AQ10) + IUF (AW10)
+    w(10, 34, f"JUGE DE BUT : {match.juge_but1_nom}" if match.juge_but1_nom else "JUGE DE BUT :")
+    w(10, 40, f"IUF N° : {match.juge_but1_iuf}" if match.juge_but1_iuf else "IUF N° :")
+    w(10, 43, f"JUGE DE BUT : {match.juge_but2_nom}" if match.juge_but2_nom else "JUGE DE BUT :")
+    w(10, 49, f"IUF N° : {match.juge_but2_iuf}" if match.juge_but2_iuf else "IUF N° :")
 
-    if match.juge_but1_nom:
-        w(7, 34, f"JUGE DE BUT : {match.juge_but1_nom}")
-    if match.juge_but1_iuf:
-        w(7, 38, f"IUF N° : {match.juge_but1_iuf}")
-    if match.juge_but2_nom:
-        w(7, 40, f"JUGE DE BUT : {match.juge_but2_nom}")
-    if match.juge_but2_iuf:
-        w(7, 45, f"IUF N° : {match.juge_but2_iuf}")
-
-    # ── Équipe domicile – joueurs (lignes 6 à 20) ────────────────────────────
+    # ── Équipe domicile – joueurs (lignes 9-23, bonnet 1→15) ─────────────────
     joueurs_dom = list(
         Participation.objects.filter(match=match, equipe_concernee='DOM')
         .order_by('numero_bonnet')
     )
-    _fill_players(ws, joueurs_dom, start_row=6, match=match)
+    _fill_players(ws, joueurs_dom, start_row=9, match=match)
 
-    # ── Staff domicile ────────────────────────────────────────────────────────
-    w(21, 18, match.entraineur_dom)
-    w(22, 18, match.entraineur_adj_dom)
-    w(23, 18, match.suppleant_dom)
+    # ── Staff domicile (lignes 24-26, colonne C=3) ────────────────────────────
+    w(24, 3, match.entraineur_dom)
+    w(25, 3, match.entraineur_adj_dom)
+    w(26, 3, match.suppleant_dom)
 
-    # ── Résultats par période ─────────────────────────────────────────────────
+    # ── Temps morts par période ───────────────────────────────────────────────
+    # Équipe DOM : ligne 5, colonnes I-L (9-12)  |  EXT : ligne 31, colonnes I-L
+    tm_dom = {1: 0, 2: 0, 3: 0, 4: 0}
+    tm_ext = {1: 0, 2: 0, 3: 0, 4: 0}
+    for ev in Evenement.objects.filter(match=match, type_action='TM'):
+        p = ev.periode
+        if 1 <= p <= 4:
+            if ev.equipe_attribuee == 'DOM':
+                tm_dom[p] += 1
+            elif ev.equipe_attribuee == 'EXT':
+                tm_ext[p] += 1
+    for p in range(1, 5):
+        if tm_dom[p]:
+            w(5,  8 + p, tm_dom[p])   # I=9, J=10, K=11, L=12
+        if tm_ext[p]:
+            w(31, 8 + p, tm_ext[p])
+
+    # ── Résultats par période (lignes 26-30, col AD=30 DOM / AE=31 EXT) ──────
+    # Attention : la période 3 partage la ligne 29 avec le nom de l'équipe 2
     scores = {sp.numero_periode: sp
-               for sp in ScorePeriode.objects.filter(match=match)}
-    # Résultat final si période non enregistrée
-    final = {'score_dom': match.score_domicile, 'score_ext': match.score_exterieur}
-
-    periode_rows = {1: 23, 2: 24, 3: 25, 4: 26}
-    for p_num, p_row in periode_rows.items():
+              for sp in ScorePeriode.objects.filter(match=match)}
+    score_rows = {1: 26, 2: 27, 3: 29, 4: 30}
+    for p_num, p_row in score_rows.items():
         sp = scores.get(p_num)
         if sp:
             w(p_row, 30, sp.score_dom)
             w(p_row, 31, sp.score_ext)
 
-    # Score final
-    w(22, 30, match.score_domicile)
-    w(22, 31, match.score_exterieur)
+    # Score final – zone « RESULTAT FINAL » (R3C31 DOM, R5C31 EXT)
+    w(3, 31, match.score_domicile)
+    w(5, 31, match.score_exterieur)
 
-    # ── Équipe extérieure – en-tête ────────────────────────────────────────────
-    w(25, 3,  match.nom_equipe_exterieur)
-
-    # ── Équipe extérieure – joueurs (lignes 29 à 43) ──────────────────────────
+    # ── Équipe extérieure – joueurs (lignes 35-49, bonnet 1→15) ──────────────
     joueurs_ext = list(
         Participation.objects.filter(match=match, equipe_concernee='EXT')
         .order_by('numero_bonnet')
     )
-    _fill_players(ws, joueurs_ext, start_row=29, match=match)
+    _fill_players(ws, joueurs_ext, start_row=35, match=match)
 
-    # ── Staff extérieur ────────────────────────────────────────────────────────
-    w(44, 18, match.entraineur_ext)
-    w(45, 18, match.entraineur_adj_ext)
-    w(46, 18, match.suppleant_ext)
+    # ── Staff extérieur (lignes 50-52, colonne C=3) ───────────────────────────
+    w(50, 3, match.entraineur_ext)
+    w(51, 3, match.entraineur_adj_ext)
+    w(52, 3, match.suppleant_ext)
 
-    # ── Délégués & arbitres ────────────────────────────────────────────────────
-    if match.delegue_dom_nom:
-        w(48, 34, match.delegue_dom_nom)
-    if match.delegue_ext_nom:
-        w(49, 34, match.delegue_ext_nom)
-    if match.arbitre1_nom:
-        w(50, 34, match.arbitre1_nom)
-    if match.arbitre1_iuf:
-        w(50, 38, match.arbitre1_iuf)
-    if match.arbitre2_nom:
-        w(51, 34, match.arbitre2_nom)
-    if match.arbitre2_iuf:
-        w(51, 38, match.arbitre2_iuf)
-    if match.delegue_ffn_nom:
-        w(52, 34, match.delegue_ffn_nom)
-    if match.delegue_ffn_iuf:
-        w(52, 38, match.delegue_ffn_iuf)
+    # ── Officiels – signatures (lignes 41-45) ─────────────────────────────────
+    # Noms : col 37 (AK, fusion AK:AS)  |  IUF : col 46 (AT)
+    w(41, 37, match.delegue_dom_nom)
+    w(42, 37, match.delegue_ext_nom)
+    w(43, 37, match.arbitre1_nom)
+    w(43, 46, match.arbitre1_iuf)
+    w(44, 37, match.arbitre2_nom)
+    w(44, 46, match.arbitre2_iuf)
+    w(45, 37, match.delegue_ffn_nom)
+    w(45, 46, match.delegue_ffn_iuf)
 
-    # ── Journal des événements (zone droite, 3 colonnes de 5) ─────────────────
+    # ── Journal des événements (zone droite, 3 colonnes, lignes 13-39) ────────
+    # 3 groupes démarrant aux colonnes 34 (AH), 40 (AN), 46 (AT)
+    # Chaque groupe : TEMPS | B(dom) | N(ext) | CODE | SCORE
+    # Max 27 lignes par groupe (lignes 13-39) avant la section officiels (l.40+)
     events = list(
         Evenement.objects.filter(match=match).order_by('heure_creation')
     )
-    # 3 groupes : (34-38), (40-44), (46-50) — chaque groupe peut tenir ~40 lignes
-    # Ligne de départ des données : ligne 13 (la ligne 12 = en-têtes)
-    groups = [
-        (34, 13),   # cols AH-AL, à partir de la ligne 13
-        (40, 13),   # cols AN-AR
-        (46, 13),   # cols AT-AX
-    ]
-    max_per_group = 35
+    groups = [(34, 13), (40, 13), (46, 13)]
+    max_per_group = 27
 
     for idx, evt in enumerate(events):
         grp_idx = idx // max_per_group
         if grp_idx >= len(groups):
-            break  # Dépasse la capacité du template
+            break
         start_col, start_row = groups[grp_idx]
         row = start_row + (idx % max_per_group)
 
@@ -671,8 +667,7 @@ def export_excel(request, match_id):
         w(row, start_col + 1, dom_b)
         w(row, start_col + 2, ext_b)
         w(row, start_col + 3, evt.type_action)
-        w(row, start_col + 4,
-          f"{evt.score_dom_apres}-{evt.score_ext_apres}")
+        w(row, start_col + 4, f"{evt.score_dom_apres}-{evt.score_ext_apres}")
 
     # ── Sauvegarde en mémoire et envoi HTTP ────────────────────────────────────
     from io import BytesIO
@@ -720,28 +715,33 @@ def _safe_write(ws, row, col, value):
 def _fill_players(ws, joueurs, start_row, match):
     """
     Remplit les lignes de joueurs dans le template.
-    start_row : première ligne de données (6 pour DOM, 29 pour EXT).
+    start_row : première ligne de données (9 pour DOM, 35 pour EXT).
     Les bonnets vont de 1 à 15 ; on place chaque joueur sur la bonne ligne.
-    """
-    # Calcul des buts par joueur
-    buts_map = {}
-    for p in joueurs:
-        buts_map[p.id] = Evenement.objects.filter(
-            match=match, joueur=p, type_action='BUT'
-        ).count()
 
-    # Collecte des exclusions/sanctions par joueur (max 3)
-    events_map = {}
-    for p in joueurs:
-        evts = list(
+    Colonnes par joueur (numérotation openpyxl) :
+      B(2)=Licence  C(3)=Nom Prénom  P(16)=Naissance  Q(17)=X(EDA)
+      R(18)=N°Bonnet  S(19)=Buts
+      Z(26)+AA(27) = Code1+Période1
+      AB(28)+AC(29) = Code2+Période2
+      AD(30)+AE(31) = Code3+Période3
+    """
+    # Buts par joueur
+    buts_map = {
+        p.id: Evenement.objects.filter(match=match, joueur=p, type_action='BUT').count()
+        for p in joueurs
+    }
+
+    # Sanctions par joueur (EXCL, EDA, PENALTY) – max 3 slots dans le template
+    events_map = {
+        p.id: list(
             Evenement.objects.filter(
                 match=match, joueur=p,
-                type_action__in=('EXCL', 'EDA', 'PENALTY', 'FAUTE'),
+                type_action__in=('EXCL', 'EDA', 'PENALTY'),
             ).order_by('heure_creation')[:3]
         )
-        events_map[p.id] = evts
+        for p in joueurs
+    }
 
-    # Indexer les joueurs par numéro de bonnet
     by_bonnet = {p.numero_bonnet: p for p in joueurs}
 
     for bonnet in range(1, 16):
@@ -753,11 +753,16 @@ def _fill_players(ws, joueurs, start_row, match):
         _safe_write(ws, row, 2,  p.numero_licence or '')
         _safe_write(ws, row, 3,  f"{p.nom} {p.prenom}")
         _safe_write(ws, row, 16, p.annee_naissance or '')
+        # Colonne X (17) : marque l'exclusion définitive
+        if p.est_exclu_definitif:
+            _safe_write(ws, row, 17, 'X')
         _safe_write(ws, row, 18, bonnet)
-        _safe_write(ws, row, 19, buts_map.get(p.id, 0) or '')
+        buts = buts_map.get(p.id, 0)
+        if buts:
+            _safe_write(ws, row, 19, buts)
 
-        # Événements joueur (Exclusion, EDA, Penalty…) – 3 colonnes paires
-        code_cols = [(22, 23), (24, 25), (26, 27)]  # (Code, Période)
+        # 3 slots de sanctions : (Code, Période) aux colonnes Z/AA, AB/AC, AD/AE
+        code_cols = [(26, 27), (28, 29), (30, 31)]
         for evt_idx, (col_code, col_per) in enumerate(code_cols):
             player_evts = events_map.get(p.id, [])
             if evt_idx < len(player_evts):

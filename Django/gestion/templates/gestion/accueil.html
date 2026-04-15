@@ -101,7 +101,16 @@
                             </select>
                             <label class="small text-muted mb-1">Ou saisir le nom</label>
                             <input type="text" id="input_domicile" name="input_domicile"
-                                   class="form-control fw-bold" placeholder="Ex: Paris Aquatique" required>
+                                   class="form-control fw-bold mb-2" placeholder="Ex: Paris Aquatique" required>
+                            <label class="small text-muted mb-1">Couleur des bonnets</label>
+                            <select name="couleur_bonnet_dom" class="form-select">
+                                <option value="BLANC" selected>Blanc</option>
+                                <option value="BLEU">Bleu</option>
+                                <option value="NOIR">Noir</option>
+                                <option value="ROUGE">Rouge</option>
+                                <option value="VERT">Vert</option>
+                                <option value="JAUNE">Jaune</option>
+                            </select>
                         </div>
 
                         <div class="col-md-6">
@@ -118,7 +127,16 @@
                             </select>
                             <label class="small text-muted mb-1">Ou saisir le nom</label>
                             <input type="text" id="input_exterieur" name="input_exterieur"
-                                   class="form-control fw-bold" placeholder="Ex: Marseille WP" required>
+                                   class="form-control fw-bold mb-2" placeholder="Ex: Marseille WP" required>
+                            <label class="small text-muted mb-1">Couleur des bonnets</label>
+                            <select name="couleur_bonnet_ext" class="form-select">
+                                <option value="BLANC">Blanc</option>
+                                <option value="BLEU" selected>Bleu</option>
+                                <option value="NOIR">Noir</option>
+                                <option value="ROUGE">Rouge</option>
+                                <option value="VERT">Vert</option>
+                                <option value="JAUNE">Jaune</option>
+                            </select>
                         </div>
                     </div>
 
@@ -135,15 +153,20 @@
                         <div class="param-group">
                             <h6><i class="bi bi-geo-alt-fill"></i> Informations générales</h6>
                             <div class="row g-3">
-                                <div class="col-md-6">
+                                <div class="col-md-5">
                                     <label class="small fw-bold mb-1">Compétition</label>
                                     <input type="text" name="competition"
                                            class="form-control"
                                            placeholder="Ex: Championnat de France N3 Occitanie">
                                 </div>
-                                <div class="col-md-6">
+                                <div class="col-md-4">
                                     <label class="small fw-bold mb-1">Lieu</label>
                                     <input type="text" name="lieu" value="Piscine Municipale"
+                                           class="form-control">
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="small fw-bold mb-1">Heure de début</label>
+                                    <input type="time" name="heure_debut"
                                            class="form-control">
                                 </div>
                             </div>

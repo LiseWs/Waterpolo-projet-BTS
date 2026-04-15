@@ -1,7 +1,9 @@
 {
   "permissions": {
     "allow": [
-      "Bash(venv/Scripts/python.exe -c ':*)"
+      "Bash(venv/Scripts/python.exe -c ':*)",
+      "Bash(python3 -c \"import openpyxl; print\\('openpyxl version:', openpyxl.__version__\\)\")",
+      "Bash(python -c ':*)"
     ]
   }
 }
