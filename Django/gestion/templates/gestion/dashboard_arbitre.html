@@ -644,11 +644,14 @@
         <div class="global-controls">
             <button class="ctrl-btn btn-start" onclick="startTimer()"><i class="fas fa-play"></i> Start</button>
             <button class="ctrl-btn btn-stop" onclick="stopTimer()"><i class="fas fa-pause"></i> Stop</button>
+    
+            <button class="ctrl-btn btn-tool" onclick="connecterAfficheur()" style="background: #e65100; color: white;">
+                <i class="fas fa-usb"></i> Connecter Afficheur
+            </button>
             <div class="ctrl-sep"></div>
-            <a href="{% url 'score_board' match.id %}" target="_blank" class="ctrl-btn btn-tool"><i class="fas fa-tv"></i> Écran</a>
-            <a href="{% url 'export_excel' match.id %}" class="ctrl-btn btn-tool"><i class="fas fa-file-excel"></i> Excel</a>
-        </div>
-    </header>
+             <a href="{% url 'score_board' match.id %}" target="_blank" class="ctrl-btn btn-tool"><i class="fas fa-tv"></i> Écran</a>
+            </div>
+        </header>
 
     <main class="app-main" id="appMain">
 
@@ -784,19 +787,24 @@
 
         const chronoEl = document.getElementById('chrono');
         function chronoRaf() {
-            const t = timeLeft();
-            chronoEl.textContent = fmt(Math.ceil(t));
-            chronoEl.classList.toggle('running', C.running);
-            
-            if (C.running && t <= 0 && !C.alertedEnd) {
-                C.alertedEnd = true;
-                C.running = false; 
-                C.frozenTime = 0; 
-                C.startedAt = null;
-                setTimeout(() => alert('⏰ Temps écoulé !'), 50);
-            }
-            requestAnimationFrame(chronoRaf);
-        }
+    const t = timeLeft();
+    
+    // C'EST CETTE LIGNE QUI FAIT APPARAÎTRE LE CHRONO DE 8 MIN SUR LE SITE :
+    chronoEl.textContent = fmt(Math.ceil(t)); 
+    
+    chronoEl.classList.toggle('running', C.running);
+    
+    // Remarque : Il n'y a PAS de rafraichirAfficheur ici, c'est normal !
+    
+    if (C.running && t <= 0 && !C.alertedEnd) {
+        C.alertedEnd = true;
+        C.running = false; 
+        C.frozenTime = 0; 
+        C.startedAt = null;
+        setTimeout(() => alert('⏰ Temps écoulé !'), 50);
+    }
+    requestAnimationFrame(chronoRaf);
+}
 
         /* --- Shot Clock --- */
         const SHOT_CLOCK = {{ match.temps_possession|default:30 }};
@@ -805,9 +813,13 @@
         const scEl = document.getElementById('shotClock');
 
         function scUpdate() {
-            scEl.textContent = scValue;
-            scEl.classList.toggle('warning', scValue <= 5 && scValue > 0);
-        }
+    // 1. Met à jour le chiffre sur le site web
+    scEl.textContent = scValue;
+    scEl.classList.toggle('warning', scValue <= 5 && scValue > 0);
+    
+    // 2. Envoie le chiffre à l'afficheur physique (Arduino)
+    rafraichirAfficheur(scValue);
+}
         function scStart() {
             if (scInterval) return;
             scInterval = setInterval(() => {
@@ -1042,7 +1054,72 @@
         }
 
         /* --- Initialisation --- */
-        chronoRaf();
+        function chronoRaf() {
+    const t = timeLeft();
+    let tempsSecondes = Math.ceil(t);
+    
+    chronoEl.textContent = fmt(tempsSecondes);
+    chronoEl.classList.toggle('running', C.running);
+    
+    // ❌ Surtout PAS de rafraichirAfficheur ici !
+    
+    if (C.running && t <= 0 && !C.alertedEnd) {
+        C.alertedEnd = true;
+        C.running = false; 
+        C.frozenTime = 0; 
+        C.startedAt = null;
+        setTimeout(() => alert('⏰ Temps écoulé !'), 50);
+    }
+    requestAnimationFrame(chronoRaf);
+}
+
+
+async function rafraichirAfficheur(tempsEnSecondes) {
+    if (writer && tempsEnSecondes !== dernierChiffreEnvoye) {
+        // On transforme le nombre en texte avec un saut de ligne (ex: "30\n")
+        const encoder = new TextEncoder();
+        const data = encoder.encode(tempsEnSecondes + "\n");
+        
+        await writer.write(data);
+        dernierChiffreEnvoye = tempsEnSecondes;
+    }
+}        
+
+/* =========================================================
+           COMMUNICATION USB AVEC L'AFFICHEUR (SHOT CLOCK)
+           ========================================================= */
+        let portSerie = null;
+        let writer = null;
+        let dernierChiffreEnvoye = -1;
+
+        async function connecterAfficheur() {
+            try {
+                portSerie = await navigator.serial.requestPort();
+                await portSerie.open({ baudRate: 115200 });
+                writer = portSerie.writable.getWriter();
+                alert("✅ Afficheur Shot Clock connecté avec succès !");
+                
+                // On envoie la valeur actuelle dès la connexion
+                rafraichirAfficheur(scValue);
+            } catch (e) {
+                console.error("Erreur de connexion série :", e);
+                alert("❌ Échec de la connexion à l'afficheur.");
+            }
+        }
+
+        async function rafraichirAfficheur(tempsEnSecondes) {
+            if (writer && tempsEnSecondes !== dernierChiffreEnvoye) {
+                // On transforme le nombre en texte avec un saut de ligne (ex: "30\n")
+                const encoder = new TextEncoder();
+                const data = encoder.encode(tempsEnSecondes + "\n");
+                await writer.write(data);
+                dernierChiffreEnvoye = tempsEnSecondes;
+            }
+        }
+
+        /* --- Initialisation de la page --- */
+        // C'est cette partie cruciale qui avait disparu !
+        chronoRaf(); // Lance la boucle visuelle du chrono 8 minutes
         checkExclusions();
         callApi({ action: 'refresh' }).then(r => {
             applyServerChrono(r.chrono);
@@ -1051,5 +1128,6 @@
         }).catch(console.error);
 
     </script>
+    
 </body>
 </html>
