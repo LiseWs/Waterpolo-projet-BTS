@@ -871,7 +871,12 @@
             <div class="sep"></div>
 =======
             <button class="ctrl-btn btn-stop" onclick="stopTimer()"><i class="fas fa-pause"></i> Stop</button>
+    
+            <button class="ctrl-btn btn-tool" onclick="connecterAfficheur()" style="background: #e65100; color: white;">
+                <i class="fas fa-usb"></i> Connecter Afficheur
+            </button>
             <div class="ctrl-sep"></div>
+<<<<<<< HEAD
 >>>>>>> ba946aae2cf978a17e824c294d9abef6143932ee
             <a href="{% url 'score_board' match.id %}" target="_blank" class="ctrl-btn btn-tool"><i class="fas fa-tv"></i> Écran</a>
             <div class="sep"></div>
@@ -880,6 +885,11 @@
             </button>
         </div>
     </header>
+=======
+             <a href="{% url 'score_board' match.id %}" target="_blank" class="ctrl-btn btn-tool"><i class="fas fa-tv"></i> Écran</a>
+            </div>
+        </header>
+>>>>>>> 29a6c0981104f6374550eed362f339f7e02693e9
 
     <!-- ════ MODAL FEUILLE DE MATCH ════ -->
     <div class="modal-backdrop" id="feuilleModal" onclick="closeFeuilleModal(event)">
@@ -1092,6 +1102,7 @@
         };
 
         const chronoEl = document.getElementById('chrono');
+<<<<<<< HEAD
         (function chronoRaf() {
             const t = timeLeft();
             chronoEl.textContent = fmt(Math.ceil(t));
@@ -1136,6 +1147,27 @@
             if (!SC.running || SC.startedAt === null) return SC.timeLeft;
             return Math.max(0, SC.timeLeft - (Date.now()/1000 - SC.startedAt));
         }
+=======
+        function chronoRaf() {
+    const t = timeLeft();
+    
+    // C'EST CETTE LIGNE QUI FAIT APPARAÎTRE LE CHRONO DE 8 MIN SUR LE SITE :
+    chronoEl.textContent = fmt(Math.ceil(t)); 
+    
+    chronoEl.classList.toggle('running', C.running);
+    
+    // Remarque : Il n'y a PAS de rafraichirAfficheur ici, c'est normal !
+    
+    if (C.running && t <= 0 && !C.alertedEnd) {
+        C.alertedEnd = true;
+        C.running = false; 
+        C.frozenTime = 0; 
+        C.startedAt = null;
+        setTimeout(() => alert('⏰ Temps écoulé !'), 50);
+    }
+    requestAnimationFrame(chronoRaf);
+}
+>>>>>>> 29a6c0981104f6374550eed362f339f7e02693e9
 
 <<<<<<< HEAD
         function scRender() {
@@ -1217,9 +1249,13 @@
         const scEl = document.getElementById('shotClock');
 
         function scUpdate() {
-            scEl.textContent = scValue;
-            scEl.classList.toggle('warning', scValue <= 5 && scValue > 0);
-        }
+    // 1. Met à jour le chiffre sur le site web
+    scEl.textContent = scValue;
+    scEl.classList.toggle('warning', scValue <= 5 && scValue > 0);
+    
+    // 2. Envoie le chiffre à l'afficheur physique (Arduino)
+    rafraichirAfficheur(scValue);
+}
         function scStart() {
             if (scInterval) return;
             scInterval = setInterval(() => {
@@ -1469,6 +1505,7 @@
             document.getElementById('appMain').classList.toggle('ui-locked', on);
         }
 
+<<<<<<< HEAD
         /* ── Modal Feuille de match ──────────────────────────────────── */
         function openFeuilleModal() {
             // Mettre à jour le score affiché dans la modal
@@ -1511,10 +1548,82 @@
         /* ── Init ────────────────────────────────────────────────────── */
         checkExcl();
         api({ action: 'refresh' }).then(r => {
+=======
+        /* --- Initialisation --- */
+        function chronoRaf() {
+    const t = timeLeft();
+    let tempsSecondes = Math.ceil(t);
+    
+    chronoEl.textContent = fmt(tempsSecondes);
+    chronoEl.classList.toggle('running', C.running);
+    
+    // ❌ Surtout PAS de rafraichirAfficheur ici !
+    
+    if (C.running && t <= 0 && !C.alertedEnd) {
+        C.alertedEnd = true;
+        C.running = false; 
+        C.frozenTime = 0; 
+        C.startedAt = null;
+        setTimeout(() => alert('⏰ Temps écoulé !'), 50);
+    }
+    requestAnimationFrame(chronoRaf);
+}
+
+
+async function rafraichirAfficheur(tempsEnSecondes) {
+    if (writer && tempsEnSecondes !== dernierChiffreEnvoye) {
+        // On transforme le nombre en texte avec un saut de ligne (ex: "30\n")
+        const encoder = new TextEncoder();
+        const data = encoder.encode(tempsEnSecondes + "\n");
+        
+        await writer.write(data);
+        dernierChiffreEnvoye = tempsEnSecondes;
+    }
+}        
+
+/* =========================================================
+           COMMUNICATION USB AVEC L'AFFICHEUR (SHOT CLOCK)
+           ========================================================= */
+        let portSerie = null;
+        let writer = null;
+        let dernierChiffreEnvoye = -1;
+
+        async function connecterAfficheur() {
+            try {
+                portSerie = await navigator.serial.requestPort();
+                await portSerie.open({ baudRate: 115200 });
+                writer = portSerie.writable.getWriter();
+                alert("✅ Afficheur Shot Clock connecté avec succès !");
+                
+                // On envoie la valeur actuelle dès la connexion
+                rafraichirAfficheur(scValue);
+            } catch (e) {
+                console.error("Erreur de connexion série :", e);
+                alert("❌ Échec de la connexion à l'afficheur.");
+            }
+        }
+
+        async function rafraichirAfficheur(tempsEnSecondes) {
+            if (writer && tempsEnSecondes !== dernierChiffreEnvoye) {
+                // On transforme le nombre en texte avec un saut de ligne (ex: "30\n")
+                const encoder = new TextEncoder();
+                const data = encoder.encode(tempsEnSecondes + "\n");
+                await writer.write(data);
+                dernierChiffreEnvoye = tempsEnSecondes;
+            }
+        }
+
+        /* --- Initialisation de la page --- */
+        // C'est cette partie cruciale qui avait disparu !
+        chronoRaf(); // Lance la boucle visuelle du chrono 8 minutes
+        checkExclusions();
+        callApi({ action: 'refresh' }).then(r => {
+>>>>>>> 29a6c0981104f6374550eed362f339f7e02693e9
             applyServerChrono(r.chrono);
             refreshUI(r);
             if (C.running) scStart();
         }).catch(console.error);
     </script>
+    
 </body>
 </html>
