@@ -135,7 +135,6 @@ try {
         'MAX_TIMEOUTS' => $maxTimeouts
     ];
     // Message flash pour l'utilisateur (sera consommé par match_setup.php ou index.php après redirection)
-    if (session_status() !== PHP_SESSION_ACTIVE) session_start();
     $_SESSION['flash'] = ['type' => 'success', 'message' => 'Match créé avec succès — vous pouvez accéder à l\'interface d\'arbitrage.'];
     // Initialise un fichier d'état pour la synchronisation en temps réel
     $dataDir = __DIR__ . '/data';

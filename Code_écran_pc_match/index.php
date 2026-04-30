@@ -590,25 +590,32 @@ button:hover {
       1
      </div>
      <div class="flex flex-col items-center justify-center gap-4">
-        <!-- Chronomètre principal -->
-        <div aria-atomic="true" aria-live="polite" class="text-[#7AC142] font-extrabold text-5xl select-text leading-none" id="timer" style="line-height: 1">
-            08:00
-        </div>
-
-        <!-- Chronomètre de possession -->
-        <div class="mt-4 flex justify-center">
+        <!-- Chronomètres côte à côte : principal + shot clock -->
+        <div class="flex items-end gap-6">
+            <!-- Chronomètre principal -->
             <div class="flex flex-col items-center">
-                <div class="text-[10px] font-bold mb-1" id="possessionLabel">Possession (30s)</div>
-                <div aria-atomic="true" aria-live="polite" class="text-orange-500 font-extrabold text-3xl select-text" id="possessionTimer" style="line-height: 1">
-                    30
-                </div>
-                <div class="flex flex-col space-y-2 mt-2">
-                    <button id="possessionBtn" title="Changer la possession - Réinitialise le chronomètre à 30 secondes" class="bg-black text-white text-xs font-semibold rounded-md py-2 px-8" type="button">Possession</button>
-                    <button id="special20Btn" title="Démarrer un décompte de 20 secondes" class="bg-black text-white text-xs font-semibold rounded-md py-1 px-3 w-24 mx-auto">
-                        20 secondes
-                    </button>
+                <div class="text-[9px] font-bold text-gray-400 uppercase tracking-wider mb-1">Temps de jeu</div>
+                <div aria-atomic="true" aria-live="polite" class="text-[#7AC142] font-extrabold text-5xl select-text leading-none" id="timer" style="line-height: 1">
+                    08:00
                 </div>
             </div>
+            <!-- Séparateur -->
+            <div class="text-gray-200 font-extrabold text-4xl self-center pb-1">|</div>
+            <!-- Shot Clock -->
+            <div class="flex flex-col items-center">
+                <div class="text-[9px] font-bold text-gray-400 uppercase tracking-wider mb-1" id="possessionLabel">Shot Clock (30s)</div>
+                <div aria-atomic="true" aria-live="polite" class="text-orange-500 font-extrabold text-4xl select-text leading-none" id="possessionTimer" style="line-height: 1">
+                    30
+                </div>
+            </div>
+        </div>
+
+        <!-- Contrôles du shot clock -->
+        <div class="flex gap-2 mt-1">
+            <button id="possessionBtn" title="Changer la possession - Réinitialise le shot clock à 30 secondes" class="bg-black text-white text-xs font-semibold rounded-md py-1 px-4" type="button">Possession</button>
+            <button id="special20Btn" title="Démarrer un décompte spécial" class="bg-black text-white text-xs font-semibold rounded-md py-1 px-3">
+                20 sec
+            </button>
         </div>
 
         <!-- Journal d'événements -->
@@ -1165,10 +1172,10 @@ button:hover {
        // === MISE À JOUR DU LABEL DE POSSESSION ===
        // Change le texte et la couleur selon le mode de jeu actuel
        if (gameState.possessionMode === 'special20') {
-           DOM.labels.possession.textContent = CONFIG.SPECIAL_TIME + ' secondes';                   // Mode spécial selon configuration (corner/penalty)
+           DOM.labels.possession.textContent = 'Shot Clock (' + CONFIG.SPECIAL_TIME + 's)';        // Mode spécial selon configuration (corner/penalty)
            DOM.labels.possession.style.color = '#3B82F6';                      // Couleur bleue pour distinguer du mode normal
        } else {
-           DOM.labels.possession.textContent = 'Possession (' + CONFIG.POSSESSION_TIME + 's)';              // Mode normal
+           DOM.labels.possession.textContent = 'Shot Clock (' + CONFIG.POSSESSION_TIME + 's)';             // Mode normal
            DOM.labels.possession.style.color = '#000';                         // Couleur noire par défaut
        }
        
@@ -1654,7 +1661,7 @@ button:hover {
        const idx = playerNumber - 1;
        const chronoTemps = document.getElementById('timer').textContent;
        enregistrerBut({
-           id_match: 3, // Valeur existante pour test
+           id_match: window.idMatchActuel || 0,
            id_joueur: joueurs && joueurs[idx] ? joueurs[idx].id_joueur : null,
            id_equipe: equipe,
            temps_chrono: chronoTemps,
@@ -1745,7 +1752,7 @@ button:hover {
            const idx = playerNumber - 1;
            const chronoTemps = document.getElementById('timer').textContent;
            enregistrerEvenement({
-               id_match: 3, // à remplacer par la sélection dynamique plus tard
+               id_match: window.idMatchActuel || 0,
                id_joueur: joueurs && joueurs[idx] ? joueurs[idx].id_joueur : null,
                id_equipe: equipe,
                type_evenement: 'exclusion',
@@ -1991,7 +1998,6 @@ button:hover {
 
    // Event listeners
    document.addEventListener('DOMContentLoaded', () => {
-       console.log('Initialisation...');
        // Ensure no editable placeholders are visible: clear any pre-rendered player inputs and hide logos until server state confirms values
        try {
            const left = document.getElementById('leftPlayersList'); if (left) left.innerHTML = '';
@@ -2146,9 +2152,7 @@ button:hover {
                  }
              }
          })
-         .catch(err => console.warn('Impossible de charger l'état initial du match :', err));
-
-       console.log('Initialisation terminée');
+         .catch(err => console.warn('Impossible de charger l\'état initial du match :', err));
    });
 
    function startPossessionTimer(duration, mode = 'normal') {
@@ -2257,14 +2261,14 @@ button:hover {
        if (playerNameElem) {
            // Ajouter la classe pour griser et barrer le nom du joueur
            playerNameElem.classList.add('excluded-player');
-           
+
            // Ajouter une bordure rouge autour du nom
-           playerInput.style.border = '2px solid red';
-           playerInput.style.borderRadius = '4px';
-           playerInput.style.padding = '2px 4px';
+           playerNameElem.style.border = '2px solid red';
+           playerNameElem.style.borderRadius = '4px';
+           playerNameElem.style.padding = '2px 4px';
 
            // Ajouter un tooltip pour indiquer que le joueur est exclu définitivement
-           playerInput.title = "Joueur exclu définitivement (Carton Rouge)";
+           playerNameElem.title = "Joueur exclu définitivement (Carton Rouge)";
 
            // Marquer visuellement la ligne du joueur comme exclue définitivement
            const playerRow = document.querySelector(`#${equipe === 1 ? 'leftPlayersList' : 'rightPlayersList'} div:nth-child(${playerNumber})`);
@@ -2475,23 +2479,11 @@ button:hover {
 
 
    function updatePlayerIndicators(equipe, playerNumber, type, count = null) {
-       console.log('updatePlayerIndicators called:', equipe, playerNumber, type, count);
-       
-       // Utiliser les attributs data pour trouver la ligne du joueur de manière fiable
        const playerControls = document.querySelector(`[data-player="${playerNumber}"][data-team="${equipe}"]`);
-       if (!playerControls) {
-           console.log('Player controls not found for player', playerNumber, 'team', equipe);
-           return;
-       }
-       
-       // Le parent direct des player-controls est la ligne du joueur
+       if (!playerControls) return;
+
        const playerRow = playerControls.parentElement;
-       if (!playerRow) {
-           console.log('Player row not found');
-           return;
-       }
-       
-       console.log('Found playerRow for player', playerNumber, 'team', equipe, playerRow);
+       if (!playerRow) return;
 
        // Initialiser ou récupérer les données du joueur
        const teamKey = equipe === 1 ? 'team1' : 'team2';
@@ -2597,18 +2589,6 @@ button:hover {
        badges.forEach(badge => {
            badgesContainer.appendChild(badge);
        });
-       
-       // Debug
-       console.log(`Tentative création badges pour joueur ${playerNumber} équipe ${equipe}`);
-       console.log(`PlayerData:`, playerData);
-       console.log(`Badges créés:`, badges.length);
-       console.log(`BadgesContainer:`, badgesContainer);
-       
-       if (badges.length > 0) {
-           console.log(`✅ ${badges.length} badge(s) ajouté(s) pour joueur ${playerNumber} équipe ${equipe}`);
-       } else {
-           console.log(`❌ Aucun badge créé pour joueur ${playerNumber} équipe ${equipe}`);
-       }
 
        // Gestion de l'exclusion définitive (nom barré)
        const playerNameInput = playerRow.querySelector('.player-name');
@@ -2642,15 +2622,6 @@ button:hover {
                button.classList.remove('opacity-50');
            });
        }
-   }
-
-
-
-   function startPossessionTimer(duration, mode = 'normal') {
-       gameState.possessionMode = mode;
-       gameState.possessionTimer = duration;
-       gameState.isPossessionRunning = true;
-       updateDisplay();
    }
 
 
@@ -2771,52 +2742,13 @@ button:hover {
        if (s.team2Logo && team2Logo) team2Logo.src = s.team2Logo;
    }
 
-       // Créer le bouton de modification qui sera caché initialement
-       const editButton = document.createElement('button');
-       editButton.innerHTML = '✎';
-       editButton.className = 'edit-team-button';
-       editButton.style.display = 'none';
-       editButton.style.marginLeft = 'auto'; // Pousse le bouton à droite
-       editButton.style.padding = '4px 8px';
-       editButton.style.border = 'none';
-       editButton.style.borderRadius = '4px';
-       editButton.style.backgroundColor = '#f3f4f6';
-       editButton.style.cursor = 'pointer';
-       container.appendChild(editButton);
-
-       // Modifier le style du conteneur pour utiliser flexbox
-       container.style.display = 'flex';
-       container.style.alignItems = 'center';
-       container.style.gap = '8px';
-
-       // Editing of team names is disabled on the referee view. Any select/change behavior is intentionally inert.
-       // select.addEventListener('change', ...) removed to enforce display-only policy.
-
-       // Ajouter un écouteur d'événement pour le bouton de modification
-       editButton.addEventListener('click', function() {
-           // Afficher le select, cacher l'input et le bouton
-           select.style.display = 'block';
-           input.style.display = 'none';
-           this.style.display = 'none';
-       });
-
-       console.log('✅ Menu déroulant mis à jour avec succès');
-   }
-
-   // Charger les équipes au démarrage
-   document.addEventListener('DOMContentLoaded', () => {
-       console.log('DOM chargé');
-       // Les équipes sont fixées depuis match_setup.php ; aucun chargement de sélection dynamique n'est nécessaire.
-   });
 
    // Fonction pour charger les joueurs du match (depuis la session / match en cours)
    function loadPlayers() {
-       // Fetch players for current match only; do not invent players or create placeholders.
        const url = 'recuperer_joueurs.php' + (window.currentMatchId ? '?matchId=' + encodeURIComponent(window.currentMatchId) : '');
        fetch(url)
            .then(response => response.json())
            .then(data => {
-               console.log('recuperer_joueurs response:', data);
                const joueurs1 = Array.isArray(data.equipe1) ? data.equipe1 : [];
                const joueurs2 = Array.isArray(data.equipe2) ? data.equipe2 : [];
 
@@ -2889,16 +2821,7 @@ button:hover {
 
    // Note : La sélection d'équipe a été supprimée. Les équipes et compositions sont fournies par match_setup.php (source unique).
 
-   // Charger les joueurs au démarrage
-   document.addEventListener('DOMContentLoaded', () => {
-       // Charger les joueurs de l'équipe 1 (TNC)
-       chargerJoueurs(1, 1);
-       // Charger les joueurs de l'équipe 2 (première équipe par défaut)
-       chargerJoueurs(2, 2);
-   });
-
    function enregistrerEvenement(evenement) {
-       console.log('Envoi événement:', evenement); // Log pour débogage
        fetch('enregistrer_evenement.php', {
            method: 'POST',
            headers: { 'Content-Type': 'application/json' },
@@ -2906,7 +2829,6 @@ button:hover {
        })
        .then(res => res.json())
        .then(data => {
-           console.log('Réponse enregistrer_evenement.php:', data); // Log pour débogage
            if (!data.success) {
                console.error('Erreur enregistrement événement:', data.error);
            }
@@ -2915,7 +2837,6 @@ button:hover {
    }
 
 function enregistrerBut(but) {
-    console.log('Envoi but:', but); // Log pour débogage
     fetch('enregistrer_but.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -2923,7 +2844,6 @@ function enregistrerBut(but) {
     })
     .then(res => res.json())
     .then(data => {
-        console.log('Réponse enregistrer_but.php:', data); // Log pour débogage
         if (!data.success) {
             console.error('Erreur enregistrement but:', data.error);
         }

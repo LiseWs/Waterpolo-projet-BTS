@@ -139,6 +139,34 @@
             50%      { text-shadow: 0 0 22px rgba(34,197,94,.9); }
         }
 
+        /* Shot Clock */
+        .shot-clock-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .shot-clock-label {
+            font-size: 0.55rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 2px;
+            font-weight: 700;
+        }
+        .shot-clock-display {
+            font-family: var(--font-mono);
+            font-size: clamp(2rem, 3.5vw, 2.8rem);
+            font-weight: 900;
+            line-height: 0.9;
+            color: var(--color-penalty);
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+        .shot-clock-display.warning {
+            color: var(--color-danger);
+            animation: pulse-glow 0.5s infinite;
+        }
+
         .period-badge {
             background: var(--info);
             padding: 2px 10px;
@@ -735,8 +763,18 @@
             font-size: 0.75rem;
         }
 
+<<<<<<< HEAD
         /* UI lock */
         .ui-locked { opacity: .5; pointer-events: none; }
+=======
+        /* Verrouillage de l'UI pendant les requêtes */
+        .ui-locked {
+            opacity: 0.5;
+            pointer-events: none;
+            filter: grayscale(0.3);
+        }
+
+>>>>>>> ba946aae2cf978a17e824c294d9abef6143932ee
 
         /* ==========================================================================
            RESPONSIVE
@@ -779,6 +817,7 @@
                 </button>
             </div>
 
+<<<<<<< HEAD
             <script>
                 function exportExcel() {
                     window.location.href = "generer_excel.php";
@@ -786,6 +825,16 @@
             </script>
             <div class="chrono-wrap">
                 <div id="chrono" class="chrono-display" title="Clic ou Espace = start/pause">--:--</div>
+=======
+            <div class="chrono-wrapper">
+                <div style="display:flex;align-items:center;gap:20px;">
+                    <div id="chrono" class="chrono-display" title="Clic = start / pause">--:--</div>
+                    <div class="shot-clock-wrapper">
+                        <div class="shot-clock-label">Shot Clock</div>
+                        <div id="shotClock" class="shot-clock-display" title="Clic = reset possession">{{ match.temps_possession }}</div>
+                    </div>
+                </div>
+>>>>>>> ba946aae2cf978a17e824c294d9abef6143932ee
                 <div class="period-badge">
                     P<span id="periodeDisplay">{{ match.periode_actuelle }}</span>/{{ match.nb_periodes }}
                 </div>
@@ -812,6 +861,7 @@
 
         <div class="ctrl-bar">
             <button class="ctrl-btn btn-start" onclick="startTimer()"><i class="fas fa-play"></i> Start</button>
+<<<<<<< HEAD
             <button class="ctrl-btn btn-stop"  onclick="stopTimer()"><i class="fas fa-pause"></i> Stop</button>
             <div class="sep"></div>
             <button class="ctrl-btn btn-adj" onclick="safeAdj(-60)">−1m</button>
@@ -819,6 +869,10 @@
             <button class="ctrl-btn btn-adj" onclick="safeAdj(10)">+10s</button>
             <button class="ctrl-btn btn-adj" onclick="safeAdj(60)">+1m</button>
             <div class="sep"></div>
+=======
+            <button class="ctrl-btn btn-stop" onclick="stopTimer()"><i class="fas fa-pause"></i> Stop</button>
+            <div class="ctrl-sep"></div>
+>>>>>>> ba946aae2cf978a17e824c294d9abef6143932ee
             <a href="{% url 'score_board' match.id %}" target="_blank" class="ctrl-btn btn-tool"><i class="fas fa-tv"></i> Écran</a>
             <div class="sep"></div>
             <button class="ctrl-btn btn-feuille" onclick="openFeuilleModal()">
@@ -935,6 +989,7 @@
             </div>
         </section>
 
+<<<<<<< HEAD
         <!-- CENTRE -->
         <section class="center-col">
             <div class="adj-panel">
@@ -947,6 +1002,14 @@
                 <div class="period-btns">
                     <button class="p-btn next"  onclick="nextPeriod()"><i class="fas fa-step-forward"></i> Période suiv.</button>
                     <button class="p-btn reset" onclick="resetPeriod()"><i class="fas fa-redo"></i> Reset</button>
+=======
+        <section class="center-section">
+            
+            <div class="adjust-panel">
+                <div class="period-controls">
+                    <button class="period-btn next" onclick="nextPeriod()"><i class="fas fa-step-forward"></i> Période Suiv.</button>
+                    <button class="period-btn reset" onclick="resetPeriod()"><i class="fas fa-redo"></i> Reset Time</button>
+>>>>>>> ba946aae2cf978a17e824c294d9abef6143932ee
                 </div>
             </div>
 
@@ -1074,6 +1137,7 @@
             return Math.max(0, SC.timeLeft - (Date.now()/1000 - SC.startedAt));
         }
 
+<<<<<<< HEAD
         function scRender() {
             const t = scTimeLeft();
             const rounded = Math.ceil(t);
@@ -1145,6 +1209,68 @@
             finally { lock(false); }
         }
         async function safeAdj(d) {
+=======
+        /* --- Shot Clock --- */
+        const SHOT_CLOCK = {{ match.temps_possession|default:30 }};
+        let scValue = SHOT_CLOCK;
+        let scInterval = null;
+        const scEl = document.getElementById('shotClock');
+
+        function scUpdate() {
+            scEl.textContent = scValue;
+            scEl.classList.toggle('warning', scValue <= 5 && scValue > 0);
+        }
+        function scStart() {
+            if (scInterval) return;
+            scInterval = setInterval(() => {
+                if (!C.running) { scStop(); return; }
+                scValue--;
+                if (scValue <= 0) scValue = SHOT_CLOCK; // reset automatique
+                scUpdate();
+            }, 1000);
+        }
+        function scStop() {
+            clearInterval(scInterval);
+            scInterval = null;
+        }
+        function scReset() {
+            scStop();
+            scValue = SHOT_CLOCK;
+            scUpdate();
+            if (C.running) scStart();
+        }
+        scEl.addEventListener('click', scReset);
+        scUpdate();
+
+        /* --- Actions Chrono --- */
+        async function startTimer() {
+            if (C.running || isProcessing) return;
+            lockUI(true);
+            try { applyServerChrono((await callApi({ action: 'start_timer' })).chrono); scStart(); }
+            finally { lockUI(false); }
+        }
+        async function stopTimer() {
+            if (!C.running || isProcessing) return;
+            lockUI(true);
+            try { applyServerChrono((await callApi({ action: 'stop_timer' })).chrono); scStop(); }
+            finally { lockUI(false); }
+        }
+
+        chronoEl.addEventListener('click', () => {
+            if (!isProcessing) C.running ? stopTimer() : startTimer();
+        });
+
+        // Barre d'espace = start / stop
+        document.addEventListener('keydown', e => {
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+            if (e.code === 'Space') {
+                e.preventDefault();
+                if (!isProcessing) C.running ? stopTimer() : startTimer();
+            }
+        });
+
+        async function safeAdjustTime(d) {
+>>>>>>> ba946aae2cf978a17e824c294d9abef6143932ee
             if (isProcessing) return;
             lock(true);
             try { applyServerChrono((await api({ action: 'adjust_time', delta: d })).chrono); }
@@ -1312,9 +1438,27 @@
         }
         setInterval(checkExcl, 400);
 
+<<<<<<< HEAD
         /* ── API ─────────────────────────────────────────────────────── */
         const api = payload => fetch('/api/match/' + matchId + '/', {
             method:  'POST',
+=======
+        /* --- Effet visuel lors d'un but --- */
+        function flashBut(pId) {
+            const card = document.getElementById('card-' + pId);
+            const el = card && card.closest('.team-section.dom')
+                ? document.getElementById('scoreDom')
+                : document.getElementById('scoreExt');
+            if (el) {
+                el.classList.add('bump');
+                setTimeout(() => el.classList.remove('bump'), 300);
+            }
+        }
+
+        /* --- API Call --- */
+        const callApi = data => fetch('/api/match/' + matchId + '/', {
+            method: 'POST',
+>>>>>>> ba946aae2cf978a17e824c294d9abef6143932ee
             headers: { 'Content-Type': 'application/json' },
             body:    JSON.stringify(payload),
         }).then(r => r.json());
@@ -1369,6 +1513,7 @@
         api({ action: 'refresh' }).then(r => {
             applyServerChrono(r.chrono);
             refreshUI(r);
+            if (C.running) scStart();
         }).catch(console.error);
     </script>
 </body>
