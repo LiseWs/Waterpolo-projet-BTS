@@ -1,0 +1,240 @@
+/* Applique la boîte de dimensionnement border-box à tous les éléments */
+* {
+  box-sizing: border-box; /* Définit le modèle de boîte pour inclure les bordures et le padding dans la largeur et la hauteur */
+}
+
+body {
+  background-color: rgb(255, 255, 255); /* Définit la couleur de fond du body en blanc */
+  margin: 0; /* Enlève les marges par défaut */
+  padding: 0; /* Enlève le padding par défaut */
+}
+
+.bordure {
+  padding-top: 60px; /* Ajoute un padding en haut de 60px */
+}
+
+header {
+  background-color: #D7D5D5; /* Définit la couleur de fond du header */
+  padding: 10px; /* Ajoute un padding de 10px tout autour */
+  text-align: left; /* Aligne le texte à gauche */
+  font-size: 30px; /* Définit la taille de police à 30px */
+  color: rgb(0, 0, 0); /* Définit la couleur du texte en noir */
+}
+
+.logo {
+  width: 200px; /* Définit la largeur de l'image à 200px */
+  height: auto; /* Ajuste automatiquement la hauteur pour garder les proportions */
+  margin-left: 15px; /* Ajoute une marge de 15px à gauche */
+}
+
+section {
+  display: flex; /* Définit l'affichage des sections en flexbox */
+}
+
+@media (max-width: 600px) {
+  section {
+    flex-direction: column; /* Change l'orientation des sections en colonne pour les écrans de moins de 600px de largeur */
+  }
+}
+
+.wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh; /* Hauteur écran complet */
+  background-color: #f5f9fc; /* Optionnel : fond doux */
+}
+
+
+
+nav {
+  flex: 0 0 250px; /* Définit la flexibilité à 20% de la largeur de son conteneur */
+  background: #ffffff; /* Définit la couleur de fond en blanc */
+  padding: 20px; /* Ajoute un padding de 20px tout autour */
+  text-align: center; /* Centre le texte à l'intérieur de l'élément */
+}
+
+nav ul {
+  list-style-type: none; /* Enlève les puces de la liste */
+  padding: 30px; /* Ajoute un padding de 30px tout autour */
+}
+
+.bouton {
+  margin-bottom: 15px; /* Ajoute une marge de 15px en bas */
+}
+
+.bouton a {
+  background-color: #ff9a03; /* Définit la couleur de fond du lien en orange */
+  color: #fff; /* Définit la couleur du texte en blanc */
+  padding: 15px 25px; /* Ajoute un padding de 15px en haut/bas et 25px gauche/droite */
+  text-align: center; /* Centre le texte */
+  text-decoration: none; /* Enlève la décoration du texte (soulignement) */
+  display: inline-block; /* Définit le lien en tant que bloc en ligne */
+  font-size: 20px; /* Définit la taille de la police à 20px */
+  border-radius: 10px; /* Arrondit les coins avec un rayon de 10px */
+  width: 100%; /* Définit la largeur à 100% du conteneur parent */
+  box-sizing: border-box; /* Utilise le modèle de boîte border-box */
+  transition: background-color 0.3s ease; /* Ajoute une transition douce pour le changement de couleur de fond */
+  box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.1), 0 6px 20px 0 rgba(0, 0, 0, 0.19); /* Ajoute des ombres au bouton */
+}
+
+.bouton a:hover {
+  background-color: #e68a00; /* Change la couleur de fond en une teinte plus foncée d'orange quand le lien est survolé */
+}
+
+.bouton a:active {
+  background-color: #cc7a00; /* Change la couleur de fond en une teinte encore plus foncée d'orange quand le lien est cliqué */
+}
+
+article {
+  flex: 0 0 80%; /* Définit la flexibilité à 80% de la largeur de son conteneur */
+  background-color: #f1f1f1; /* Définit la couleur de fond en gris clair */
+}
+
+.date_match {
+  text-align: center; /* Centre le texte */
+  padding-top: 10px; /* Ajoute un padding de 10px en haut */
+  color: rgb(162, 19, 27); /* Définit la couleur du texte en rouge foncé */
+}
+
+footer {
+  background-color: #ffffff; /* Définit la couleur de fond en blanc */
+  padding: 0%; /* Enlève le padding */
+  text-align: center; /* Centre le texte */
+  color: white; /* Définit la couleur du texte en blanc */
+}
+
+.style_footer {
+  background-color: #ffffff; /* Définit la couleur de fond en blanc */
+}
+
+.imgfooter {
+  display: block; /* Affiche l'élément en tant que bloc */
+  width: 100%; /* Définit la largeur à 100% du conteneur parent */
+  height: auto; /* Ajuste automatiquement la hauteur pour garder les proportions */
+  margin: 0; /* Enlève les marges */
+  padding: 0; /* Enlève le padding */
+}
+
+.match {
+  /* Classe vide pour .match */
+}
+
+.bordure_match {
+  border: 1px solid rgb(166, 164, 164); /* Ajoute une bordure de 1px de couleur gris clair */
+}
+
+.lien_cli:link,
+.lien_cli:hover,
+.lien_cli:visited,
+.lien_cli:active {
+  color: inherit; /* Hérite de la couleur du texte parent */
+  text-decoration: none; /* Enlève la décoration du texte (soulignement) */
+}
+
+.Date_m {
+  /* Classe vide pour .Date_m */
+}
+
+.logo {
+  border-radius: 10px; /* Arrondit les coins avec un rayon de 10px */
+  text-align: center; /* Centre le texte */
+}
+
+.style_equipe {
+  text-align: center; /* Centre le texte */
+  margin: 10px; /* Ajoute une marge de 10px tout autour */
+  font-size: 40px; /* Définit la taille de la police à 40px */
+  font-weight: bold; /* Définit le texte en gras */
+}
+
+.titre_rh1 {
+  text-align: center; /* Centre le texte */
+  font-size: 50px; /* Définit la taille de la police à 50px */
+  margin-top: 10px; /* Ajoute une marge de 10px en haut */
+}
+
+.para_r {
+  font-size: 20px; /* Définit la taille de la police à 20px */
+  margin: 20px; /* Ajoute une marge de 20px tout autour */
+}
+
+.titre_r {
+  margin: 10px; /* Ajoute une marge de 10px tout autour */
+}
+
+.style_resultat_e {
+  text-align: center; /* Centre le texte */
+  font-size: 50px; /* Définit la taille de la police à 50px */
+  margin-top: 50px; /* Ajoute une marge de 50px en haut */
+  text-indent: -70px; /* Indente le texte de -70px */
+}
+
+.vd {
+  text-align: center; /* Centre le texte */
+  font-size: 50px; /* Définit la taille de la police à 50px */
+  margin-top: 50px; /* Ajoute une marge de 50px en haut */
+  text-indent: -70px; /* Indente le texte de -70px */
+}
+
+.titre_ddm {
+  text-align: center; /* Centre le texte */
+  padding-top: 10px; /* Ajoute un padding de 10px en haut */
+  margin-bottom: 30px; /* Ajoute une marge de 30px en bas */
+  font-size: 60px; /* Définit la taille de la police à 60px */
+  color: black; /* Définit la couleur du texte en noir */
+}
+
+.tt {
+  font-size: 32px; /* Définit la taille de la police à 32px */
+}
+
+.table-content {
+  font-size: 23px; /* Définit la taille de la police à 23px */
+}
+
+.ddm_equipe {
+  text-align: center; /* Centre le texte */
+  font-size: 30px; /* Définit la taille de la police à 30px */
+}
+
+.arbitre {
+  padding-top: 30px; /* Ajoute un padding de 30px en haut */
+  text-align: center; /* Centre le texte */
+  font-size: 32px; /* Définit la taille de la police à 32px */
+  color: dodgerblue; /* Définit la couleur du texte en bleu clair */
+}
+
+.structure {
+  padding-top: 30px; /* Ajoute un padding de 30px en haut */
+  font-size: 30px; /* Définit la taille de la police à 30px */
+  margin: 20px; /* Ajoute une marge de 20px tout autour */
+}
+
+.logo_eq {
+  width: 200px; /* Définit la largeur de l'image à 200px */
+  display: block; /* Affiche l'image en tant que bloc */
+  margin-left: auto; /* Centre l'image horizontalement (à gauche) */
+  margin-right: auto; /* Centre l'image horizontalement (à droite) */
+  max-width: 100%; /* Définit la largeur maximale à 100% du conteneur parent */
+  height: auto; /* Ajuste automatiquement la hauteur pour garder les proportions */
+  border-radius: 10px; /* Arrondit les coins avec un rayon de 10px */
+}
+
+.images_equipe {
+  padding-top: 30px; /* Ajoute un padding de 30px en haut */
+}
+
+.message-success {
+  margin: 20px auto;
+  padding: 15px 25px;
+  max-width: 600px;
+  background-color: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
+  border-radius: 10px;
+  font-size: 18px;
+  font-weight: 500;
+  text-align: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
