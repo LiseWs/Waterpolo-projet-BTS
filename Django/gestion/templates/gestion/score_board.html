@@ -3,497 +3,382 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>WATERPOLO LIVE</title>
+<title>{{ match.nom_equipe_domicile }} vs {{ match.nom_equipe_exterieur }} — LIVE</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:ital,wght@0,400;0,600;0,700;0,900;1,700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@400;600;700;900&display=swap" rel="stylesheet">
 <style>
-/* ═══════════════════════════════════════════════════
-   DESIGN SYSTEM — street / water-polo / Nike energy
-   ═══════════════════════════════════════════════════ */
 :root {
-  --bg:      #050810;
-  --bg2:     #0a0f1e;
-  --bg3:     #0e1528;
-  --w:       #ffffff;
-  --w60:     rgba(255,255,255,.6);
-  --w20:     rgba(255,255,255,.2);
-  --w08:     rgba(255,255,255,.08);
-  --cyan:    #00d4ff;
-  --cyan40:  rgba(0,212,255,.4);
-  --cyan10:  rgba(0,212,255,.1);
-  --red:     #ff1744;
-  --red40:   rgba(255,23,68,.4);
-  --gold:    #ffc400;
-  --orange:  #ff6b00;
-  --green:   #00e676;
+  --bg:    #050810;
+  --bg2:   #080d1c;
+  --panel: rgba(255,255,255,.035);
+  --bord:  rgba(255,255,255,.08);
 
-  --font-main: 'Bebas Neue', sans-serif;
-  --font-sub:  'Barlow Condensed', sans-serif;
+  --dom:      #ffffff;
+  --ext:      #00d4ff;
+  --ext-glow: rgba(0,212,255,.45);
 
-  /* fluid sizes */
-  --sc-h:   clamp(56px, 10vh, 110px);   /* score */
-  --nm-h:   clamp(1rem, 2.2vw, 3.2rem); /* team name */
-  --ch-h:   clamp(3rem, 7vw, 9rem);     /* chrono */
-  --shot-h: clamp(2rem, 4vw, 5rem);     /* shot clock */
-  --pd-h:   clamp(.7rem, 1vw, 1.4rem);  /* period label */
-  --cell-r: clamp(4px, .5vw, 10px);
-  --cell-g: clamp(2px, .35vw, 7px);
-  --lbl-h:  clamp(.65rem, .9vw, 1.4rem);
-  --tm-dot: clamp(7px, 1.1vw, 18px);
+  --stop:   #ff6b2b;
+  --run:    #00d4ff;
+  --gold:   #ffc400;
+  --orange: #ff8c00;
+  --red:    #ff1744;
+
+  --f-main: 'Bebas Neue', Impact, sans-serif;
+  --f-sub:  'Barlow Condensed', 'Arial Narrow', sans-serif;
+
+  --top-h:    clamp(30px,4vh,46px);
+  --score-sz: clamp(4rem,10vw,12rem);
+  --name-sz:  clamp(.9rem,2.2vw,3rem);
+  --ch-sz:    clamp(3rem,8vw,10rem);
+  --shot-sz:  clamp(1.8rem,3.5vw,4.5rem);
+  --per-sz:   clamp(.6rem,1vw,1.3rem);
+  --cell-r:   clamp(4px,.5vw,10px);
+  --cell-g:   clamp(2px,.35vw,7px);
+  --tm-dot:   clamp(7px,1.1vw,18px);
 }
 
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
 html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);}
 
 body{
-  font-family:var(--font-sub);
-  color:var(--w);
+  font-family:var(--f-sub);color:#fff;
   display:grid;
-  grid-template-rows: 1fr auto auto;  /* main | players | sponsors */
+  grid-template-rows:var(--top-h) 1fr auto auto;
   height:100vh;
-  position:relative;
 }
 
-/* ── Noise texture overlay ── */
+/* Ambient bg */
 body::before{
   content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
-  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='.04'/%3E%3C/svg%3E");
-  background-size:200px;
-  opacity:.5;
+  background:
+    radial-gradient(ellipse 60% 50% at 15% 15%,rgba(0,100,200,.06) 0%,transparent 100%),
+    radial-gradient(ellipse 50% 60% at 85% 80%,rgba(0,212,255,.04) 0%,transparent 100%),
+    url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.03'/%3E%3C/svg%3E");
+  background-size:auto,auto,200px;
 }
 
-/* ── Ambient glows ── */
-.glow-dom{
-  position:fixed;top:0;left:0;width:40vw;height:60vh;
-  background:radial-gradient(ellipse at 20% 30%, rgba(0,180,255,.07) 0%, transparent 70%);
-  pointer-events:none;z-index:0;
+/* ── TOP BAR ─────────────────────────────────────────── */
+.top-bar{
+  position:relative;z-index:5;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 clamp(12px,2vw,40px);gap:16px;
+  background:rgba(5,8,20,.96);
+  border-bottom:1px solid rgba(0,212,255,.15);
 }
-.glow-ext{
-  position:fixed;top:0;right:0;width:40vw;height:60vh;
-  background:radial-gradient(ellipse at 80% 30%, rgba(0,212,255,.05) 0%, transparent 70%);
-  pointer-events:none;z-index:0;
+.top-bar::after{
+  content:'';position:absolute;bottom:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(0,212,255,.4),transparent);
+}
+.competition-name{
+  font-weight:700;font-size:clamp(.5rem,.85vw,1rem);
+  letter-spacing:3px;text-transform:uppercase;
+  color:rgba(255,255,255,.6);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;
+}
+.live-badge{
+  display:flex;align-items:center;gap:6px;
+  font-weight:900;font-size:clamp(.5rem,.75vw,.85rem);
+  letter-spacing:3px;color:var(--red);text-transform:uppercase;flex-shrink:0;
+}
+.live-dot{
+  width:clamp(5px,.65vw,8px);height:clamp(5px,.65vw,8px);border-radius:50%;
+  background:var(--red);box-shadow:0 0 8px var(--red);
+  animation:livePulse 1.2s ease-in-out infinite;
+}
+@keyframes livePulse{0%,100%{opacity:1}50%{opacity:.15}}
+.top-clock{
+  font-family:var(--f-main);font-size:clamp(.7rem,1.1vw,1.3rem);
+  color:rgba(255,255,255,.45);letter-spacing:2px;flex-shrink:0;min-width:5ch;text-align:right;
 }
 
-/* ────────────────────────────────────────────
-   OVERLAY fullscreen invite
-   ──────────────────────────────────────────── */
-#fs-overlay{
-  position:fixed;inset:0;z-index:9999;
-  background:rgba(5,8,16,.96);
-  display:flex;flex-direction:column;
-  align-items:center;justify-content:center;gap:2vh;
-  cursor:pointer;backdrop-filter:blur(20px);
-}
-#fs-overlay .ov-icon{
-  font-size:clamp(2.5rem,6vw,5rem);
-  animation:ovPulse 1.8s ease-in-out infinite;
-}
-#fs-overlay .ov-title{
-  font-family:var(--font-main);
-  font-size:clamp(1.4rem,3vw,3.5rem);
-  letter-spacing:8px;
-  background:linear-gradient(135deg,var(--cyan),#fff);
-  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
-}
-#fs-overlay .ov-sub{
-  font-size:clamp(.65rem,1vw,.9rem);
-  letter-spacing:4px;text-transform:uppercase;
-  color:var(--w60);
-}
-@keyframes ovPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.1)}}
-
-/* ────────────────────────────────────────────
-   MAIN ZONE — scores + chrono
-   ──────────────────────────────────────────── */
+/* ── MAIN ZONE ───────────────────────────────────────── */
 .main-zone{
-  position:relative;z-index:1;
-  display:grid;
-  grid-template-columns: 1fr auto 1fr;
-  align-items:center;
-  padding: clamp(8px,1.5vh,28px) clamp(14px,2.5vw,56px);
-  gap:clamp(8px,1.5vw,32px);
-  border-bottom:1px solid var(--w08);
-  background:linear-gradient(180deg, rgba(10,15,30,.9) 0%, rgba(5,8,16,.7) 100%);
-  min-height:0;
+  position:relative;z-index:2;
+  display:grid;grid-template-columns:1fr auto 1fr;
+  align-items:stretch;
+  padding:clamp(8px,1.5vh,22px) clamp(12px,2vw,48px);
+  gap:clamp(8px,1.5vw,30px);
+  min-height:0;overflow:hidden;
 }
-
-/* ── Separator line ── */
 .main-zone::after{
   content:'';position:absolute;bottom:0;left:5%;right:5%;height:1px;
-  background:linear-gradient(90deg,transparent,var(--cyan40),var(--w20),var(--cyan40),transparent);
+  background:linear-gradient(90deg,transparent,rgba(0,212,255,.2),rgba(255,255,255,.1),rgba(0,212,255,.2),transparent);
 }
 
-/* ── Team block ── */
-.team-block{
-  display:flex;flex-direction:column;gap:clamp(4px,.8vh,12px);
-  min-width:0;
+/* ── Team panel ── */
+.team-panel{
+  display:flex;flex-direction:column;justify-content:space-between;
+  padding:clamp(10px,1.5vh,22px) clamp(12px,1.8vw,26px);
+  border-radius:clamp(10px,1.2vw,18px);
+  border:1px solid var(--bord);
+  min-width:0;overflow:hidden;position:relative;
 }
-.team-block.dom{align-items:flex-start;}
-.team-block.ext{align-items:flex-end;}
+.team-panel.dom{
+  background:linear-gradient(135deg,rgba(255,255,255,.05) 0%,rgba(255,255,255,.02) 100%);
+  border-color:rgba(255,255,255,.12);
+}
+.team-panel.ext{
+  background:linear-gradient(135deg,rgba(0,212,255,.06) 0%,rgba(0,212,255,.02) 100%);
+  border-color:rgba(0,212,255,.18);align-items:flex-end;
+}
+.team-panel.dom::before{
+  content:'';position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(ellipse at 0% 0%,rgba(255,255,255,.06) 0%,transparent 65%);
+}
+.team-panel.ext::before{
+  content:'';position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(ellipse at 100% 0%,rgba(0,212,255,.07) 0%,transparent 65%);
+}
 
-/* Logo */
+/* Team header */
+.team-header{display:flex;align-items:center;gap:clamp(8px,1.2vw,18px);min-width:0;}
+.team-panel.ext .team-header{flex-direction:row-reverse;}
+
 .team-logo-wrap{
-  width:clamp(56px,7vw,120px);height:clamp(56px,7vw,120px);
-  flex-shrink:0;
+  width:clamp(40px,5.5vw,84px);height:clamp(40px,5.5vw,84px);
+  flex-shrink:0;border-radius:50%;overflow:hidden;
   display:flex;align-items:center;justify-content:center;
-  border-radius:50%;overflow:hidden;
-  border:2px solid var(--w20);
-  background:var(--w08);
+  background:rgba(255,255,255,.07);border:2px solid rgba(255,255,255,.14);
 }
+.team-panel.ext .team-logo-wrap{border-color:rgba(0,212,255,.2);}
 .team-logo-wrap img{width:100%;height:100%;object-fit:contain;}
-.team-logo-wrap .logo-emoji{font-size:clamp(1.6rem,3.5vw,4rem);}
+.logo-emoji{font-size:clamp(1.3rem,2.8vw,3.2rem);}
 
-/* Name */
+.team-name-wrap{min-width:0;}
+.team-panel.ext .team-name-wrap{text-align:right;}
 .team-name{
-  font-family:var(--font-main);
-  font-size:var(--nm-h);
-  letter-spacing:clamp(1px,.2vw,4px);
-  line-height:1;
+  font-family:var(--f-main);font-size:var(--name-sz);
+  letter-spacing:clamp(1px,.25vw,4px);line-height:1;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-  max-width:100%;
 }
-.team-block.dom .team-name{
-  color:#fff;
-  text-shadow:0 0 30px rgba(255,255,255,.3);
-}
-.team-block.ext .team-name{
-  color:var(--cyan);
-  text-shadow:0 0 30px rgba(0,212,255,.4);
-}
+.team-panel.dom .team-name{color:#fff;text-shadow:0 0 28px rgba(255,255,255,.25);}
+.team-panel.ext .team-name{color:var(--ext);text-shadow:0 0 28px rgba(0,212,255,.35);}
 
-/* TM (temps morts) */
-.tm-row{
-  display:flex;align-items:center;gap:clamp(3px,.5vw,8px);
-}
-.tm-label{
-  font-size:clamp(.55rem,.75vw,1rem);
-  font-weight:700;text-transform:uppercase;
-  letter-spacing:2px;color:var(--w60);
-}
+/* TM row */
+.tm-row{display:flex;align-items:center;gap:clamp(4px,.6vw,10px);margin-top:clamp(3px,.4vh,8px);}
+.team-panel.ext .tm-row{justify-content:flex-end;}
+.tm-label{font-size:clamp(.45rem,.65vw,.85rem);font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.4);}
 .tm-dots{display:flex;gap:clamp(3px,.4vw,7px);}
 .tm-dot{
-  width:var(--tm-dot);height:var(--tm-dot);
-  border-radius:50%;
-  border:1.5px solid var(--w60);
-  background:transparent;
+  width:var(--tm-dot);height:var(--tm-dot);border-radius:50%;
+  border:1.5px solid rgba(255,255,255,.3);background:transparent;
   transition:background .3s,border-color .3s,box-shadow .3s;
 }
-.tm-dot.used{
-  background:var(--cyan);
-  border-color:var(--cyan);
-  box-shadow:0 0 8px var(--cyan40);
-}
+.team-panel.ext .tm-dot{border-color:rgba(0,212,255,.3);}
+.tm-dot.used{background:var(--gold);border-color:var(--gold);box-shadow:0 0 8px rgba(255,196,0,.6);}
 
 /* Score */
-.score-wrap{
-  display:flex;align-items:center;gap:clamp(4px,.7vw,12px);
-}
+.score-area{display:flex;align-items:flex-end;gap:clamp(6px,.8vw,14px);position:relative;}
+.team-panel.ext .score-area{justify-content:flex-end;align-self:flex-end;}
 .score-num{
-  font-family:var(--font-main);
-  font-size:var(--sc-h);
-  line-height:1;
-  transition:transform .3s cubic-bezier(.34,1.56,.64,1),filter .3s;
+  font-family:var(--f-main);font-size:var(--score-sz);
+  line-height:.92;letter-spacing:-2px;position:relative;
+  transition:transform .3s cubic-bezier(.34,1.56,.64,1);user-select:none;
 }
-.team-block.dom .score-num{
-  color:#fff;
-  text-shadow:0 0 30px rgba(255,255,255,.45),0 0 80px rgba(255,255,255,.12);
-}
-.team-block.ext .score-num{
-  color:var(--cyan);
-  text-shadow:0 0 30px rgba(0,212,255,.55),0 0 80px rgba(0,212,255,.15);
-}
+.team-panel.dom .score-num{color:#fff;text-shadow:0 0 40px rgba(255,255,255,.5),0 0 100px rgba(255,255,255,.1);}
+.team-panel.ext .score-num{color:var(--ext);text-shadow:0 0 40px rgba(0,212,255,.6),0 0 100px rgba(0,212,255,.15);}
 .score-num.flash{animation:scoreFlash .5s cubic-bezier(.34,1.56,.64,1);}
-@keyframes scoreFlash{
-  0%{transform:scale(1);filter:brightness(1)}
-  45%{transform:scale(1.28);filter:brightness(2.2)}
-  100%{transform:scale(1);filter:brightness(1)}
-}
+@keyframes scoreFlash{0%{transform:scale(1);filter:brightness(1)}45%{transform:scale(1.22);filter:brightness(2.5)}100%{transform:scale(1);filter:brightness(1)}}
 
-/* ── Center block ── */
-.center-block{
-  display:flex;flex-direction:column;align-items:center;
-  gap:clamp(3px,.6vh,10px);
-  flex-shrink:0;
-}
-
-/* Period badge */
-.period-badge{
-  font-family:var(--font-sub);font-weight:900;
-  font-size:var(--pd-h);text-transform:uppercase;letter-spacing:3px;
-  background:linear-gradient(135deg,var(--orange),var(--gold));
-  color:#000;border-radius:20px;
-  padding:clamp(2px,.35vh,6px) clamp(10px,1.6vw,26px);
-  box-shadow:0 0 14px rgba(255,107,0,.4),0 4px 12px rgba(0,0,0,.3);
-  white-space:nowrap;
-}
-
-/* Chrono */
-.chrono{
-  font-family:var(--font-main);
-  font-size:var(--ch-h);
-  line-height:1;
-  letter-spacing:clamp(2px,.5vw,8px);
-  white-space:nowrap;
-  color:var(--red);
-  text-shadow:0 0 28px var(--red40),0 0 60px rgba(255,23,68,.15);
-  transition:color .3s,text-shadow .3s;
-}
-.chrono.running{
-  color:var(--cyan);
-  text-shadow:0 0 28px var(--cyan40),0 0 60px rgba(0,212,255,.2);
-  animation:chronoPulse 2s ease-in-out infinite;
-}
-@keyframes chronoPulse{0%,100%{opacity:1}50%{opacity:.85}}
-
-/* Shot clock */
-.shot-clock-row{
-  display:flex;flex-direction:column;align-items:center;gap:2px;
-}
-.shot-label{
-  font-size:clamp(.5rem,.65vw,.85rem);
-  font-weight:700;letter-spacing:3px;text-transform:uppercase;
-  color:var(--w60);
-}
-.shot-value{
-  font-family:var(--font-main);
-  font-size:var(--shot-h);
-  color:var(--orange);
-  text-shadow:0 0 18px rgba(255,107,0,.5);
-  line-height:1;
-}
-
-/* ────────────────────────────────────────────
-   PLAYERS ZONE
-   ──────────────────────────────────────────── */
-.players-zone{
-  position:relative;z-index:1;
-  display:flex;flex-direction:column;
-  gap:clamp(5px,.8vh,14px);
-  padding:clamp(6px,.8vh,16px) clamp(14px,2.5vw,56px);
-  background:var(--bg2);
-  border-bottom:1px solid var(--w08);
-}
-
-.team-row{
-  display:flex;align-items:stretch;
-  gap:clamp(6px,.9vw,18px);
-}
-
-/* Team label vertical */
-.team-label{
-  font-family:var(--font-main);
-  font-size:clamp(.7rem,1vw,1.5rem);
-  writing-mode:vertical-rl;text-orientation:mixed;
-  letter-spacing:clamp(1px,.3vw,5px);
-  padding:clamp(8px,1.2vh,20px) clamp(5px,.55vw,10px);
-  border-radius:var(--cell-r);
-  flex-shrink:0;
-  display:flex;align-items:center;justify-content:center;
-}
-.team-label.dom-label{
-  color:#fff;background:rgba(255,255,255,.05);
-  border:1px solid rgba(255,255,255,.18);
-}
-.team-label.ext-label{
-  color:var(--cyan);background:rgba(0,212,255,.05);
-  border:1px solid rgba(0,212,255,.2);
-}
-
-/* 15-cell grid */
-.players-grid{
-  flex:1;min-width:0;
-  display:grid;
-  grid-template-columns:repeat(15,1fr);
-  gap:var(--cell-g);
-}
-
-/* Player cell */
-.player-cell{
-  aspect-ratio:1/1;
-  border-radius:var(--cell-r);
-  display:flex;flex-direction:column;
-  justify-content:center;align-items:center;
-  position:relative;overflow:hidden;
-  background:var(--w08);
-  border:1px solid rgba(255,255,255,.1);
-  transition:transform .25s ease, background .25s;
-}
-.player-cell.dom-cell{border-color:rgba(255,255,255,.15);}
-.player-cell.ext-cell{border-color:rgba(0,212,255,.15);}
-
-.player-num{
-  font-family:var(--font-main);
-  font-size:clamp(.5rem,.7vw,1.1rem);
-  position:absolute;top:clamp(2px,.25vh,5px);left:clamp(2px,.3vw,6px);
-  opacity:.25;line-height:1;
-}
-
-/* Foul dots inside cell */
-.foul-dots{
-  display:flex;flex-wrap:wrap;
-  justify-content:center;align-items:center;
-  gap:clamp(1px,.2vw,3px);
-  padding:clamp(2px,.3vh,5px);
-}
-.foul-dot{
-  width:clamp(4px,.55vw,9px);height:clamp(4px,.55vw,9px);
-  border-radius:50%;background:var(--gold);
-  box-shadow:0 0 5px rgba(255,196,0,.6);
-}
-
-/* Exclusion */
-.player-cell.excl{
-  background:linear-gradient(135deg,rgba(255,23,68,.85),rgba(183,28,28,.85));
-  border-color:var(--red) !important;
-  box-shadow:0 0 clamp(6px,1vw,20px) rgba(255,23,68,.55),
-             inset 0 0 clamp(4px,.6vw,12px) rgba(255,23,68,.18);
-  animation:exclPulse 1.2s ease-in-out infinite;
-}
-@keyframes exclPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
-.excl .excl-timer{
-  font-family:var(--font-main);
-  font-size:clamp(.65rem,.95vw,1.5rem);
-  color:#fff;text-shadow:0 0 8px rgba(255,255,255,.7);
-}
-
-/* EDA */
-.player-cell.eda{
-  background:#060810;
-  border:2px solid var(--red) !important;
-  box-shadow:0 0 clamp(8px,1.2vw,22px) rgba(255,23,68,.7),
-             inset 0 0 8px rgba(255,23,68,.12);
-}
-.eda .eda-label{
-  font-family:var(--font-main);
-  font-size:clamp(.55rem,.8vw,1.2rem);
-  color:var(--red);text-shadow:0 0 8px rgba(255,23,68,.8);
-}
-
-/* ────────────────────────────────────────────
-   GOAL FLASH (replaces ball animation)
-   ──────────────────────────────────────────── */
-#goal-flash{
-  position:fixed;inset:0;z-index:8888;
-  pointer-events:none;opacity:0;
-  background:radial-gradient(circle at 50% 40%,rgba(0,212,255,.22) 0%,transparent 60%);
-}
-#goal-flash.active{animation:goalFlash .7s ease-out forwards;}
-@keyframes goalFlash{
-  0%{opacity:0}15%{opacity:1}100%{opacity:0}
-}
-
-/* Scanlines on goal */
-#goal-lines{
-  position:fixed;inset:0;z-index:8887;pointer-events:none;opacity:0;
-  background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,212,255,.05) 3px,rgba(0,212,255,.05) 4px);
-}
-#goal-lines.active{animation:goalLines .7s ease-out forwards;}
-@keyframes goalLines{0%{opacity:0}15%{opacity:1}100%{opacity:0}}
-
-/* Score ripple */
 .score-ripple{
-  position:absolute;inset:0;border-radius:inherit;
-  pointer-events:none;
-  background:radial-gradient(circle at 50% 50%,rgba(0,212,255,.35) 0%,transparent 70%);
+  position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+  background:radial-gradient(circle,rgba(0,212,255,.4) 0%,transparent 70%);
   opacity:0;transform:scale(.5);
 }
 .score-ripple.active{animation:rippleOut .6s ease-out forwards;}
-@keyframes rippleOut{
-  0%{opacity:1;transform:scale(.5)}
-  100%{opacity:0;transform:scale(2.5)}
-}
+@keyframes rippleOut{0%{opacity:1;transform:scale(.5)}100%{opacity:0;transform:scale(2.5)}}
 
-/* Goal banner (clean text instead of flying ball) */
-#goal-banner{
-  position:fixed;top:50%;left:50%;
-  transform:translate(-50%,-50%) scaleY(0);
-  z-index:8889;pointer-events:none;
-  font-family:var(--font-main);
-  font-size:clamp(3rem,8vw,10rem);
-  letter-spacing:clamp(4px,1vw,16px);
-  background:linear-gradient(180deg,#fff 0%,var(--cyan) 60%);
-  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
-  filter:drop-shadow(0 0 18px rgba(0,212,255,.7));
+.lead-badge{
+  display:inline-flex;align-items:center;
+  font-size:clamp(.4rem,.6vw,.75rem);font-weight:700;
+  letter-spacing:2px;text-transform:uppercase;
+  padding:2px 7px;border-radius:20px;
+  opacity:0;transition:opacity .4s;margin-bottom:6px;
+}
+.lead-badge.visible{opacity:1;}
+.lead-badge.dom{background:rgba(255,255,255,.12);color:rgba(255,255,255,.8);}
+.lead-badge.ext{background:rgba(0,212,255,.12);color:var(--ext);}
+
+/* ── CENTER BLOCK ── */
+.center-block{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:clamp(4px,1vh,12px);flex-shrink:0;
+  min-width:clamp(130px,18vw,300px);
+  padding:clamp(6px,.8vh,14px) 0;
+}
+.period-badge{
+  font-family:var(--f-sub);font-weight:900;font-size:var(--per-sz);
+  text-transform:uppercase;letter-spacing:4px;
+  background:linear-gradient(135deg,var(--orange),var(--gold));
+  color:#000;border-radius:20px;
+  padding:clamp(2px,.35vh,5px) clamp(10px,1.6vw,26px);
+  box-shadow:0 0 14px rgba(255,140,0,.4),0 4px 12px rgba(0,0,0,.4);
   white-space:nowrap;
 }
-#goal-banner.active{animation:bannerIn .65s cubic-bezier(.34,1.56,.64,1) forwards,bannerOut .4s ease-in .9s forwards;}
-@keyframes bannerIn{0%{transform:translate(-50%,-50%) scaleY(0) scaleX(.7);opacity:0}100%{transform:translate(-50%,-50%) scaleY(1) scaleX(1);opacity:1}}
-@keyframes bannerOut{0%{opacity:1;transform:translate(-50%,-50%) scale(1)}100%{opacity:0;transform:translate(-50%,-50%) scale(.9)}}
+.chrono{
+  font-family:var(--f-main);font-size:var(--ch-sz);
+  line-height:1;letter-spacing:clamp(2px,.6vw,10px);white-space:nowrap;
+  color:var(--stop);text-shadow:0 0 28px rgba(255,107,43,.45);
+  transition:color .4s,text-shadow .4s;
+}
+.chrono.running{
+  color:var(--run);text-shadow:0 0 28px rgba(0,212,255,.5),0 0 70px rgba(0,212,255,.15);
+  animation:chronoPulse 2.5s ease-in-out infinite;
+}
+@keyframes chronoPulse{0%,100%{opacity:1}50%{opacity:.88}}
 
-/* ────────────────────────────────────────────
-   SPONSORS BAR
-   ──────────────────────────────────────────── */
-.sponsors-bar{
-  position:relative;z-index:1;
-  height:clamp(70px,12vh,140px);
-  background:rgba(5,8,16,.95);
-  border-top:1px solid var(--w08);
-  display:flex;align-items:center;
-  overflow:hidden;
+/* Period bar */
+.period-bar-wrap{
+  width:clamp(90px,14vw,240px);height:4px;
+  background:rgba(255,255,255,.08);border-radius:4px;overflow:hidden;
 }
-.sponsors-bar::before,.sponsors-bar::after{
-  content:'';position:absolute;top:0;bottom:0;width:clamp(30px,5vw,80px);
-  z-index:2;pointer-events:none;
-}
-.sponsors-bar::before{left:0;background:linear-gradient(90deg,rgba(5,8,16,1),transparent);}
-.sponsors-bar::after{right:0;background:linear-gradient(270deg,rgba(5,8,16,1),transparent);}
-
-.sponsors-track{
-  display:flex;align-items:center;gap:clamp(20px,4vw,70px);
-  padding:0 clamp(14px,2vw,40px);
-  white-space:nowrap;
-  animation:sponsorSlide 30s linear infinite;
-  will-change:transform;
-}
-.sponsors-track.no-anim{animation:none;}
-@keyframes sponsorSlide{
-  from{transform:translateX(0)}
-  to{transform:translateX(-50%)}
+.period-bar-fill{
+  height:100%;width:100%;border-radius:4px;
+  background:var(--run);transition:width .5s linear,background .5s;
 }
 
-.sponsor-img{
-  height:clamp(46px,8vh,110px);
-  max-width:clamp(120px,18vw,280px);
-  width:auto;object-fit:contain;
-  filter:brightness(1.15) drop-shadow(0 0 10px rgba(255,255,255,.18));
+/* Shot ring */
+.shot-ring-wrap{
+  position:relative;
+  width:clamp(56px,7.5vw,120px);height:clamp(56px,7.5vw,120px);
   flex-shrink:0;
 }
-.no-sponsors-label{
-  font-size:clamp(.6rem,.8vw,1rem);
-  color:var(--w60);letter-spacing:3px;text-transform:uppercase;
+.shot-ring{width:100%;height:100%;transform:rotate(-90deg);}
+.ring-track{fill:none;stroke:rgba(255,255,255,.07);stroke-width:5;}
+.ring-fill{
+  fill:none;stroke:var(--orange);stroke-width:5;stroke-linecap:round;
+  stroke-dasharray:276.46;stroke-dashoffset:0;
+  transition:stroke-dashoffset .4s linear,stroke .3s;
+  filter:drop-shadow(0 0 4px var(--orange));
+}
+.shot-center{
+  position:absolute;inset:0;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+}
+.shot-label{
+  font-size:clamp(.35rem,.5vw,.65rem);font-weight:700;
+  letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.4);line-height:1;
+}
+.shot-value{
+  font-family:var(--f-main);font-size:var(--shot-sz);line-height:1;
+  color:var(--orange);text-shadow:0 0 16px rgba(255,140,0,.6);
+  transition:color .3s,text-shadow .3s;
 }
 
-/* ────────────────────────────────────────────
-   MEDIA QUERIES
-   ──────────────────────────────────────────── */
-@media(max-height:650px){
-  :root{
-    --sc-h:clamp(42px,8vh,72px);
-    --ch-h:clamp(2.2rem,5vw,6rem);
-    --shot-h:clamp(1.4rem,2.8vw,3.4rem);
-    --nm-h:clamp(.8rem,1.7vw,2rem);
-  }
+/* ── PLAYERS ZONE ─────────────────────────────────────── */
+.players-zone{
+  position:relative;z-index:2;
+  display:flex;flex-direction:column;
+  gap:clamp(4px,.6vh,10px);
+  padding:clamp(6px,.8vh,14px) clamp(12px,2vw,48px);
+  background:var(--bg2);
+  border-top:1px solid var(--bord);
+  border-bottom:1px solid var(--bord);
 }
-@media(max-width:1280px){
-  :root{
-    --nm-h:clamp(.9rem,1.9vw,2.4rem);
-    --sc-h:clamp(46px,8.5vh,88px);
-    --ch-h:clamp(2.8rem,6vw,7.5rem);
-  }
+.team-row{display:flex;align-items:stretch;gap:clamp(5px,.8vw,14px);}
+.team-label{
+  font-family:var(--f-main);font-size:clamp(.6rem,.9vw,1.4rem);
+  writing-mode:vertical-rl;text-orientation:mixed;
+  letter-spacing:clamp(1px,.3vw,5px);
+  padding:clamp(6px,1vh,14px) clamp(4px,.5vw,8px);
+  border-radius:var(--cell-r);flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
 }
-@media(min-width:2200px){
-  :root{--cell-g:clamp(5px,.3vw,10px);}
+.dom-label{color:rgba(255,255,255,.65);background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.12);}
+.ext-label{color:var(--ext);background:rgba(0,212,255,.04);border:1px solid rgba(0,212,255,.15);}
+.players-grid{
+  flex:1;min-width:0;
+  display:grid;grid-template-columns:repeat(15,1fr);gap:var(--cell-g);
 }
+.player-cell{
+  aspect-ratio:1;border-radius:var(--cell-r);
+  display:flex;flex-direction:column;justify-content:center;align-items:center;
+  position:relative;overflow:hidden;
+  background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);
+  transition:background .25s,box-shadow .25s;
+}
+.dom-cell{border-color:rgba(255,255,255,.1);}
+.ext-cell{border-color:rgba(0,212,255,.1);}
+.player-num{
+  font-family:var(--f-main);font-size:clamp(.5rem,.7vw,1.1rem);
+  position:absolute;top:clamp(2px,.25vh,4px);left:clamp(2px,.3vw,5px);
+  opacity:.28;line-height:1;
+}
+.dom-cell .player-num{color:#fff;}
+.ext-cell .player-num{color:var(--ext);}
+.foul-dots{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:clamp(1px,.2vw,3px);padding:clamp(2px,.3vh,5px);}
+.foul-dot{width:clamp(4px,.55vw,9px);height:clamp(4px,.55vw,9px);border-radius:50%;background:var(--gold);box-shadow:0 0 5px rgba(255,196,0,.6);}
+.player-cell.excl{
+  background:linear-gradient(135deg,rgba(255,23,68,.85),rgba(183,28,28,.85));
+  border-color:var(--red)!important;
+  box-shadow:0 0 clamp(6px,1vw,18px) rgba(255,23,68,.5),inset 0 0 8px rgba(255,23,68,.15);
+  animation:exclPulse 1.2s ease-in-out infinite;
+}
+@keyframes exclPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
+.excl-timer{font-family:var(--f-main);font-size:clamp(.65rem,.95vw,1.5rem);color:#fff;text-shadow:0 0 8px rgba(255,255,255,.7);}
+.player-cell.eda{
+  background:#060810;border:2px solid var(--red)!important;
+  box-shadow:0 0 clamp(8px,1.2vw,20px) rgba(255,23,68,.6),inset 0 0 8px rgba(255,23,68,.1);
+}
+.eda-label{font-family:var(--f-main);font-size:clamp(.55rem,.8vw,1.2rem);color:var(--red);text-shadow:0 0 8px rgba(255,23,68,.8);}
+
+/* ── GOAL FX ──────────────────────────────────────────── */
+#goal-flash{position:fixed;inset:0;z-index:8888;pointer-events:none;opacity:0;background:radial-gradient(circle at 50% 40%,rgba(0,212,255,.25) 0%,transparent 60%);}
+#goal-flash.active{animation:goalFlash .7s ease-out forwards;}
+@keyframes goalFlash{0%{opacity:0}15%{opacity:1}100%{opacity:0}}
+#goal-lines{position:fixed;inset:0;z-index:8887;pointer-events:none;opacity:0;background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,212,255,.05) 3px,rgba(0,212,255,.05) 4px);}
+#goal-lines.active{animation:goalLines .7s ease-out forwards;}
+@keyframes goalLines{0%{opacity:0}15%{opacity:1}100%{opacity:0}}
+#goal-banner{
+  position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scaleY(0);
+  z-index:8889;pointer-events:none;font-family:var(--f-main);
+  font-size:clamp(4rem,11vw,13rem);letter-spacing:clamp(4px,1.2vw,20px);
+  background:linear-gradient(180deg,#fff 0%,var(--ext) 70%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  filter:drop-shadow(0 0 24px rgba(0,212,255,.7));white-space:nowrap;
+}
+#goal-banner.active{animation:bannerIn .65s cubic-bezier(.34,1.56,.64,1) forwards,bannerOut .4s ease-in .9s forwards;}
+@keyframes bannerIn{0%{transform:translate(-50%,-50%) scaleY(0) scaleX(.6);opacity:0}100%{transform:translate(-50%,-50%) scaleY(1) scaleX(1);opacity:1}}
+@keyframes bannerOut{0%{opacity:1;transform:translate(-50%,-50%) scale(1)}100%{opacity:0;transform:translate(-50%,-50%) scale(.85)}}
+
+/* ── FULLSCREEN OVERLAY ───────────────────────────────── */
+#fs-overlay{
+  position:fixed;inset:0;z-index:9999;background:rgba(5,8,16,.97);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2vh;
+  cursor:pointer;backdrop-filter:blur(20px);
+}
+.ov-icon{font-size:clamp(2.5rem,6vw,5rem);animation:ovPulse 1.8s ease-in-out infinite;}
+.ov-title{font-family:var(--f-main);font-size:clamp(1.6rem,4vw,4.5rem);letter-spacing:10px;background:linear-gradient(135deg,var(--ext),#fff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.ov-sub{font-size:clamp(.6rem,1vw,.9rem);letter-spacing:4px;text-transform:uppercase;color:rgba(255,255,255,.5);}
+@keyframes ovPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(1.1)}}
+
+/* ── SPONSORS ─────────────────────────────────────────── */
+.sponsors-bar{
+  position:relative;z-index:2;
+  height:clamp(56px,10vh,110px);
+  background:rgba(5,8,16,.98);border-top:1px solid var(--bord);
+  display:flex;align-items:center;overflow:hidden;
+}
+.sponsors-bar::before,.sponsors-bar::after{content:'';position:absolute;top:0;bottom:0;width:clamp(28px,5vw,70px);z-index:2;pointer-events:none;}
+.sponsors-bar::before{left:0;background:linear-gradient(90deg,rgba(5,8,16,1),transparent);}
+.sponsors-bar::after{right:0;background:linear-gradient(270deg,rgba(5,8,16,1),transparent);}
+.sponsors-track{display:flex;align-items:center;gap:clamp(20px,4vw,70px);padding:0 clamp(12px,2vw,40px);white-space:nowrap;animation:sponsorSlide 30s linear infinite;will-change:transform;}
+.sponsors-track.no-anim{animation:none;}
+@keyframes sponsorSlide{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+.sponsor-img{height:clamp(32px,6.5vh,84px);max-width:clamp(90px,15vw,220px);width:auto;object-fit:contain;filter:brightness(1.1) drop-shadow(0 0 8px rgba(255,255,255,.15));flex-shrink:0;}
+.no-sponsors-label{font-size:clamp(.55rem,.75vw,.9rem);color:rgba(255,255,255,.3);letter-spacing:3px;text-transform:uppercase;}
+
+/* ── RESPONSIVE ───────────────────────────────────────── */
+@media(max-height:650px){:root{--score-sz:clamp(3rem,8vw,8rem);--ch-sz:clamp(2.2rem,6vw,6.5rem);--shot-sz:clamp(1.4rem,2.8vw,3rem);--name-sz:clamp(.8rem,1.7vw,2rem);}}
+@media(max-width:1100px){:root{--name-sz:clamp(.8rem,1.8vw,2.2rem);}}
+@media(min-width:2200px){:root{--cell-g:clamp(5px,.3vw,10px);}}
 </style>
 </head>
 <body>
-<div class="glow-dom"></div>
-<div class="glow-ext"></div>
 
 <!-- Fullscreen invite -->
 <div id="fs-overlay" onclick="enterFS()">
-  <div class="ov-icon">&#x25B6;&#xFE0F;</div>
+  <div class="ov-icon">▶️</div>
   <div class="ov-title">WATER&nbsp;POLO&nbsp;LIVE</div>
   <div class="ov-sub">Cliquez pour démarrer &bull; F11 plein écran</div>
 </div>
@@ -503,70 +388,76 @@ body::before{
 <div id="goal-lines"></div>
 <div id="goal-banner">BUT&nbsp;!</div>
 
-<!-- ════════════ MAIN ZONE ════════════ -->
+<!-- TOP BAR -->
+<div class="top-bar">
+  <div class="competition-name">{{ match.competition|default:"Water-Polo" }}</div>
+  <div class="live-badge"><div class="live-dot"></div>LIVE</div>
+  <div class="top-clock" id="top-clock">--:--</div>
+</div>
+
+<!-- MAIN ZONE -->
 <div class="main-zone">
 
   <!-- DOM -->
-  <div class="team-block dom">
-    <div class="score-wrap">
-      <div class="team-logo-wrap" id="logo-dom">
-        <span class="logo-emoji">&#x1F3CA;</span>
-      </div>
-      <div>
+  <div class="team-panel dom">
+    <div class="team-header">
+      <div class="team-logo-wrap" id="logo-dom"><span class="logo-emoji">🤽</span></div>
+      <div class="team-name-wrap">
         <div class="team-name" id="name-dom">{{ match.nom_equipe_domicile }}</div>
         <div class="tm-row">
           <span class="tm-label">TM</span>
-          <div class="tm-dots" id="tm-dom">
-            {% for i in range_15 %}<div class="tm-dot"></div>{% endfor %}
-          </div>
+          <div class="tm-dots" id="tm-dom">{% for i in range_15 %}<div class="tm-dot"></div>{% endfor %}</div>
         </div>
       </div>
     </div>
-    <div class="score-num" id="score-dom">
-      {{ match.score_domicile }}
-      <div class="score-ripple" id="ripple-dom"></div>
+    <div class="score-area">
+      <div class="score-num" id="score-dom">{{ match.score_domicile }}<div class="score-ripple" id="ripple-dom"></div></div>
+      <div class="lead-badge dom" id="lead-dom"></div>
     </div>
   </div>
 
   <!-- CENTER -->
   <div class="center-block">
-    <div class="period-badge">
-      PÉRIODE&nbsp;<span id="periode">{{ match.periode_actuelle }}</span>
+    <div class="period-badge">PÉRIODE&nbsp;<span id="periode">{{ match.periode_actuelle }}</span></div>
+    <div class="chrono" id="chrono">--:--</div>
+    <div class="period-bar-wrap">
+      <div class="period-bar-fill" id="period-bar"></div>
     </div>
-    <div class="chrono" id="chrono">{{ match.temps_restant|default:"480"|stringformat:"s" }}</div>
-    <div class="shot-clock-row">
-      <span class="shot-label">TEMPS D'ATTAQUE</span>
-      <span class="shot-value" id="shot-clock">{{ match.temps_possession }}</span>
+    <div class="shot-ring-wrap">
+      <svg class="shot-ring" viewBox="0 0 100 100">
+        <circle class="ring-track" cx="50" cy="50" r="44"/>
+        <circle class="ring-fill"  cx="50" cy="50" r="44" id="ring-fill"
+                stroke-dasharray="276.46" stroke-dashoffset="0"/>
+      </svg>
+      <div class="shot-center">
+        <div class="shot-label">ATTAQUE</div>
+        <div class="shot-value" id="shot-clock">{{ match.temps_possession }}</div>
+      </div>
     </div>
   </div>
 
   <!-- EXT -->
-  <div class="team-block ext">
-    <div class="score-wrap" style="justify-content:flex-end;">
-      <div>
+  <div class="team-panel ext">
+    <div class="team-header">
+      <div class="team-logo-wrap" id="logo-ext"><span class="logo-emoji">🤽</span></div>
+      <div class="team-name-wrap">
         <div class="team-name" id="name-ext">{{ match.nom_equipe_exterieur }}</div>
-        <div class="tm-row" style="justify-content:flex-end;">
-          <div class="tm-dots" id="tm-ext">
-            {% for i in range_15 %}<div class="tm-dot"></div>{% endfor %}
-          </div>
+        <div class="tm-row" style="justify-content:flex-end">
+          <div class="tm-dots" id="tm-ext">{% for i in range_15 %}<div class="tm-dot"></div>{% endfor %}</div>
           <span class="tm-label">TM</span>
         </div>
       </div>
-      <div class="team-logo-wrap" id="logo-ext">
-        <span class="logo-emoji">&#x1F93D;</span>
-      </div>
     </div>
-    <div class="score-num" id="score-ext" style="align-self:flex-end;">
-      {{ match.score_exterieur }}
-      <div class="score-ripple" id="ripple-ext"></div>
+    <div class="score-area">
+      <div class="lead-badge ext" id="lead-ext"></div>
+      <div class="score-num" id="score-ext">{{ match.score_exterieur }}<div class="score-ripple" id="ripple-ext"></div></div>
     </div>
   </div>
 
 </div>
 
-<!-- ════════════ PLAYERS ════════════ -->
+<!-- PLAYERS -->
 <div class="players-zone">
-
   <div class="team-row">
     <div class="team-label dom-label" id="lbl-dom">{{ match.couleur_bonnet_dom }}</div>
     <div class="players-grid" id="grid-dom">
@@ -577,7 +468,6 @@ body::before{
       {% endfor %}
     </div>
   </div>
-
   <div class="team-row">
     <div class="team-label ext-label" id="lbl-ext">{{ match.couleur_bonnet_ext }}</div>
     <div class="players-grid" id="grid-ext">
@@ -588,369 +478,243 @@ body::before{
       {% endfor %}
     </div>
   </div>
-
 </div>
 
-<!-- ════════════ SPONSORS ════════════ -->
+<!-- SPONSORS -->
 <div class="sponsors-bar" id="sponsors-bar">
   <div class="sponsors-track" id="sponsors-track">
     <span class="no-sponsors-label" id="no-sponsors-msg">Aucun sponsor</span>
   </div>
 </div>
 
+<script id="match-data" type="application/json">
+{"id":{{ match.id }},"duree_periode":{{ match.duree_periode }},"temps_restant":{{ match.temps_restant|default:"480" }},"temps_possession":{{ match.temps_possession }},"score_dom":{{ match.score_domicile }},"score_ext":{{ match.score_exterieur }},"nb_tm":{{ match.nb_temps_morts }}}
+</script>
 <script>
-/* ═══════════════════════════════════════════════════════════
-   SCOREBOARD JS — polling + RAF chrono + real-time players
-   ═══════════════════════════════════════════════════════════ */
+const MD             = JSON.parse(document.getElementById('match-data').textContent);
+const MATCH_ID       = MD.id;
+const PERIOD_SECONDS = MD.duree_periode * 60;
+const API            = '/api/match/' + MATCH_ID + '/state/';
+const RING_CIRC      = 276.46;
 
-const MATCH_ID = {{ match.id }};
-const API = '/api/match/' + MATCH_ID + '/state/';
+let C  = { running:false, frozenTime:MD.temps_restant, startedAt:null };
+let SC = { running:false, frozenTime:MD.temps_possession, startedAt:null, max:MD.temps_possession };
+let lastDom = MD.score_dom;
+let lastExt = MD.score_ext;
+let nbTM    = MD.nb_tm;
 
-// Chrono state
-let C = {
-  running:    false,
-  frozenTime: {{ match.temps_restant|default:"480" }},
-  startedAt:  null
-};
-
-// Score tracking for goal animation
-let lastDom = {{ match.score_domicile }};
-let lastExt = {{ match.score_exterieur }};
-
-// TM config (updated from API)
-let nbTM = {{ match.nb_temps_morts }};
-
-// Shot clock — état synchronisé avec le serveur (identique au dashboard)
-let SC = {
-  running:    false,
-  frozenTime: {{ match.temps_possession }},
-  startedAt:  null,
-  max:        {{ match.temps_possession }},
-};
-
-function applyServerShot(shot) {
-  if (!shot || typeof shot !== 'object') return;
-  const ft = Number(shot.frozen_time);
+function applyServerChrono(c) {
+  if (!c) return;
+  const ft=Number(c.frozen_time), st=Number(c.started_at), srv=Number(c.server_ts);
   if (isNaN(ft)) return;
-  const st  = Number(shot.started_at);
-  const srv = Number(shot.server_ts);
-  const delay = (!isNaN(srv) && srv > 0) ? Math.max(0, (Date.now()/1000 - srv)/2) : 0;
-  SC.running    = shot.running === true;
-  SC.frozenTime = ft;
-  SC.startedAt  = (SC.running && !isNaN(st) && st > 0) ? st + delay : null;
-  if (shot.max) SC.max = shot.max;
+  const lag = (!isNaN(srv)&&srv>0) ? Math.max(0,(Date.now()/1000-srv)/2) : 0;
+  C.running=c.running===true; C.frozenTime=ft;
+  C.startedAt=(C.running&&!isNaN(st)&&st>0)?st+lag:null;
 }
-
-function shotLeft() {
-  if (!SC.running || !SC.startedAt) return Math.max(0, SC.frozenTime);
-  return Math.max(0, SC.frozenTime - (Date.now()/1000 - SC.startedAt));
+function applyServerShot(s) {
+  if (!s) return;
+  const ft=Number(s.frozen_time), st=Number(s.started_at), srv=Number(s.server_ts);
+  if (isNaN(ft)) return;
+  const lag=(!isNaN(srv)&&srv>0)?Math.max(0,(Date.now()/1000-srv)/2):0;
+  SC.running=s.running===true; SC.frozenTime=ft;
+  SC.startedAt=(SC.running&&!isNaN(st)&&st>0)?st+lag:null;
+  if (s.max) SC.max=s.max;
 }
-
-// ── Fullscreen ─────────────────────────────────────────────
-function enterFS() {
-  document.documentElement.requestFullscreen().catch(() => {});
-  document.getElementById('fs-overlay').style.display = 'none';
-}
-
-// ── Time format ────────────────────────────────────────────
-function fmt(sec) {
-  if (!isFinite(sec) || sec < 0) sec = 0;
-  const m = Math.floor(sec / 60), s = Math.floor(sec % 60);
-  return String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
-}
-
-// ── Chrono compute ─────────────────────────────────────────
 function computeTime() {
-  if (!C.running || !C.startedAt) return Math.max(0, C.frozenTime);
-  return Math.max(0, C.frozenTime - (Date.now()/1000 - C.startedAt));
+  if (!C.running||!C.startedAt) return Math.max(0,C.frozenTime);
+  return Math.max(0,C.frozenTime-(Date.now()/1000-C.startedAt));
+}
+function shotLeft() {
+  if (!SC.running||!SC.startedAt) return Math.max(0,SC.frozenTime);
+  return Math.max(0,SC.frozenTime-(Date.now()/1000-SC.startedAt));
+}
+function fmt(sec) {
+  if (!isFinite(sec)||sec<0) sec=0;
+  return String(Math.floor(sec/60)).padStart(2,'0')+':'+String(Math.floor(sec%60)).padStart(2,'0');
+}
+function enterFS() {
+  document.documentElement.requestFullscreen().catch(()=>{});
+  document.getElementById('fs-overlay').style.display='none';
 }
 
-function applyServerChrono(chrono) {
-  if (!chrono || typeof chrono !== 'object') return;
-  const ft = Number(chrono.frozen_time);
-  if (isNaN(ft)) return;
-  const st = Number(chrono.started_at);
-  const srv = Number(chrono.server_ts);
-  const delay = (!isNaN(srv) && srv > 0) ? Math.max(0, (Date.now()/1000 - srv)/2) : 0;
-  C.running    = chrono.running === true;
-  C.frozenTime = ft;
-  C.startedAt  = (C.running && !isNaN(st) && st > 0) ? st + delay : null;
-}
-
-// ── RAF loops ──────────────────────────────────────────────
+/* ── RAF: chrono + progress bar ── */
 function rafChrono() {
-  const t  = computeTime();
-  const el = document.getElementById('chrono');
-  el.textContent = fmt(Math.ceil(t));
-  C.running ? el.classList.add('running') : el.classList.remove('running');
+  const t=computeTime();
+  const el=document.getElementById('chrono');
+  el.textContent=fmt(Math.ceil(t));
+  el.classList.toggle('running',C.running);
+  const bar=document.getElementById('period-bar');
+  if (bar&&PERIOD_SECONDS>0) {
+    const pct=Math.max(0,Math.min(1,t/PERIOD_SECONDS));
+    bar.style.width=(pct*100)+'%';
+    bar.style.background=pct>0.5?'var(--run)':pct>0.2?'var(--gold)':'var(--red)';
+  }
   requestAnimationFrame(rafChrono);
 }
 
+/* ── RAF: exclusion timers ── */
 function rafExcl() {
-  const now = Date.now()/1000;
-  document.querySelectorAll('.player-cell.excl').forEach(c => {
-    const end = parseFloat(c.dataset.end) || 0;
-    const span = c.querySelector('.excl-timer');
-    if (span && end > 0) span.textContent = Math.max(0, Math.ceil(end - now));
+  const now=Date.now()/1000;
+  document.querySelectorAll('.player-cell.excl').forEach(c=>{
+    const end=parseFloat(c.dataset.end)||0;
+    const sp=c.querySelector('.excl-timer');
+    if (sp&&end>0) sp.textContent=Math.max(0,Math.ceil(end-now));
   });
   requestAnimationFrame(rafExcl);
 }
 
+/* ── RAF: shot clock + SVG ring ── */
 function rafShot() {
-  const v  = Math.ceil(shotLeft());
-  const el = document.getElementById('shot-clock');
+  const raw=shotLeft(), v=Math.ceil(raw);
+  const el=document.getElementById('shot-clock');
+  const ring=document.getElementById('ring-fill');
   if (el) {
-    el.textContent = v;
-    if (v <= 5) {
-      el.style.color = 'var(--red)';
-      el.style.textShadow = '0 0 22px rgba(255,23,68,.9)';
-    } else if (v <= 10) {
-      el.style.color = 'var(--gold)';
-      el.style.textShadow = '0 0 18px rgba(255,196,0,.6)';
-    } else {
-      el.style.color = 'var(--orange)';
-      el.style.textShadow = '0 0 18px rgba(255,107,0,.5)';
-    }
+    el.textContent=v;
+    const [col,sh]=v<=5?['var(--red)','rgba(255,23,68,.9)']:v<=10?['var(--gold)','rgba(255,196,0,.7)']:['var(--orange)','rgba(255,140,0,.6)'];
+    el.style.color=col; el.style.textShadow='0 0 20px '+sh;
+  }
+  if (ring&&SC.max>0) {
+    const pct=Math.max(0,Math.min(1,raw/SC.max));
+    ring.style.strokeDashoffset=RING_CIRC*(1-pct);
+    const col=v<=5?'var(--red)':v<=10?'var(--gold)':'var(--orange)';
+    ring.style.stroke=col;
+    ring.style.filter='drop-shadow(0 0 5px '+col+')';
   }
   requestAnimationFrame(rafShot);
 }
 
-// ── TM dots ────────────────────────────────────────────────
-function updateTM(side, used) {
-  const container = document.getElementById('tm-' + side);
-  if (!container) return;
-  const dots = container.querySelectorAll('.tm-dot');
-  dots.forEach((d, i) => {
-    if (i < used) d.classList.add('used');
-    else d.classList.remove('used');
-  });
+/* ── RAF: live clock ── */
+function rafClock() {
+  const n=new Date();
+  document.getElementById('top-clock').textContent=
+    String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0');
+  requestAnimationFrame(rafClock);
 }
 
-function setTMDots(side, total) {
-  const container = document.getElementById('tm-' + side);
-  if (!container) return;
-  // Rebuild dots to match nbTM
-  container.innerHTML = '';
-  for (let i = 0; i < total; i++) {
-    const d = document.createElement('div');
-    d.className = 'tm-dot';
-    container.appendChild(d);
+/* ── TM dots ── */
+function setTMDots(side,total) {
+  const c=document.getElementById('tm-'+side); if(!c) return;
+  c.innerHTML='';
+  for(let i=0;i<total;i++){const d=document.createElement('div');d.className='tm-dot';c.appendChild(d);}
+}
+function updateTM(side,used) {
+  const c=document.getElementById('tm-'+side); if(!c) return;
+  c.querySelectorAll('.tm-dot').forEach((d,i)=>d.classList.toggle('used',i<used));
+}
+
+/* ── Score ── */
+function setScore(side,val) {
+  const el=document.getElementById('score-'+side); if(!el) return;
+  const str=isNaN(val)?'0':String(val);
+  if (el.childNodes[0]?.textContent?.trim()!==str) {
+    el.childNodes[0].textContent=str+'\n';
+    el.classList.add('flash'); setTimeout(()=>el.classList.remove('flash'),500);
+    const rp=document.getElementById('ripple-'+side);
+    if(rp){rp.classList.remove('active');void rp.offsetWidth;rp.classList.add('active');setTimeout(()=>rp.classList.remove('active'),600);}
   }
 }
 
-// ── Score update ───────────────────────────────────────────
-function setScore(side, val) {
-  const el = document.getElementById('score-' + side);
-  if (!el) return;
-  const str = isNaN(val) ? '0' : String(val);
-  const current = el.childNodes[0]?.textContent?.trim();
-  if (current !== str) {
-    el.childNodes[0].textContent = str + '\n';
-    el.classList.add('flash');
-    setTimeout(() => el.classList.remove('flash'), 500);
-    // ripple
-    const ripple = document.getElementById('ripple-' + side);
-    if (ripple) {
-      ripple.classList.remove('active');
-      void ripple.offsetWidth;
-      ripple.classList.add('active');
-      setTimeout(() => ripple.classList.remove('active'), 600);
-    }
-  }
+/* ── Lead badge ── */
+function updateLeadBadge(dom,ext) {
+  const db=document.getElementById('lead-dom'), eb=document.getElementById('lead-ext');
+  if(!db||!eb) return;
+  if (dom>ext) {db.textContent='+'+( dom-ext);db.classList.add('visible');eb.classList.remove('visible');}
+  else if (ext>dom){eb.textContent='+'+( ext-dom);eb.classList.add('visible');db.classList.remove('visible');}
+  else {db.classList.remove('visible');eb.classList.remove('visible');}
 }
 
-// ── Goal animation (clean, no ball) ────────────────────────
+/* ── Goal FX ── */
 function goalFX() {
-  const fl = document.getElementById('goal-flash');
-  const ln = document.getElementById('goal-lines');
-  const bn = document.getElementById('goal-banner');
-
-  [fl, ln, bn].forEach(el => { el.classList.remove('active'); void el.offsetWidth; });
-  fl.classList.add('active');
-  ln.classList.add('active');
-  bn.classList.add('active');
-
-  setTimeout(() => {
-    [fl, ln, bn].forEach(el => el.classList.remove('active'));
-  }, 1400);
+  const els=['goal-flash','goal-lines','goal-banner'].map(id=>document.getElementById(id));
+  els.forEach(e=>{e.classList.remove('active');void e.offsetWidth;});
+  els.forEach(e=>e.classList.add('active'));
+  setTimeout(()=>els.forEach(e=>e.classList.remove('active')),1400);
 }
 
-// ── Player cell rendering ──────────────────────────────────
-function renderCell(cell, info) {
-  // Clear
-  cell.classList.remove('excl','eda','fouls');
-  cell.dataset.end = '0';
-  // Remove all dynamic children (keep player-num)
-  cell.querySelectorAll('.foul-dots,.excl-timer,.eda-label').forEach(e => e.remove());
-
-  if (info.state === 'EDA') {
+/* ── Player cells ── */
+function renderCell(cell,info) {
+  cell.classList.remove('excl','eda','fouls'); cell.dataset.end='0';
+  cell.querySelectorAll('.foul-dots,.excl-timer,.eda-label').forEach(e=>e.remove());
+  if (info.state==='EDA') {
     cell.classList.add('eda');
-    const span = document.createElement('span');
-    span.className = 'eda-label';
-    span.textContent = 'EDA';
-    cell.appendChild(span);
-  } else if (info.state === 'EXCL') {
-    cell.classList.add('excl');
-    cell.dataset.end = String(info.end_time || 0);
-    const span = document.createElement('span');
-    span.className = 'excl-timer';
-    span.textContent = Math.max(0, Math.ceil((info.end_time||0) - Date.now()/1000));
-    cell.appendChild(span);
-  } else if (info.fautes > 0) {
+    const s=document.createElement('span'); s.className='eda-label'; s.textContent='EDA'; cell.appendChild(s);
+  } else if (info.state==='EXCL') {
+    cell.classList.add('excl'); cell.dataset.end=String(info.end_time||0);
+    const s=document.createElement('span'); s.className='excl-timer';
+    s.textContent=Math.max(0,Math.ceil((info.end_time||0)-Date.now()/1000)); cell.appendChild(s);
+  } else if (info.fautes>0) {
     cell.classList.add('fouls');
-    const wrap = document.createElement('div');
-    wrap.className = 'foul-dots';
-    for (let i = 0; i < Math.min(info.fautes, 3); i++) {
-      const d = document.createElement('div');
-      d.className = 'foul-dot';
-      wrap.appendChild(d);
-    }
-    cell.appendChild(wrap);
+    const w=document.createElement('div'); w.className='foul-dots';
+    for(let i=0;i<Math.min(info.fautes,3);i++){const d=document.createElement('div');d.className='foul-dot';w.appendChild(d);}
+    cell.appendChild(w);
   }
 }
-
 function updatePlayers(players) {
-  // Reset all cells first
-  document.querySelectorAll('.player-cell').forEach(c => {
-    c.classList.remove('excl','eda','fouls');
-    c.dataset.end = '0';
-    c.querySelectorAll('.foul-dots,.excl-timer,.eda-label').forEach(e => e.remove());
+  document.querySelectorAll('.player-cell').forEach(c=>{
+    c.classList.remove('excl','eda','fouls'); c.dataset.end='0';
+    c.querySelectorAll('.foul-dots,.excl-timer,.eda-label').forEach(e=>e.remove());
   });
-
-  for (const [pid, info] of Object.entries(players)) {
-    const side   = (info.side || '').toLowerCase() === 'dom' ? 'dom' : 'ext';
-    const bonnet = info.bonnet;
-    if (!bonnet) continue;
-    const cell = document.getElementById('cell-' + side + '-' + bonnet);
-    if (cell) renderCell(cell, info);
+  for (const [,info] of Object.entries(players)) {
+    const side=(info.side||'').toLowerCase()==='dom'?'dom':'ext';
+    if (!info.bonnet) continue;
+    const cell=document.getElementById('cell-'+side+'-'+info.bonnet);
+    if (cell) renderCell(cell,info);
   }
 }
 
-// ── Logo update ────────────────────────────────────────────
-function setLogo(side, url) {
-  const wrap = document.getElementById('logo-' + side);
-  if (!wrap) return;
-  if (url) {
-    wrap.innerHTML = `<img src="${url}" alt="logo">`;
-  }
+/* ── Logo ── */
+function setLogo(side,url) {
+  const w=document.getElementById('logo-'+side); if(!w||!url) return;
+  w.innerHTML=`<img src="${url}" alt="logo">`;
 }
 
-// ── Sponsors ───────────────────────────────────────────────
-let currentSponsors = [];
+/* ── Sponsors ── */
+let currentSponsors=[];
 function updateSponsors(urls) {
-  if (!urls || urls.length === 0) return;
-  const sig = urls.join(',');
-  if (sig === currentSponsors.join(',')) return;
-  currentSponsors = urls;
-
-  const track = document.getElementById('sponsors-track');
-  // Double the list for seamless loop
-  const doubled = [...urls, ...urls];
-  track.innerHTML = doubled.map(u =>
-    `<img class="sponsor-img" src="${u}" alt="sponsor">`
-  ).join('');
-
-  // Hide "no sponsors" message
-  const msg = document.getElementById('no-sponsors-msg');
-  if (msg) msg.remove();
-
-  // Animate only if enough sponsors
-  if (urls.length > 1) {
-    track.classList.remove('no-anim');
-    const totalWidth = track.scrollWidth / 2;
-    const speed = Math.max(15, totalWidth / 50); // px/s
-    track.style.animationDuration = speed + 's';
-  } else {
-    track.classList.add('no-anim');
-    track.style.justifyContent = 'center';
-  }
+  if(!urls||!urls.length) return;
+  const sig=urls.join(','); if(sig===currentSponsors.join(',')) return;
+  currentSponsors=urls;
+  const track=document.getElementById('sponsors-track');
+  track.innerHTML=[...urls,...urls].map(u=>`<img class="sponsor-img" src="${u}" alt="sponsor">`).join('');
+  const msg=document.getElementById('no-sponsors-msg'); if(msg) msg.remove();
+  if (urls.length>1){track.classList.remove('no-anim');track.style.animationDuration=Math.max(15,track.scrollWidth/2/50)+'s';}
+  else{track.classList.add('no-anim');track.style.justifyContent='center';}
 }
 
-// ── Main sync ──────────────────────────────────────────────
+/* ── Sync ── */
 async function sync() {
   try {
-    const res  = await fetch(API);
-    if (!res.ok) return;
-    const data = await res.json();
-
-    // Chrono
-    applyServerChrono(data.chrono);
-
-    // Period
-    const pEl = document.getElementById('periode');
-    if (pEl && data.periode !== undefined) pEl.textContent = data.periode;
-
-    // Shot clock — depuis l'état serveur (même source que le dashboard)
-    if (data.shot) applyServerShot(data.shot);
-
-    // Scores — detect goals
-    const sd = Number(data.score_dom), se = Number(data.score_ext);
-    if (!isNaN(sd)) {
-      if (sd > lastDom) goalFX();
-      lastDom = sd;
-      setScore('dom', sd);
-    }
-    if (!isNaN(se)) {
-      if (se > lastExt) goalFX();
-      lastExt = se;
-      setScore('ext', se);
-    }
-
-    // TM dots
-    if (data.nb_temps_morts !== undefined && data.nb_temps_morts !== nbTM) {
-      nbTM = data.nb_temps_morts;
-      setTMDots('dom', nbTM);
-      setTMDots('ext', nbTM);
-    }
-    if (data.tm_dom !== undefined) updateTM('dom', data.tm_dom);
-    if (data.tm_ext !== undefined) updateTM('ext', data.tm_ext);
-
-    // Team names
-    if (data.nom_dom) {
-      const el = document.getElementById('name-dom');
-      if (el && el.textContent !== data.nom_dom) el.textContent = data.nom_dom;
-    }
-    if (data.nom_ext) {
-      const el = document.getElementById('name-ext');
-      if (el && el.textContent !== data.nom_ext) el.textContent = data.nom_ext;
-    }
-
-    // Logos
-    if (data.logo_dom) setLogo('dom', data.logo_dom);
-    if (data.logo_ext) setLogo('ext', data.logo_ext);
-
-    // Players — pMap is now in API response (side + bonnet per player)
-    if (data.players) updatePlayers(data.players);
-
-    // Sponsors
-    if (data.sponsors) updateSponsors(data.sponsors);
-
-  } catch(e) {
-    console.warn('[sync]', e);
-  }
+    const res=await fetch(API); if(!res.ok) return;
+    const d=await res.json();
+    applyServerChrono(d.chrono);
+    if (d.shot) applyServerShot(d.shot);
+    const pEl=document.getElementById('periode');
+    if (pEl&&d.periode!==undefined) pEl.textContent=d.periode;
+    const sd=Number(d.score_dom),se=Number(d.score_ext);
+    if (!isNaN(sd)){if(sd>lastDom)goalFX();lastDom=sd;setScore('dom',sd);}
+    if (!isNaN(se)){if(se>lastExt)goalFX();lastExt=se;setScore('ext',se);}
+    if (!isNaN(sd)&&!isNaN(se)) updateLeadBadge(sd,se);
+    if (d.nb_temps_morts!==undefined&&d.nb_temps_morts!==nbTM){nbTM=d.nb_temps_morts;setTMDots('dom',nbTM);setTMDots('ext',nbTM);}
+    if (d.tm_dom!==undefined) updateTM('dom',d.tm_dom);
+    if (d.tm_ext!==undefined) updateTM('ext',d.tm_ext);
+    if (d.nom_dom){const e=document.getElementById('name-dom');if(e&&e.textContent!==d.nom_dom)e.textContent=d.nom_dom;}
+    if (d.nom_ext){const e=document.getElementById('name-ext');if(e&&e.textContent!==d.nom_ext)e.textContent=d.nom_ext;}
+    if (d.logo_dom) setLogo('dom',d.logo_dom);
+    if (d.logo_ext) setLogo('ext',d.logo_ext);
+    if (d.players)  updatePlayers(d.players);
+    if (d.sponsors) updateSponsors(d.sponsors);
+  } catch(e){ console.warn('[sync]',e); }
 }
 
-// ── Bootstrap ──────────────────────────────────────────────
-setTMDots('dom', nbTM);
-setTMDots('ext', nbTM);
+/* ── Bootstrap ── */
+setTMDots('dom',nbTM); setTMDots('ext',nbTM);
+rafChrono(); rafExcl(); rafShot(); rafClock();
+sync(); setInterval(sync,1000);
 
-rafChrono();
-rafExcl();
-rafShot();
-
-sync();
-setInterval(sync, 1000);
-
-// ── Entry animation for cells ──────────────────────────────
-window.addEventListener('load', () => {
-  document.querySelectorAll('.player-cell').forEach((c, i) => {
-    c.style.opacity = '0';
-    c.style.transform = 'translateY(10px)';
-    setTimeout(() => {
-      c.style.transition = 'opacity .3s ease, transform .3s cubic-bezier(.34,1.56,.64,1)';
-      c.style.opacity = '1';
-      c.style.transform = 'translateY(0)';
-    }, i * 12);
+window.addEventListener('load',()=>{
+  document.querySelectorAll('.player-cell').forEach((c,i)=>{
+    c.style.opacity='0'; c.style.transform='translateY(8px)';
+    setTimeout(()=>{c.style.transition='opacity .3s ease,transform .3s cubic-bezier(.34,1.56,.64,1)';c.style.opacity='1';c.style.transform='translateY(0)';},i*10);
   });
 });
 </script>

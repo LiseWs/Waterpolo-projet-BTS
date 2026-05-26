@@ -1,6 +1,7 @@
 import json
 import os
 from datetime import timedelta
+from io import BytesIO
 
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import JsonResponse, HttpResponse
@@ -34,17 +35,22 @@ def accueil(request):
             nom_dom = request.POST.get('input_domicile', '').strip()
             eq_dom_obj = None
             if id_dom:
-                eq_dom_obj = Equipe.objects.get(id=id_dom)
-                nom_dom = eq_dom_obj.nom
+                eq_dom_obj = Equipe.objects.filter(id=id_dom).first()
+                if eq_dom_obj:
+                    nom_dom = eq_dom_obj.nom
 
             id_ext = request.POST.get('select_exterieur')
             nom_ext = request.POST.get('input_exterieur', '').strip()
             eq_ext_obj = None
             if id_ext:
-                eq_ext_obj = Equipe.objects.get(id=id_ext)
-                nom_ext = eq_ext_obj.nom
+                eq_ext_obj = Equipe.objects.filter(id=id_ext).first()
+                if eq_ext_obj:
+                    nom_ext = eq_ext_obj.nom
 
-            duree_periode = int(request.POST.get('duree_periode', 8))
+            try:
+                duree_periode = int(request.POST.get('duree_periode', 8))
+            except (ValueError, TypeError):
+                duree_periode = 8
 
             heure_raw = request.POST.get('heure_debut', '').strip()
             heure_val = None
@@ -55,6 +61,12 @@ def accueil(request):
                     heure_val = dtime(int(h), int(m))
                 except (ValueError, TypeError):
                     pass
+
+            def _post_int(key, default):
+                try:
+                    return int(request.POST.get(key, default))
+                except (ValueError, TypeError):
+                    return default
 
             match = Match.objects.create(
                 nom_equipe_domicile=nom_dom,
@@ -68,12 +80,12 @@ def accueil(request):
                 heure_debut=heure_val,
                 # Règles
                 duree_periode=duree_periode,
-                nb_periodes=int(request.POST.get('nb_periodes', 4)),
-                temps_possession=int(request.POST.get('temps_possession', 30)),
-                duree_exclusion=int(request.POST.get('duree_exclusion', 20)),
-                nb_temps_morts=int(request.POST.get('nb_temps_morts', 2)),
-                max_fautes_perso=int(request.POST.get('max_fautes_perso', 3)),
-                nb_remplacants=int(request.POST.get('nb_remplacants', 6)),
+                nb_periodes=_post_int('nb_periodes', 4),
+                temps_possession=_post_int('temps_possession', 30),
+                duree_exclusion=_post_int('duree_exclusion', 20),
+                nb_temps_morts=_post_int('nb_temps_morts', 2),
+                max_fautes_perso=_post_int('max_fautes_perso', 3),
+                nb_remplacants=_post_int('nb_remplacants', 6),
                 # Officiels
                 arbitre1_nom=request.POST.get('arbitre1_nom', ''),
                 arbitre1_iuf=request.POST.get('arbitre1_iuf', ''),
@@ -243,6 +255,7 @@ def dashboard_arbitre(request, match_id):
         'joueurs_dom': joueurs_dom,
         'joueurs_ext': joueurs_ext,
         'events': events,
+        'range_fautes': range(1, match.max_fautes_perso + 1),
     })
 
 
@@ -350,7 +363,11 @@ def api_match_action(request, match_id):
                              'shot': _shot_payload(match)})
 
     elif action == 'adjust_time':
-        delta = int(data.get('delta', 0))
+        try:
+            delta = int(data.get('delta', 0))
+        except (ValueError, TypeError):
+            delta = 0
+        delta = max(-600, min(600, delta))  # borne ±10 minutes max
         match.temps_restant = max(0, match.temps_restant + delta)
         match.save(update_fields=['temps_restant'])
         return JsonResponse({'status': 'ok', 'chrono': _chrono_payload(match),
@@ -495,6 +512,9 @@ def api_match_action(request, match_id):
             if evt.type_action == 'EXCL':
                 j.est_exclu = False
                 j.fin_exclusion = None
+                # Si on était passé en EDA automatiquement à cause de cette faute, on annule aussi l'EDA
+                if j.nb_fautes_personnelles < match.max_fautes_perso:
+                    j.est_exclu_definitif = False
             if evt.type_action == 'EDA':
                 j.est_exclu_definitif = False
             j.save()
@@ -618,8 +638,6 @@ def export_excel(request, match_id):
     Génère et télécharge la feuille de match officielle FFN en .xlsx.
     Mapping précis calé sur la structure réelle du template FFN.
     """
-    import os
-
     try:
         from openpyxl import load_workbook
     except ImportError:
@@ -644,24 +662,9 @@ def export_excel(request, match_id):
     wb = load_workbook(template_path)
     ws = wb['Feuile de Match']   # typo intentionnelle du template FFN
 
+    # Alias local pour éviter de répéter ws à chaque appel
     def w(row, col, value):
-        """Écrit dans une cellule, remonte à la cellule maître si fusionnée."""
-        if value is None or value == '':
-            return
-        from openpyxl.cell.cell import MergedCell
-        cell = ws.cell(row=row, column=col)
-        if isinstance(cell, MergedCell):
-            for merged_range in ws.merged_cells.ranges:
-                if (merged_range.min_row <= row <= merged_range.max_row
-                        and merged_range.min_col <= col <= merged_range.max_col):
-                    cell = ws.cell(
-                        row=merged_range.min_row,
-                        column=merged_range.min_col,
-                    )
-                    break
-            else:
-                return
-        cell.value = value
+        _safe_write(ws, row, col, value)
 
     # ── Infos générales ──────────────────────────────────────────────────────
     # Nom équipe 1 : C3 (fusion C3:Q3)
@@ -787,7 +790,6 @@ def export_excel(request, match_id):
         w(row, start_col + 4, f"{evt.score_dom_apres}-{evt.score_ext_apres}")
 
     # ── Sauvegarde en mémoire et envoi HTTP ────────────────────────────────────
-    from io import BytesIO
     buf = BytesIO()
     wb.save(buf)
     buf.seek(0)
@@ -842,22 +844,32 @@ def _fill_players(ws, joueurs, start_row, match):
       AB(28)+AC(29) = Code2+Période2
       AD(30)+AE(31) = Code3+Période3
     """
-    # Buts par joueur
-    buts_map = {
-        p.id: Evenement.objects.filter(match=match, joueur=p, type_action='BUT').count()
-        for p in joueurs
-    }
+    from django.db.models import Count
 
-    # Sanctions par joueur (EXCL, EDA, PENALTY) – max 3 slots dans le template
-    events_map = {
-        p.id: list(
-            Evenement.objects.filter(
-                match=match, joueur=p,
-                type_action__in=('EXCL', 'EDA', 'PENALTY'),
-            ).order_by('heure_creation')[:3]
-        )
-        for p in joueurs
-    }
+    joueur_ids = [p.id for p in joueurs]
+
+    # Buts par joueur en 1 seule requête (au lieu de N requêtes)
+    buts_counts = (
+        Evenement.objects
+        .filter(match=match, type_action='BUT', joueur_id__in=joueur_ids)
+        .values('joueur_id')
+        .annotate(cnt=Count('id'))
+    )
+    buts_map = {item['joueur_id']: item['cnt'] for item in buts_counts}
+
+    # Sanctions par joueur en 1 seule requête (au lieu de N requêtes)
+    sanctions = list(
+        Evenement.objects
+        .filter(match=match, type_action__in=('EXCL', 'EDA', 'PENALTY'), joueur_id__in=joueur_ids)
+        .order_by('joueur_id', 'heure_creation')
+    )
+    events_map = {}
+    for evt in sanctions:
+        pid = evt.joueur_id
+        if pid not in events_map:
+            events_map[pid] = []
+        if len(events_map[pid]) < 3:
+            events_map[pid].append(evt)
 
     by_bonnet = {p.numero_bonnet: p for p in joueurs}
 

@@ -905,7 +905,7 @@
                         <div class="p-info">
                             <div class="p-name" title="{{ p.nom }} {{ p.prenom }}">{{ p.nom }} {{ p.prenom|first }}.</div>
                             <div class="p-fautes">
-                                {% for i in "xxx" %}{% if forloop.counter <= p.nb_fautes_personnelles %}<span class="fdot"></span>{% endif %}{% endfor %}
+                                {% for i in range_fautes %}{% if forloop.counter <= p.nb_fautes_personnelles %}<span class="fdot"></span>{% endif %}{% endfor %}
                             </div>
                         </div>
                     </div>
@@ -966,7 +966,7 @@
                         <div class="p-info">
                             <div class="p-name" title="{{ p.nom }} {{ p.prenom }}">{{ p.nom }} {{ p.prenom|first }}.</div>
                             <div class="p-fautes">
-                                {% for i in "xxx" %}{% if forloop.counter <= p.nb_fautes_personnelles %}<span class="fdot"></span>{% endif %}{% endfor %}
+                                {% for i in range_fautes %}{% if forloop.counter <= p.nb_fautes_personnelles %}<span class="fdot"></span>{% endif %}{% endfor %}
                             </div>
                         </div>
                     </div>
@@ -996,6 +996,10 @@
         }
 
         /* ── Utilitaires ─────────────────────────────────────────────────── */
+        function esc(s) {
+            return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+        }
+
         const fmt = s => {
             if (s < 0) s = 0;
             return String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(Math.floor(s % 60)).padStart(2, '0');
@@ -1309,15 +1313,15 @@
             list.innerHTML = history.map(e => {
                 const side = e.equipe_attribuee === 'DOM' ? 'dom' : 'ext';
                 const lbl  = e.joueur__nom
-                    ? 'N°' + e.joueur__numero_bonnet + ' ' + e.joueur__nom
+                    ? 'N°' + esc(e.joueur__numero_bonnet) + ' ' + esc(e.joueur__nom)
                     : 'ÉQUIPE';
-                return `<div class="hist-item ${side}">
+                return `<div class="hist-item ${esc(side)}">
                     <span>
-                        <span class="h-time">${e.chrono_match || '00:00'}</span>
-                        <span class="h-badge b-${e.type_action}">${e.type_action}</span>
+                        <span class="h-time">${esc(e.chrono_match) || '00:00'}</span>
+                        <span class="h-badge b-${esc(e.type_action)}">${esc(e.type_action)}</span>
                         <span>${lbl}</span>
                     </span>
-                    <span class="h-del" onclick="deleteEvent(${e.id},'${e.type_action}')">
+                    <span class="h-del" onclick="deleteEvent(${Number(e.id)},'${esc(e.type_action)}')">
                         <i class="fas fa-times"></i>
                     </span>
                 </div>`;
