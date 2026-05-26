@@ -1,3 +1,4 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -29,7 +30,6 @@
             --muted:   #6b7280;
             --mono:    'Courier New', monospace;
 
-            --header-h: 100px;
             --r-sm: 6px;
             --r-md: 10px;
         }
@@ -56,11 +56,10 @@
            ========================================================================== */
         .app-header {
             flex-shrink: 0;
-            height: var(--header-h);
             display: flex;
             flex-direction: column;
-            gap: 8px;
-            padding: 8px 14px;
+            gap: 6px;
+            padding: 6px 14px 8px;
             background: #0c0c14;
             border-bottom: 1px solid var(--border);
             z-index: 10;
@@ -109,7 +108,6 @@
         .team-info.dom .score-number { color: var(--dom); border-color: rgba(255,255,255,.25); }
         .team-info.ext .score-number { color: var(--ext); border-color: rgba(59,130,246,.4); }
 
-        /* Flash score = fond coloré bref, plus efficace que scale */
         .score-number.bump-dom { background: rgba(34,197,94,.25); transform: scale(1.15); }
         .score-number.bump-ext { background: rgba(34,197,94,.25); transform: scale(1.15); }
 
@@ -117,7 +115,12 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 3px;
+            gap: 4px;
+        }
+        .chrono-inner-row {
+            display: flex;
+            align-items: center;
+            gap: 14px;
         }
 
         .chrono-display {
@@ -137,34 +140,6 @@
         @keyframes pulse-glow {
             0%,100% { text-shadow: 0 0 8px rgba(34,197,94,.4); }
             50%      { text-shadow: 0 0 22px rgba(34,197,94,.9); }
-        }
-
-        /* Shot Clock */
-        .shot-clock-wrapper {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-        .shot-clock-label {
-            font-size: 0.55rem;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 2px;
-            font-weight: 700;
-        }
-        .shot-clock-display {
-            font-family: var(--font-mono);
-            font-size: clamp(2rem, 3.5vw, 2.8rem);
-            font-weight: 900;
-            line-height: 0.9;
-            color: var(--color-penalty);
-            cursor: pointer;
-            transition: color 0.2s;
-        }
-        .shot-clock-display.warning {
-            color: var(--color-danger);
-            animation: pulse-glow 0.5s infinite;
         }
 
         .period-badge {
@@ -284,6 +259,7 @@
             box-shadow: 0 0 14px rgba(34,197,94,.35);
             opacity: 1 !important;
         }
+
         /* Modal feuille de match */
         .modal-backdrop {
             display: none;
@@ -497,7 +473,7 @@
         }
 
         /* ==========================================================================
-           CARTE JOUEUR — redessinée pour la rapidité
+           CARTE JOUEUR
            ========================================================================== */
         .pcard {
             position: relative;
@@ -511,7 +487,6 @@
         }
         .pcard:hover { border-color: #333; background: var(--bg-card-hover); }
 
-        /* Ligne du haut : numéro + nom + fautes */
         .pcard-top {
             display: flex;
             align-items: center;
@@ -561,7 +536,6 @@
             box-shadow: 0 0 4px var(--faute);
         }
 
-        /* Ligne du bas : 4 boutons d'action */
         .pcard-actions {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
@@ -569,7 +543,7 @@
         }
 
         .abt {
-            height: 30px;        /* ← plus grand qu'avant (24px) */
+            height: 30px;
             border: none;
             font-size: 0.62rem;
             font-weight: 900;
@@ -636,7 +610,6 @@
             min-height: 0;
         }
 
-        /* Ajustements rapides */
         .adj-panel {
             background: var(--bg-panel);
             border-radius: var(--r-md);
@@ -763,18 +736,8 @@
             font-size: 0.75rem;
         }
 
-<<<<<<< HEAD
         /* UI lock */
         .ui-locked { opacity: .5; pointer-events: none; }
-=======
-        /* Verrouillage de l'UI pendant les requêtes */
-        .ui-locked {
-            opacity: 0.5;
-            pointer-events: none;
-            filter: grayscale(0.3);
-        }
-
->>>>>>> ba946aae2cf978a17e824c294d9abef6143932ee
 
         /* ==========================================================================
            RESPONSIVE
@@ -783,7 +746,6 @@
             .app-main { grid-template-columns: 1fr 190px 1fr; }
         }
         @media (max-width: 860px) {
-            :root { --header-h: 95px; }
             .app-main {
                 grid-template-columns: 1fr 1fr;
                 grid-template-rows: 1fr auto;
@@ -811,57 +773,29 @@
                 <div class="score-number dom" id="scoreDom">{{ match.score_domicile }}</div>
                 <div class="team-name">{{ match.nom_equipe_domicile }}</div>
             </div>
-            <div class="export-exel">
-                <button class="ctrl-btn btn-tool" onclick="exportExcel()">
-                    <i class="fas fa-file-excel"></i> Excel
-                </button>
-            </div>
 
-<<<<<<< HEAD
-            <script>
-                function exportExcel() {
-                    window.location.href = "generer_excel.php";
-                }
-            </script>
             <div class="chrono-wrap">
-                <div id="chrono" class="chrono-display" title="Clic ou Espace = start/pause">--:--</div>
-=======
-            <div class="chrono-wrapper">
-                <div style="display:flex;align-items:center;gap:20px;">
-                    <div id="chrono" class="chrono-display" title="Clic = start / pause">--:--</div>
-                    <div class="shot-clock-wrapper">
-                        <div class="shot-clock-label">Shot Clock</div>
+                <div class="chrono-inner-row">
+                    <div id="chrono" class="chrono-display" title="Clic ou Espace = start/pause">--:--</div>
+                    <div class="shot-clock-wrap">
+                        <div class="shot-clock-label">⚡ Attaque</div>
                         <div id="shotClock" class="shot-clock-display" title="Clic = reset possession">{{ match.temps_possession }}</div>
+                        <div class="shot-clock-btns">
+                            <button class="sc-btn sc-reset" onclick="scReset()" title="Remettre à {{ match.temps_possession }}s">↺ {{ match.temps_possession }}s</button>
+                        </div>
                     </div>
                 </div>
->>>>>>> ba946aae2cf978a17e824c294d9abef6143932ee
-                <div class="period-badge">
-                    P<span id="periodeDisplay">{{ match.periode_actuelle }}</span>/{{ match.nb_periodes }}
-                </div>
-                <div class="space-hint">⎵ start / stop</div>
-            </div>
-
-            
-
-
-            <div class="shot-clock-wrap">
-                <div class="shot-clock-label">⚡ Attaque</div>
-                <div id="shotClock" class="shot-clock-display" title="Clic = start/pause shot clock">{{ match.temps_possession }}</div>
-                <div class="shot-clock-btns">
-                    <button class="sc-btn sc-reset" onclick="scReset()" title="Remettre à {{ match.temps_possession }}s">↺ {{ match.temps_possession }}s</button>
-                    <button class="sc-btn" onclick="scToggle()" title="Start / Stop">▶/⏸</button>
-                </div>
+                <div class="period-badge">P<span id="periodeDisplay">{{ match.periode_actuelle }}</span>/{{ match.nb_periodes }}</div>
             </div>
 
             <div class="team-info ext">
-                <div class="score-number ext" id="scoreExt">{{ match.score_exterieur }}</div>
                 <div class="team-name">{{ match.nom_equipe_exterieur }}</div>
+                <div class="score-number ext" id="scoreExt">{{ match.score_exterieur }}</div>
             </div>
         </div>
 
         <div class="ctrl-bar">
             <button class="ctrl-btn btn-start" onclick="startTimer()"><i class="fas fa-play"></i> Start</button>
-<<<<<<< HEAD
             <button class="ctrl-btn btn-stop"  onclick="stopTimer()"><i class="fas fa-pause"></i> Stop</button>
             <div class="sep"></div>
             <button class="ctrl-btn btn-adj" onclick="safeAdj(-60)">−1m</button>
@@ -869,29 +803,18 @@
             <button class="ctrl-btn btn-adj" onclick="safeAdj(10)">+10s</button>
             <button class="ctrl-btn btn-adj" onclick="safeAdj(60)">+1m</button>
             <div class="sep"></div>
-=======
-            <button class="ctrl-btn btn-stop" onclick="stopTimer()"><i class="fas fa-pause"></i> Stop</button>
-    
-            <button class="ctrl-btn btn-tool" onclick="connecterAfficheur()" style="background: #e65100; color: white;">
+            <button class="ctrl-btn btn-tool" id="btnArduino" onclick="connecterAfficheur()" style="background:#e65100;">
                 <i class="fas fa-usb"></i> Connecter Afficheur
             </button>
-            <div class="ctrl-sep"></div>
-<<<<<<< HEAD
->>>>>>> ba946aae2cf978a17e824c294d9abef6143932ee
-            <a href="{% url 'score_board' match.id %}" target="_blank" class="ctrl-btn btn-tool"><i class="fas fa-tv"></i> Écran</a>
+            <a href="{% url 'score_board' match.id %}" target="_blank" class="ctrl-btn btn-tool">
+                <i class="fas fa-tv"></i> Écran
+            </a>
             <div class="sep"></div>
             <button class="ctrl-btn btn-feuille" onclick="openFeuilleModal()">
                 <i class="fas fa-file-alt"></i> Feuille de match
             </button>
         </div>
     </header>
-=======
-             <a href="{% url 'score_board' match.id %}" target="_blank" class="ctrl-btn btn-tool"><i class="fas fa-tv"></i> Écran</a>
-             <div class="ctrl-sep"></div>
-             <a href="{% url 'export_excel' match.id %}" class="ctrl-btn btn-tool" style="background:#1b5e20;color:#fff;"><i class="fas fa-file-excel"></i> Feuille de match</a>
-            </div>
-        </header>
->>>>>>> 29a6c0981104f6374550eed362f339f7e02693e9
 
     <!-- ════ MODAL FEUILLE DE MATCH ════ -->
     <div class="modal-backdrop" id="feuilleModal" onclick="closeFeuilleModal(event)">
@@ -900,7 +823,6 @@
                 <i class="fas fa-file-alt"></i> Feuille de match
             </div>
 
-            <!-- Score recap -->
             <div>
                 <div class="modal-score">
                     <span class="ms-dom" id="modal-score-dom">{{ match.score_domicile }}</span>
@@ -913,7 +835,6 @@
                 </div>
             </div>
 
-            <!-- Scores par période -->
             <div class="modal-section">
                 <div class="modal-section-title"><i class="fas fa-chart-bar"></i> Scores par période</div>
                 <div class="modal-periods" id="modal-periods">
@@ -928,7 +849,6 @@
                 </div>
             </div>
 
-            <!-- Résumé événements -->
             <div class="modal-section">
                 <div class="modal-section-title"><i class="fas fa-list"></i> Résumé des événements</div>
                 <div class="modal-events-summary">
@@ -951,7 +871,6 @@
                 </div>
             </div>
 
-            <!-- Actions -->
             <div class="modal-actions">
                 <button class="modal-btn modal-btn-cancel" onclick="closeFeuilleModal()">
                     <i class="fas fa-times"></i> Annuler
@@ -1001,7 +920,6 @@
             </div>
         </section>
 
-<<<<<<< HEAD
         <!-- CENTRE -->
         <section class="center-col">
             <div class="adj-panel">
@@ -1014,14 +932,6 @@
                 <div class="period-btns">
                     <button class="p-btn next"  onclick="nextPeriod()"><i class="fas fa-step-forward"></i> Période suiv.</button>
                     <button class="p-btn reset" onclick="resetPeriod()"><i class="fas fa-redo"></i> Reset</button>
-=======
-        <section class="center-section">
-            
-            <div class="adjust-panel">
-                <div class="period-controls">
-                    <button class="period-btn next" onclick="nextPeriod()"><i class="fas fa-step-forward"></i> Période Suiv.</button>
-                    <button class="period-btn reset" onclick="resetPeriod()"><i class="fas fa-redo"></i> Reset Time</button>
->>>>>>> ba946aae2cf978a17e824c294d9abef6143932ee
                 </div>
             </div>
 
@@ -1074,11 +984,24 @@
     </main>
 
     <script>
-        const matchId       = {{ match.id }};
-        const dureeExcl     = {{ match.duree_exclusion }};
-        let   isProcessing  = false;
+        const matchId   = {{ match.id }};
+        const dureeExcl = {{ match.duree_exclusion }};
+        let isProcessing = false;
 
-        /* ── Chrono ──────────────────────────────────────────────────── */
+        /* ── Klaxon ───────────────────────────────────────────────────────── */
+        const klaxon = new Audio("{% static 'gestion/klaxon.mp3' %}");
+        klaxon.preload = 'auto';
+        function playKlaxon() {
+            try { klaxon.currentTime = 0; klaxon.play(); } catch (e) {}
+        }
+
+        /* ── Utilitaires ─────────────────────────────────────────────────── */
+        const fmt = s => {
+            if (s < 0) s = 0;
+            return String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(Math.floor(s % 60)).padStart(2, '0');
+        };
+
+        /* ── Chrono (source de vérité : serveur) ─────────────────────────── */
         let C = {
             running:    {{ match.chrono_en_cours|yesno:"true,false" }},
             frozenTime: {{ match.temps_restant|default:"480" }},
@@ -1086,17 +1009,13 @@
             alertedEnd: false,
         };
 
-        const fmt = s => {
-            if (s < 0) s = 0;
-            return String(Math.floor(s/60)).padStart(2,'0') + ':' + String(Math.floor(s%60)).padStart(2,'0');
-        };
         const timeLeft = () => (!C.running || C.startedAt === null)
             ? Math.max(0, C.frozenTime)
-            : Math.max(0, C.frozenTime - (Date.now()/1000 - C.startedAt));
+            : Math.max(0, C.frozenTime - (Date.now() / 1000 - C.startedAt));
 
         const applyServerChrono = ch => {
             if (!ch) return;
-            const lag = (Date.now()/1000 - ch.server_ts) / 2;
+            const lag    = (Date.now() / 1000 - ch.server_ts) / 2;
             C.running    = ch.running;
             C.frozenTime = ch.frozen_time;
             C.startedAt  = ch.running ? (ch.started_at + lag) : null;
@@ -1104,7 +1023,6 @@
         };
 
         const chronoEl = document.getElementById('chrono');
-<<<<<<< HEAD
         (function chronoRaf() {
             const t = timeLeft();
             chronoEl.textContent = fmt(Math.ceil(t));
@@ -1114,7 +1032,7 @@
                 C.running    = false;
                 C.frozenTime = 0;
                 C.startedAt  = null;
-                setTimeout(() => alert('⏰ Temps écoulé !'), 50);
+                playKlaxon();
             }
             requestAnimationFrame(chronoRaf);
         })();
@@ -1123,148 +1041,29 @@
             if (!isProcessing) C.running ? stopTimer() : startTimer();
         });
 
-        /* ── Touche Espace = start/stop chrono principal ─────────────── */
         document.addEventListener('keydown', e => {
+            if (['INPUT', 'TEXTAREA', 'BUTTON', 'A'].includes(e.target.tagName)) return;
             if (e.code === 'Space' && !isProcessing) {
-                // Éviter de déclencher si focus sur un input/bouton
-                if (['INPUT','TEXTAREA','BUTTON','A'].includes(e.target.tagName)) return;
                 e.preventDefault();
                 C.running ? stopTimer() : startTimer();
             }
         });
 
-        /* ── Shot Clock (chrono d'attaque — 100% client) ─────────────── */
-        const SC_DURATION = {{ match.temps_possession }};
-        let SC = {
-            running:   false,
-            timeLeft:  SC_DURATION,
-            startedAt: null,
-            raf:       null,
-            alerted:   false,
-        };
-
-        const scEl = document.getElementById('shotClock');
-
-        function scTimeLeft() {
-            if (!SC.running || SC.startedAt === null) return SC.timeLeft;
-            return Math.max(0, SC.timeLeft - (Date.now()/1000 - SC.startedAt));
-        }
-=======
-        function chronoRaf() {
-    const t = timeLeft();
-    
-    // C'EST CETTE LIGNE QUI FAIT APPARAÎTRE LE CHRONO DE 8 MIN SUR LE SITE :
-    chronoEl.textContent = fmt(Math.ceil(t)); 
-    
-    chronoEl.classList.toggle('running', C.running);
-    
-    // Remarque : Il n'y a PAS de rafraichirAfficheur ici, c'est normal !
-    
-    if (C.running && t <= 0 && !C.alertedEnd) {
-        C.alertedEnd = true;
-        C.running = false; 
-        C.frozenTime = 0; 
-        C.startedAt = null;
-        setTimeout(() => alert('⏰ Temps écoulé !'), 50);
-    }
-    requestAnimationFrame(chronoRaf);
-}
->>>>>>> 29a6c0981104f6374550eed362f339f7e02693e9
-
-<<<<<<< HEAD
-        /* --- Shot Clock (synchronisé serveur, identique au scoreboard) --- */
+        /* ── Shot Clock (source de vérité : serveur) ─────────────────────── */
         const SHOT_MAX = Number("{{ match.temps_possession }}");
         let SC = {
             running:    false,
             frozenTime: SHOT_MAX,
             startedAt:  null,
             max:        SHOT_MAX,
+            alertedEnd: false,
         };
-=======
-<<<<<<< HEAD
-        function scRender() {
-            const t = scTimeLeft();
-            const rounded = Math.ceil(t);
-            scEl.textContent = rounded;
-            scEl.classList.toggle('running', SC.running && t > 5);
-            scEl.classList.toggle('urgent',  SC.running && t <= 5 && t > 0);
 
-            if (SC.running && t <= 0 && !SC.alerted) {
-                SC.alerted  = true;
-                SC.running  = false;
-                SC.timeLeft = 0;
-                SC.startedAt = null;
-                scEl.classList.remove('running');
-                scEl.classList.add('urgent');
-                scEl.textContent = '0';
-                setTimeout(() => alert('🚨 Shot clock écoulé !'), 50);
-                return;
-            }
-            SC.raf = requestAnimationFrame(scRender);
-        }
-
-        function scStart() {
-            if (SC.running) return;
-            if (SC.timeLeft <= 0) { scReset(); return; }
-            SC.running   = true;
-            SC.startedAt = Date.now()/1000;
-            SC.alerted   = false;
-            scRender();
-        }
-
-        function scStop() {
-            if (!SC.running) return;
-            SC.timeLeft  = scTimeLeft();
-            SC.running   = false;
-            SC.startedAt = null;
-            if (SC.raf) { cancelAnimationFrame(SC.raf); SC.raf = null; }
-            scRender();
-        }
-
-        function scReset() {
-            scStop();
-            SC.timeLeft = SC_DURATION;
-            SC.alerted  = false;
-            scEl.classList.remove('running','urgent');
-            scEl.textContent = SC_DURATION;
-        }
-
-        function scToggle() {
-            SC.running ? scStop() : scStart();
-        }
-
-        // Clic sur l'affichage shot clock
-        scEl.addEventListener('click', scToggle);
-
-        // Démarrage initial du rendu
-        SC.raf = requestAnimationFrame(scRender);
-
-        /* ── Actions chrono ──────────────────────────────────────────── */
-        async function startTimer() {
-            if (C.running || isProcessing) return;
-            lock(true);
-            try { applyServerChrono((await api({ action: 'start_timer' })).chrono); }
-            finally { lock(false); }
-        }
-        async function stopTimer() {
-            if (!C.running || isProcessing) return;
-            lock(true);
-            try { applyServerChrono((await api({ action: 'stop_timer' })).chrono); }
-            finally { lock(false); }
-        }
-        async function safeAdj(d) {
-=======
-        /* --- Shot Clock --- */
-        const SHOT_CLOCK = {{ match.temps_possession|default:30 }};
-        let scValue = SHOT_CLOCK;
-        let scInterval = null;
->>>>>>> 2094a522e4ec3a1f576ee22f7ce56a281e6e0575
         const scEl = document.getElementById('shotClock');
 
         function applyServerShot(shot) {
             if (!shot) return;
-            const lag = (!isNaN(shot.server_ts) && shot.server_ts > 0)
-                ? Math.max(0, (Date.now()/1000 - shot.server_ts) / 2) : 0;
+            const lag    = (shot.server_ts > 0) ? Math.max(0, (Date.now() / 1000 - shot.server_ts) / 2) : 0;
             SC.running    = shot.running === true;
             SC.frozenTime = Number(shot.frozen_time) || 0;
             SC.max        = shot.max || SC.max;
@@ -1272,74 +1071,139 @@
         }
 
         function shotLeft() {
-            if (!SC.running || SC.startedAt === null)
-                return Math.max(0, SC.frozenTime);
-            return Math.max(0, SC.frozenTime - (Date.now()/1000 - SC.startedAt));
+            if (!SC.running || SC.startedAt === null) return Math.max(0, SC.frozenTime);
+            return Math.max(0, SC.frozenTime - (Date.now() / 1000 - SC.startedAt));
         }
 
-        function shotRaf() {
-            const v = Math.ceil(shotLeft());
+        let shotAutoResetting = false;
+        (function shotRaf() {
+            const raw = shotLeft();
+            const v   = Math.ceil(raw);
             scEl.textContent = v;
-            scEl.classList.toggle('warning', v <= 5 && v > 0);
+            scEl.classList.toggle('running', SC.running && v > 5);
+            scEl.classList.toggle('urgent',  SC.running && v <= 5 && v > 0);
             rafraichirAfficheur(v);
+
+            /* Auto-restart quand le shot clock atteint 0 et que le chrono tourne */
+            if (SC.running && raw <= 0 && !SC.alertedEnd && !shotAutoResetting) {
+                SC.alertedEnd = true;
+                playKlaxon();
+                if (C.running) {
+                    shotAutoResetting = true;
+                    api({ action: 'shot_reset' }).then(r => {
+                        if (r.shot) applyServerShot(r.shot);
+                        SC.alertedEnd     = false;
+                        shotAutoResetting = false;
+                    }).catch(() => { shotAutoResetting = false; });
+                }
+            }
             requestAnimationFrame(shotRaf);
+        })();
+
+        scEl.addEventListener('click', scReset);
+
+        function scReset() {
+            if (!isProcessing)
+                api({ action: 'shot_reset' }).then(r => { if (r.shot) applyServerShot(r.shot); });
         }
 
-        scEl.addEventListener('click', () => {
-            if (!isProcessing)
-                callApi({ action: 'shot_reset' }).then(r => { if (r.shot) applyServerShot(r.shot); });
-        });
+        /* ── Arduino / Web Serial ────────────────────────────────────────── */
+        let portSerie = null, writer = null, dernierChiffreEnvoye = -1;
 
-        /* --- Actions Chrono --- */
+        function updateArduinoBtn() {
+            const btn = document.getElementById('btnArduino');
+            if (!btn) return;
+            if (writer) {
+                btn.innerHTML = '<i class="fas fa-usb"></i> Afficheur connecté';
+                btn.style.background = '#166534';
+                btn.onclick = deconnecterAfficheur;
+            } else {
+                btn.innerHTML = '<i class="fas fa-usb"></i> Connecter Afficheur';
+                btn.style.background = '#e65100';
+                btn.onclick = connecterAfficheur;
+            }
+        }
+
+        async function connecterAfficheur() {
+            try {
+                portSerie = await navigator.serial.requestPort();
+                await portSerie.open({ baudRate: 115200 });
+                writer = portSerie.writable.getWriter();
+                updateArduinoBtn();
+                rafraichirAfficheur(Math.ceil(shotLeft()));
+            } catch (e) {
+                console.error('Connexion série :', e);
+                alert('❌ Échec connexion afficheur.');
+            }
+        }
+
+        async function deconnecterAfficheur() {
+            try {
+                if (writer) { writer.releaseLock(); writer = null; }
+                if (portSerie) { await portSerie.close(); portSerie = null; }
+            } catch (e) { writer = null; portSerie = null; }
+            dernierChiffreEnvoye = -1;
+            updateArduinoBtn();
+        }
+
+        async function rafraichirAfficheur(v) {
+            if (!writer || v === dernierChiffreEnvoye) return;
+            try {
+                /* L'Arduino lit Serial.read() = 1 seul octet brut.
+                   On envoie la valeur directement en binaire (Uint8Array d'un byte). */
+                await writer.write(new Uint8Array([v & 0xFF]));
+                dernierChiffreEnvoye = v;
+            } catch (e) {
+                writer = null;
+                updateArduinoBtn();
+            }
+        }
+
+        /* ── Actions chrono ──────────────────────────────────────────────── */
         async function startTimer() {
             if (C.running || isProcessing) return;
-            lockUI(true);
+            lock(true);
             try {
-                const r = await callApi({ action: 'start_timer' });
+                const r = await api({ action: 'start_timer' });
                 applyServerChrono(r.chrono);
                 if (r.shot) applyServerShot(r.shot);
-            } finally { lockUI(false); }
+            } finally { lock(false); }
         }
+
         async function stopTimer() {
             if (!C.running || isProcessing) return;
-            lockUI(true);
+            lock(true);
             try {
-                const r = await callApi({ action: 'stop_timer' });
+                const r = await api({ action: 'stop_timer' });
                 applyServerChrono(r.chrono);
                 if (r.shot) applyServerShot(r.shot);
-            } finally { lockUI(false); }
+            } finally { lock(false); }
         }
 
-        chronoEl.addEventListener('click', () => {
-            if (!isProcessing) C.running ? stopTimer() : startTimer();
-        });
-
-        // Barre d'espace = start / stop
-        document.addEventListener('keydown', e => {
-            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
-            if (e.code === 'Space') {
-                e.preventDefault();
-                if (!isProcessing) C.running ? stopTimer() : startTimer();
-            }
-        });
-
-        async function safeAdjustTime(d) {
->>>>>>> ba946aae2cf978a17e824c294d9abef6143932ee
+        async function safeAdj(d) {
             if (isProcessing) return;
             lock(true);
-            try { applyServerChrono((await api({ action: 'adjust_time', delta: d })).chrono); }
-            finally { lock(false); }
+            try {
+                const r = await api({ action: 'adjust_time', delta: d });
+                applyServerChrono(r.chrono);
+            } finally { lock(false); }
         }
+
         function resetPeriod() {
             const d = {{ match.duree_periode }};
-            if (!confirm(`Réinitialiser à ${String(d).padStart(2,'0')}:00 ?`)) return;
-            api({ action: 'reset_period' }).then(r => applyServerChrono(r.chrono));
+            if (!confirm('Réinitialiser à ' + String(d).padStart(2, '0') + ':00 ?')) return;
+            api({ action: 'reset_period' }).then(r => {
+                applyServerChrono(r.chrono);
+                if (r.shot) applyServerShot(r.shot);
+            });
         }
+
         function nextPeriod() {
             if (isProcessing || !confirm('Passer à la période suivante ?')) return;
             lock(true);
             api({ action: 'next_period' }).then(r => {
                 applyServerChrono(r.chrono);
+                if (r.shot) applyServerShot(r.shot);
                 document.getElementById('periodeDisplay').textContent = r.period;
                 document.querySelectorAll('.pcard').forEach(c => {
                     c.dataset.exclEnd = '0';
@@ -1350,7 +1214,7 @@
             });
         }
 
-        /* ── Délégation d'événements (boutons action + timeout) ──────── */
+        /* ── Délégation d'événements ──────────────────────────────────────── */
         document.addEventListener('click', e => {
             const btn = e.target.closest('.abt');
             if (btn && !isProcessing) {
@@ -1368,17 +1232,18 @@
             lock(true);
             try {
                 const res = await api({
-                    action: type,
+                    action:           type,
                     participation_id: pId,
                     equipe,
-                    chrono_display: fmt(Math.ceil(timeLeft())),
+                    chrono_display:   fmt(Math.ceil(timeLeft())),
                 });
                 if (res.status !== 'ok') return;
                 refreshUI(res);
+                if (res.shot) applyServerShot(res.shot);
 
                 if (type === 'EXCL' && pId) {
                     document.getElementById('card-' + pId).dataset.exclEnd =
-                        Math.floor(Date.now()/1000) + dureeExcl;
+                        Math.floor(Date.now() / 1000) + dureeExcl;
                     checkExcl();
                 }
                 if (type === 'EDA' && pId) {
@@ -1386,19 +1251,17 @@
                     checkExcl();
                 }
                 if (type === 'BUT') bumpScore(pId);
+                if (type === 'TM')  setTimeout(() => playKlaxon(), 60000);
             } catch (err) {
                 console.error(err);
                 alert('❌ Erreur serveur');
             } finally { lock(false); }
         }
 
-        /* Feedback visuel discret sur le score (pas d'overlay plein écran) */
         function bumpScore(pId) {
-            const card = document.getElementById('card-' + pId);
+            const card  = document.getElementById('card-' + pId);
             const isDom = card && card.closest('.team-col.dom');
-            const el = isDom
-                ? document.getElementById('scoreDom')
-                : document.getElementById('scoreExt');
+            const el    = document.getElementById(isDom ? 'scoreDom' : 'scoreExt');
             if (!el) return;
             const cls = isDom ? 'bump-dom' : 'bump-ext';
             el.classList.add(cls);
@@ -1416,19 +1279,18 @@
             });
         }
 
-
         async function deleteEvent(evtId, type) {
             if (isProcessing || !confirm('❌ Annuler cette action ?')) return;
             lock(true);
             try {
                 const res = await api({ action: 'delete_event', event_id: evtId });
                 refreshUI(res);
-                if (['EXCL','EDA'].includes(type)) setTimeout(() => location.reload(), 350);
+                if (['EXCL', 'EDA'].includes(type)) setTimeout(() => location.reload(), 350);
             } catch { alert('❌ Erreur'); }
             finally { lock(false); }
         }
 
-        /* ── Mise à jour UI ──────────────────────────────────────────── */
+        /* ── Mise à jour UI ──────────────────────────────────────────────── */
         function refreshUI(res) {
             if (res.score_dom !== undefined)
                 document.getElementById('scoreDom').textContent = res.score_dom;
@@ -1462,57 +1324,46 @@
             }).join('');
         }
 
-        /* ── Overlays exclusions ─────────────────────────────────────── */
+        /* ── Overlays exclusions + klaxon fin exclusion ───────────────────── */
+        const prevExclState = {};
         function checkExcl() {
             const now = Date.now() / 1000;
             document.querySelectorAll('.pcard').forEach(card => {
-                const ov  = document.getElementById('ov-'    + card.id.split('-')[1]);
-                const txt = document.getElementById('ovtxt-' + card.id.split('-')[1]);
+                const id  = card.id.split('-')[1];
+                const ov  = document.getElementById('ov-' + id);
+                const txt = document.getElementById('ovtxt-' + id);
                 if (!ov || !txt) return;
 
                 if (card.dataset.eda === 'true') {
-                    ov.className = 'p-overlay eda';
+                    ov.className    = 'p-overlay eda';
                     txt.textContent = 'EDA';
+                    prevExclState[id] = 'eda';
                     return;
                 }
                 const end = parseFloat(card.dataset.exclEnd || 0);
                 if (end > 0) {
                     const rem = end - now;
                     if (rem > 0) {
-                        ov.className = 'p-overlay excl';
+                        ov.className    = 'p-overlay excl';
                         txt.textContent = Math.ceil(rem) + 's';
+                        prevExclState[id] = 'excl';
                     } else {
-                        ov.className = 'p-overlay ready';
+                        if (prevExclState[id] === 'excl') playKlaxon();
+                        ov.className    = 'p-overlay ready';
                         txt.textContent = '✓ OK';
+                        prevExclState[id] = 'ready';
                     }
                 } else {
                     ov.className = 'p-overlay';
+                    prevExclState[id] = 'none';
                 }
             });
         }
         setInterval(checkExcl, 400);
 
-<<<<<<< HEAD
-        /* ── API ─────────────────────────────────────────────────────── */
+        /* ── API ─────────────────────────────────────────────────────────── */
         const api = payload => fetch('/api/match/' + matchId + '/', {
             method:  'POST',
-=======
-        /* --- Effet visuel lors d'un but --- */
-        function flashBut(pId) {
-            const card = document.getElementById('card-' + pId);
-            const el = card && card.closest('.team-section.dom')
-                ? document.getElementById('scoreDom')
-                : document.getElementById('scoreExt');
-            if (el) {
-                el.classList.add('bump');
-                setTimeout(() => el.classList.remove('bump'), 300);
-            }
-        }
-
-        /* --- API Call --- */
-        const callApi = data => fetch('/api/match/' + matchId + '/', {
-            method: 'POST',
->>>>>>> ba946aae2cf978a17e824c294d9abef6143932ee
             headers: { 'Content-Type': 'application/json' },
             body:    JSON.stringify(payload),
         }).then(r => r.json());
@@ -1523,26 +1374,23 @@
             document.getElementById('appMain').classList.toggle('ui-locked', on);
         }
 
-<<<<<<< HEAD
-        /* ── Modal Feuille de match ──────────────────────────────────── */
+        /* ── Modal Feuille de match ───────────────────────────────────────── */
         function openFeuilleModal() {
-            // Mettre à jour le score affiché dans la modal
             document.getElementById('modal-score-dom').textContent =
                 document.getElementById('scoreDom').textContent;
             document.getElementById('modal-score-ext').textContent =
                 document.getElementById('scoreExt').textContent;
 
-            // Compter les événements depuis l'historique rendu
             const items = document.querySelectorAll('.hist-item');
             let buts = 0, excl = 0, pen = 0, fautes = 0;
             items.forEach(item => {
                 const badge = item.querySelector('.h-badge');
                 if (!badge) return;
                 const t = badge.textContent.trim();
-                if (t === 'BUT')     buts++;
+                if (t === 'BUT')              buts++;
                 else if (t === 'EXCL' || t === 'EDA') excl++;
-                else if (t === 'PENALTY') pen++;
-                else if (t === 'FAUTE')   fautes++;
+                else if (t === 'PENALTY')     pen++;
+                else if (t === 'FAUTE')       fautes++;
             });
             document.getElementById('modal-nb-buts').textContent  = buts;
             document.getElementById('modal-nb-excl').textContent  = excl;
@@ -1557,91 +1405,19 @@
             document.getElementById('feuilleModal').classList.remove('open');
         }
 
-        // Echap ferme la modal
         document.addEventListener('keydown', e => {
             if (e.code === 'Escape')
                 document.getElementById('feuilleModal').classList.remove('open');
         });
 
-        /* ── Init ────────────────────────────────────────────────────── */
+        /* ── Init ────────────────────────────────────────────────────────── */
         checkExcl();
         api({ action: 'refresh' }).then(r => {
-=======
-        /* --- Initialisation --- */
-        function chronoRaf() {
-    const t = timeLeft();
-    let tempsSecondes = Math.ceil(t);
-    
-    chronoEl.textContent = fmt(tempsSecondes);
-    chronoEl.classList.toggle('running', C.running);
-    
-    // ❌ Surtout PAS de rafraichirAfficheur ici !
-    
-    if (C.running && t <= 0 && !C.alertedEnd) {
-        C.alertedEnd = true;
-        C.running = false; 
-        C.frozenTime = 0; 
-        C.startedAt = null;
-        setTimeout(() => alert('⏰ Temps écoulé !'), 50);
-    }
-    requestAnimationFrame(chronoRaf);
-}
-
-
-async function rafraichirAfficheur(tempsEnSecondes) {
-    if (writer && tempsEnSecondes !== dernierChiffreEnvoye) {
-        // On transforme le nombre en texte avec un saut de ligne (ex: "30\n")
-        const encoder = new TextEncoder();
-        const data = encoder.encode(tempsEnSecondes + "\n");
-        
-        await writer.write(data);
-        dernierChiffreEnvoye = tempsEnSecondes;
-    }
-}        
-
-/* =========================================================
-           COMMUNICATION USB AVEC L'AFFICHEUR (SHOT CLOCK)
-           ========================================================= */
-        let portSerie = null;
-        let writer = null;
-        let dernierChiffreEnvoye = -1;
-
-        async function connecterAfficheur() {
-            try {
-                portSerie = await navigator.serial.requestPort();
-                await portSerie.open({ baudRate: 115200 });
-                writer = portSerie.writable.getWriter();
-                alert("✅ Afficheur Shot Clock connecté avec succès !");
-                
-                // On envoie la valeur actuelle dès la connexion
-                rafraichirAfficheur(Math.ceil(shotLeft()));
-            } catch (e) {
-                console.error("Erreur de connexion série :", e);
-                alert("❌ Échec de la connexion à l'afficheur.");
-            }
-        }
-
-        async function rafraichirAfficheur(tempsEnSecondes) {
-            if (writer && tempsEnSecondes !== dernierChiffreEnvoye) {
-                // On transforme le nombre en texte avec un saut de ligne (ex: "30\n")
-                const encoder = new TextEncoder();
-                const data = encoder.encode(tempsEnSecondes + "\n");
-                await writer.write(data);
-                dernierChiffreEnvoye = tempsEnSecondes;
-            }
-        }
-
-        /* --- Initialisation de la page --- */
-        chronoRaf();
-        shotRaf();
-        checkExclusions();
-        callApi({ action: 'refresh' }).then(r => {
->>>>>>> 29a6c0981104f6374550eed362f339f7e02693e9
             applyServerChrono(r.chrono);
             if (r.shot) applyServerShot(r.shot);
             refreshUI(r);
         }).catch(console.error);
     </script>
-    
+
 </body>
 </html>
