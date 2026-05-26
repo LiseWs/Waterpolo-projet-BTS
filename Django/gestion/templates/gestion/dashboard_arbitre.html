@@ -650,6 +650,8 @@
             </button>
             <div class="ctrl-sep"></div>
              <a href="{% url 'score_board' match.id %}" target="_blank" class="ctrl-btn btn-tool"><i class="fas fa-tv"></i> Écran</a>
+             <div class="ctrl-sep"></div>
+             <a href="{% url 'export_excel' match.id %}" class="ctrl-btn btn-tool" style="background:#1b5e20;color:#fff;"><i class="fas fa-file-excel"></i> Feuille de match</a>
             </div>
         </header>
 
@@ -806,54 +808,63 @@
     requestAnimationFrame(chronoRaf);
 }
 
-        /* --- Shot Clock --- */
-        const SHOT_CLOCK = {{ match.temps_possession|default:30 }};
-        let scValue = SHOT_CLOCK;
-        let scInterval = null;
+        /* --- Shot Clock (synchronisé serveur, identique au scoreboard) --- */
+        const SHOT_MAX = Number("{{ match.temps_possession }}");
+        let SC = {
+            running:    false,
+            frozenTime: SHOT_MAX,
+            startedAt:  null,
+            max:        SHOT_MAX,
+        };
         const scEl = document.getElementById('shotClock');
 
-        function scUpdate() {
-    // 1. Met à jour le chiffre sur le site web
-    scEl.textContent = scValue;
-    scEl.classList.toggle('warning', scValue <= 5 && scValue > 0);
-    
-    // 2. Envoie le chiffre à l'afficheur physique (Arduino)
-    rafraichirAfficheur(scValue);
-}
-        function scStart() {
-            if (scInterval) return;
-            scInterval = setInterval(() => {
-                if (!C.running) { scStop(); return; }
-                scValue--;
-                if (scValue <= 0) scValue = SHOT_CLOCK; // reset automatique
-                scUpdate();
-            }, 1000);
+        function applyServerShot(shot) {
+            if (!shot) return;
+            const lag = (!isNaN(shot.server_ts) && shot.server_ts > 0)
+                ? Math.max(0, (Date.now()/1000 - shot.server_ts) / 2) : 0;
+            SC.running    = shot.running === true;
+            SC.frozenTime = Number(shot.frozen_time) || 0;
+            SC.max        = shot.max || SC.max;
+            SC.startedAt  = SC.running ? (Number(shot.started_at) + lag) : null;
         }
-        function scStop() {
-            clearInterval(scInterval);
-            scInterval = null;
+
+        function shotLeft() {
+            if (!SC.running || SC.startedAt === null)
+                return Math.max(0, SC.frozenTime);
+            return Math.max(0, SC.frozenTime - (Date.now()/1000 - SC.startedAt));
         }
-        function scReset() {
-            scStop();
-            scValue = SHOT_CLOCK;
-            scUpdate();
-            if (C.running) scStart();
+
+        function shotRaf() {
+            const v = Math.ceil(shotLeft());
+            scEl.textContent = v;
+            scEl.classList.toggle('warning', v <= 5 && v > 0);
+            rafraichirAfficheur(v);
+            requestAnimationFrame(shotRaf);
         }
-        scEl.addEventListener('click', scReset);
-        scUpdate();
+
+        scEl.addEventListener('click', () => {
+            if (!isProcessing)
+                callApi({ action: 'shot_reset' }).then(r => { if (r.shot) applyServerShot(r.shot); });
+        });
 
         /* --- Actions Chrono --- */
         async function startTimer() {
             if (C.running || isProcessing) return;
             lockUI(true);
-            try { applyServerChrono((await callApi({ action: 'start_timer' })).chrono); scStart(); }
-            finally { lockUI(false); }
+            try {
+                const r = await callApi({ action: 'start_timer' });
+                applyServerChrono(r.chrono);
+                if (r.shot) applyServerShot(r.shot);
+            } finally { lockUI(false); }
         }
         async function stopTimer() {
             if (!C.running || isProcessing) return;
             lockUI(true);
-            try { applyServerChrono((await callApi({ action: 'stop_timer' })).chrono); scStop(); }
-            finally { lockUI(false); }
+            try {
+                const r = await callApi({ action: 'stop_timer' });
+                applyServerChrono(r.chrono);
+                if (r.shot) applyServerShot(r.shot);
+            } finally { lockUI(false); }
         }
 
         chronoEl.addEventListener('click', () => {
@@ -1100,7 +1111,7 @@ async function rafraichirAfficheur(tempsEnSecondes) {
                 alert("✅ Afficheur Shot Clock connecté avec succès !");
                 
                 // On envoie la valeur actuelle dès la connexion
-                rafraichirAfficheur(scValue);
+                rafraichirAfficheur(Math.ceil(shotLeft()));
             } catch (e) {
                 console.error("Erreur de connexion série :", e);
                 alert("❌ Échec de la connexion à l'afficheur.");
@@ -1118,13 +1129,13 @@ async function rafraichirAfficheur(tempsEnSecondes) {
         }
 
         /* --- Initialisation de la page --- */
-        // C'est cette partie cruciale qui avait disparu !
-        chronoRaf(); // Lance la boucle visuelle du chrono 8 minutes
+        chronoRaf();
+        shotRaf();
         checkExclusions();
         callApi({ action: 'refresh' }).then(r => {
             applyServerChrono(r.chrono);
+            if (r.shot) applyServerShot(r.shot);
             refreshUI(r);
-            if (C.running) scStart();
         }).catch(console.error);
 
     </script>

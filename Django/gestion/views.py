@@ -7,7 +7,7 @@ from django.http import JsonResponse, HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.utils import timezone
 
-from .models import Match, Equipe, Joueur, Participation, Evenement, ScorePeriode
+from .models import Match, Equipe, Joueur, Participation, Evenement, ScorePeriode, Sponsor
 
 
 # ==========================================
@@ -94,6 +94,20 @@ def accueil(request):
                 # Chrono initial
                 temps_restant=duree_periode * 60,
             )
+            # ── Logos équipes ────────────────────────────────────────────────
+            logo_dom_file = request.FILES.get('logo_dom')
+            logo_ext_file = request.FILES.get('logo_ext')
+            if logo_dom_file:
+                match.logo_dom = logo_dom_file
+                match.save(update_fields=['logo_dom'])
+            if logo_ext_file:
+                match.logo_ext = logo_ext_file
+                match.save(update_fields=['logo_ext'])
+
+            # ── Sponsors ─────────────────────────────────────────────────────
+            for idx, sponsor_file in enumerate(request.FILES.getlist('sponsors')):
+                Sponsor.objects.create(match=match, image=sponsor_file, ordre=idx)
+
             return redirect('compo_equipe', match_id=match.id)
 
     return render(request, 'gestion/accueil.html', {'equipes': equipes_existantes})
@@ -249,6 +263,33 @@ def _chrono_payload(match):
     }
 
 
+def _shot_payload(match):
+    """Bloc shot clock renvoyé à chaque réponse API (source de vérité).
+    Si shot_top est None, on renvoie running=False — pas de started_at=now
+    qui ferait croire au client que le chrono vient de démarrer (boucle)."""
+    now_ts = timezone.now().timestamp()
+    running = match.shot_en_cours and match.shot_top is not None
+    started_at = match.shot_top.timestamp() if match.shot_top else 0.0
+    return {
+        'running':     running,
+        'frozen_time': float(match.shot_restant),
+        'started_at':  started_at,
+        'server_ts':   now_ts,
+        'max':         match.temps_possession,
+    }
+
+
+def _reset_shot(match):
+    """Remet le shot clock à zéro (modifie l'objet, pas de save)."""
+    match.shot_restant = match.temps_possession
+    if match.chrono_en_cours:
+        match.shot_en_cours = True
+        match.shot_top = timezone.now()
+    else:
+        match.shot_en_cours = False
+        match.shot_top = None
+
+
 def _history_qs(match):
     return list(
         Evenement.objects
@@ -279,36 +320,59 @@ def api_match_action(request, match_id):
 
     if action == 'start_timer':
         if not match.chrono_en_cours:
+            now = timezone.now()
             match.chrono_en_cours = True
-            match.dernier_top_chrono = timezone.now()
-            match.save(update_fields=['chrono_en_cours', 'dernier_top_chrono'])
-        return JsonResponse({'status': 'ok', 'chrono': _chrono_payload(match)})
+            match.dernier_top_chrono = now
+            if not match.shot_en_cours or match.shot_top is None:
+                match.shot_en_cours = True
+                match.shot_top = now
+            match.save(update_fields=['chrono_en_cours', 'dernier_top_chrono',
+                                       'shot_en_cours', 'shot_top'])
+        return JsonResponse({'status': 'ok', 'chrono': _chrono_payload(match),
+                             'shot': _shot_payload(match)})
 
     elif action == 'stop_timer':
         if match.chrono_en_cours:
+            now = timezone.now()
             if match.dernier_top_chrono:
-                delta = (timezone.now() - match.dernier_top_chrono).total_seconds()
+                delta = (now - match.dernier_top_chrono).total_seconds()
                 match.temps_restant = max(0, int(match.temps_restant - delta))
             match.chrono_en_cours = False
             match.dernier_top_chrono = None
-            match.save(update_fields=['chrono_en_cours', 'temps_restant', 'dernier_top_chrono'])
-        return JsonResponse({'status': 'ok', 'chrono': _chrono_payload(match)})
+            if match.shot_en_cours and match.shot_top:
+                elapsed = (now - match.shot_top).total_seconds()
+                match.shot_restant = max(0, int(match.shot_restant - elapsed))
+            match.shot_en_cours = False
+            match.shot_top = None
+            match.save(update_fields=['chrono_en_cours', 'temps_restant', 'dernier_top_chrono',
+                                       'shot_en_cours', 'shot_restant', 'shot_top'])
+        return JsonResponse({'status': 'ok', 'chrono': _chrono_payload(match),
+                             'shot': _shot_payload(match)})
 
     elif action == 'adjust_time':
         delta = int(data.get('delta', 0))
         match.temps_restant = max(0, match.temps_restant + delta)
         match.save(update_fields=['temps_restant'])
-        return JsonResponse({'status': 'ok', 'chrono': _chrono_payload(match)})
+        return JsonResponse({'status': 'ok', 'chrono': _chrono_payload(match),
+                             'shot': _shot_payload(match)})
+
+    elif action == 'shot_reset':
+        _reset_shot(match)
+        match.save(update_fields=['shot_en_cours', 'shot_restant', 'shot_top'])
+        return JsonResponse({'status': 'ok', 'chrono': _chrono_payload(match),
+                             'shot': _shot_payload(match)})
 
     elif action == 'reset_period':
         match.chrono_en_cours = False
         match.dernier_top_chrono = None
         match.temps_restant = match.duree_periode * 60
-        match.save(update_fields=['chrono_en_cours', 'dernier_top_chrono', 'temps_restant'])
-        return JsonResponse({'status': 'ok', 'chrono': _chrono_payload(match)})
+        _reset_shot(match)
+        match.save(update_fields=['chrono_en_cours', 'dernier_top_chrono', 'temps_restant',
+                                   'shot_en_cours', 'shot_restant', 'shot_top'])
+        return JsonResponse({'status': 'ok', 'chrono': _chrono_payload(match),
+                             'shot': _shot_payload(match)})
 
     elif action == 'next_period':
-        # Snapshot du score en fin de période
         ScorePeriode.objects.update_or_create(
             match=match,
             numero_periode=match.periode_actuelle,
@@ -319,14 +383,17 @@ def api_match_action(request, match_id):
         match.dernier_top_chrono = None
         match.periode_actuelle += 1
         match.temps_restant = match.duree_periode * 60
+        _reset_shot(match)
         match.save(update_fields=[
             'chrono_en_cours', 'dernier_top_chrono',
             'periode_actuelle', 'temps_restant',
+            'shot_en_cours', 'shot_restant', 'shot_top',
         ])
         return JsonResponse({
             'status': 'ok',
             'period': match.periode_actuelle,
             'chrono': _chrono_payload(match),
+            'shot':   _shot_payload(match),
         })
 
     # ── Retour en jeu ─────────────────────────────────────────────────────────
@@ -368,6 +435,7 @@ def api_match_action(request, match_id):
                     match.score_domicile += 1
                 else:
                     match.score_exterieur += 1
+                _reset_shot(match)
 
             elif action in ('FAUTE', 'PENALTY'):
                 joueur.nb_fautes_personnelles += 1
@@ -397,7 +465,8 @@ def api_match_action(request, match_id):
                     'est_exclu_definitif', 'est_exclu', 'nb_fautes_personnelles'
                 ])
 
-            match.save(update_fields=['score_domicile', 'score_exterieur'])
+            match.save(update_fields=['score_domicile', 'score_exterieur',
+                                       'shot_en_cours', 'shot_restant', 'shot_top'])
 
             Evenement.objects.create(
                 **evt_kwargs,
@@ -442,6 +511,7 @@ def api_match_action(request, match_id):
         'period':    match.periode_actuelle,
         'history':   _history_qs(match),
         'chrono':    _chrono_payload(match),
+        'shot':      _shot_payload(match),
     })
 
 
@@ -451,16 +521,35 @@ def api_match_action(request, match_id):
 
 def score_board(request, match_id):
     match = get_object_or_404(Match, id=match_id)
-    joueurs_dom = Participation.objects.filter(
-        match=match, equipe_concernee='DOM').order_by('numero_bonnet')
-    joueurs_ext = Participation.objects.filter(
-        match=match, equipe_concernee='EXT').order_by('numero_bonnet')
     return render(request, 'gestion/score_board.html', {
         'match': match,
-        'joueurs_dom': joueurs_dom,
-        'joueurs_ext': joueurs_ext,
         'range_15': range(1, 16),
     })
+
+
+@csrf_exempt
+def upload_sponsor(request, match_id):
+    """Upload one or more sponsor images for a match."""
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST only'}, status=405)
+    match = get_object_or_404(Match, id=match_id)
+    count = Sponsor.objects.filter(match=match).count()
+    created = []
+    for idx, f in enumerate(request.FILES.getlist('sponsors')):
+        s = Sponsor.objects.create(match=match, image=f, ordre=count + idx)
+        created.append({'id': s.id, 'url': request.build_absolute_uri(s.image.url)})
+    return JsonResponse({'created': created})
+
+
+@csrf_exempt
+def delete_sponsor(request, sponsor_id):
+    """Delete a sponsor image."""
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST only'}, status=405)
+    s = get_object_or_404(Sponsor, id=sponsor_id)
+    s.image.delete(save=False)
+    s.delete()
+    return JsonResponse({'status': 'deleted'})
 
 
 @csrf_exempt
@@ -478,17 +567,45 @@ def api_match_state(request, match_id):
         else:
             state, end_time = 'OK', 0
         players_state[p.id] = {
-            'state': state,
+            'state':   state,
             'end_time': end_time,
-            'fautes': p.nb_fautes_personnelles,
+            'fautes':  p.nb_fautes_personnelles,
+            'side':    p.equipe_concernee,
+            'bonnet':  p.numero_bonnet,
         }
 
+    # Temps morts utilisés par équipe
+    tm_qs = Evenement.objects.filter(match=match, type_action='TM')
+    tm_dom = tm_qs.filter(equipe_attribuee='DOM').count()
+    tm_ext = tm_qs.filter(equipe_attribuee='EXT').count()
+
+    # Logos et sponsors
+    request_host = request.build_absolute_uri('/')[:-1]
+    logo_dom_url = (request_host + match.logo_dom.url) if match.logo_dom else None
+    logo_ext_url = (request_host + match.logo_ext.url) if match.logo_ext else None
+    sponsor_urls = [
+        request_host + s.image.url
+        for s in Sponsor.objects.filter(match=match)
+    ]
+
     return JsonResponse({
-        'score_dom': match.score_domicile,
-        'score_ext': match.score_exterieur,
-        'periode':   match.periode_actuelle,
-        'players':   players_state,
-        'chrono':    _chrono_payload(match),
+        'score_dom':      match.score_domicile,
+        'score_ext':      match.score_exterieur,
+        'periode':        match.periode_actuelle,
+        'players':        players_state,
+        'chrono':         _chrono_payload(match),
+        'tm_dom':         tm_dom,
+        'tm_ext':         tm_ext,
+        'nb_temps_morts': match.nb_temps_morts,
+        'temps_possession': match.temps_possession,
+        'nom_dom':        match.nom_equipe_domicile,
+        'nom_ext':        match.nom_equipe_exterieur,
+        'logo_dom':       logo_dom_url,
+        'logo_ext':       logo_ext_url,
+        'sponsors':       sponsor_urls,
+        'couleur_dom':    match.couleur_bonnet_dom,
+        'couleur_ext':    match.couleur_bonnet_ext,
+        'shot':           _shot_payload(match),
     })
 
 

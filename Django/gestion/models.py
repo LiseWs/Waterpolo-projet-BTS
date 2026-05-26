@@ -32,6 +32,10 @@ class Joueur(models.Model):
 # ==========================================
 
 class Match(models.Model):
+    # ── Logos équipes (fichiers uploadés) ────────────────────────────────────
+    logo_dom = models.FileField(upload_to='logos/', blank=True, null=True)
+    logo_ext = models.FileField(upload_to='logos/', blank=True, null=True)
+
     # ── Infos générales ─────────────────────────────────────────────────────
     date_match = models.DateTimeField(auto_now_add=True)
     heure_debut = models.TimeField(null=True, blank=True,
@@ -107,6 +111,11 @@ class Match(models.Model):
     chrono_en_cours = models.BooleanField(default=False)
     temps_restant = models.IntegerField(default=480)  # secondes
     dernier_top_chrono = models.DateTimeField(null=True, blank=True)
+
+    # ── Shot clock (source de vérité serveur) ─────────────────────────────────
+    shot_en_cours = models.BooleanField(default=False)
+    shot_restant = models.IntegerField(default=30)   # secondes
+    shot_top = models.DateTimeField(null=True, blank=True)
 
     def __str__(self):
         return f"{self.nom_equipe_domicile} vs {self.nom_equipe_exterieur}"
@@ -204,3 +213,21 @@ class ScorePeriode(models.Model):
     def __str__(self):
         return (f"Période {self.numero_periode}: "
                 f"{self.score_dom} – {self.score_ext}")
+
+
+# ==========================================
+# 6. SPONSORS (images affichées sur le scoreboard)
+# ==========================================
+
+class Sponsor(models.Model):
+    """Logo sponsor PNG affiché en bas du scoreboard."""
+    match = models.ForeignKey(Match, on_delete=models.CASCADE,
+                               related_name='sponsors')
+    image = models.FileField(upload_to='sponsors/')
+    ordre = models.IntegerField(default=0)
+
+    class Meta:
+        ordering = ['ordre', 'id']
+
+    def __str__(self):
+        return f"Sponsor match {self.match_id} #{self.ordre}"
