@@ -39,36 +39,26 @@
         <li class="bouton"><a href="affichage_feuille_match.php">Feuille de Match</a></li> <!-- Lien vers la page du affichage feuille de match -->
         <li class="bouton"><a href="upload_match.php">Upload feuille de match dans la BDD</a></li> <!-- Upload de la feuille de match sur la BDD -->
         
+        
       </ul>
     </nav> 
     <article>
       <?php
             // Requête SQL pour récupérer les informations 
-            $sqlQuery = "SELECT 
-            Matchs.id_matchs,
-            date_matchs,
-            heure_matchs,
-            visiteur.nom_equipe AS 'equipe_visiteur',
-            domicile.nom_equipe AS 'equipe_domicile',
-            domicile.logo_equipe AS 'logo_domicile',
-            visiteur.logo_equipe AS 'logo_visiteur',
-            (SELECT COUNT(*) 
-             FROM But 
-             WHERE But.id_equipe = Matchs.id_equipe_domicile 
-               AND But.id_matchs = Matchs.id_matchs) AS buts_domicile,
-            (SELECT COUNT(*) 
-             FROM But 
-             WHERE But.id_equipe = Matchs.id_equipe_visiteur 
-               AND But.id_matchs = Matchs.id_matchs) AS buts_visiteur
-        FROM 
-            Matchs 
-        INNER JOIN 
-            Equipe AS domicile ON Matchs.id_equipe_domicile = domicile.id_equipe
-        INNER JOIN 
-            Equipe AS visiteur ON Matchs.id_equipe_visiteur = visiteur.id_equipe
-        ORDER BY 
-            date_matchs DESC, 
-            heure_matchs DESC;";
+     $sqlQuery = "SELECT
+    matchs.id_matchs,
+    date_matchs,
+    heure_matchs,
+    visiteur.nom_equipe  AS equipe_visiteur,
+    domicile.nom_equipe  AS equipe_domicile,
+    domicile.logo_equipe AS logo_domicile,
+    visiteur.logo_equipe AS logo_visiteur,
+    matchs.score_domicile AS buts_domicile,
+    matchs.score_visiteur AS buts_visiteur
+FROM matchs
+INNER JOIN equipe AS domicile ON matchs.id_equipe_domicile = domicile.id_equipe
+INNER JOIN equipe AS visiteur ON matchs.id_equipe_visiteur = visiteur.id_equipe
+ORDER BY date_matchs DESC, heure_matchs DESC;";
             // Préparation de la requête
             $requete_matchs = $mysqlClient->prepare($sqlQuery);
             // Exécution de la requête

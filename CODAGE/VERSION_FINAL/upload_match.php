@@ -37,8 +37,7 @@ if (!isset($_SESSION['user'])) {
 
       </ul>
     </nav> 
-    <form action="traitement_upload.php" method="post" enctype="multipart/form-data">
-  <label for="matchFile">Importer une feuille de match Excel :</label>
-  <input type="file" name="matchFile" id="matchFile" accept=".xlsx">
-  <input type="submit" value="Envoyer">
-    </form>
+  <form action="import_feuille_match.php" method="POST" enctype="multipart/form-data">
+    <input type="file" name="xlsx_file" accept=".xlsx">
+    <button type="submit">Importer</button>
+</form>

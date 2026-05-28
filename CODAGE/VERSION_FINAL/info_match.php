@@ -24,38 +24,24 @@ if (isset($_GET['id_match'])) {
     // Vérifie si l'ID du match est passé en paramètre GET
 
     $sqlQuery = "SELECT 
-            Matchs.id_equipe_domicile,
-            Matchs.id_equipe_visiteur,
-            date_matchs,
-            heure_matchs,
-            visiteur.nom_equipe AS 'equipe_visiteur',
-            domicile.nom_equipe AS 'equipe_domicile',
-            domicile.logo_equipe AS 'logo_domicile',
-            visiteur.logo_equipe AS 'logo_visiteur',
-            (SELECT COUNT(*) 
-             FROM But 
-             WHERE But.id_equipe = Matchs.id_equipe_domicile 
-               AND But.id_matchs = Matchs.id_matchs) AS buts_domicile,
-            (SELECT COUNT(*) 
-             FROM But 
-             WHERE But.id_equipe = Matchs.id_equipe_visiteur 
-               AND But.id_matchs = Matchs.id_matchs) AS buts_visiteur,
-            Arbitre.nom_arbitre,
-            Arbitre.prenom_arbitre,
-            Structure.nom_structure,
-            Structure.lieu_structure
-        FROM 
-            Matchs 
-        INNER JOIN 
-            Equipe AS domicile ON Matchs.id_equipe_domicile = domicile.id_equipe
-        INNER JOIN 
-            Equipe AS visiteur ON Matchs.id_equipe_visiteur = visiteur.id_equipe
-        INNER JOIN 
-            Arbitre ON Matchs.id_arbitre = Arbitre.id_arbitre
-        INNER JOIN 
-            Structure ON Matchs.id_structure = Structure.id_structure
-        WHERE 
-            Matchs.id_matchs = :id_match";
+        matchs.id_equipe_domicile,
+        matchs.id_equipe_visiteur,
+        date_matchs,
+        heure_matchs,
+        visiteur.nom_equipe  AS equipe_visiteur,
+        domicile.nom_equipe  AS equipe_domicile,
+        domicile.logo_equipe AS logo_domicile,
+        visiteur.logo_equipe AS logo_visiteur,
+        matchs.score_domicile AS buts_domicile,
+        matchs.score_visiteur AS buts_visiteur,
+        structure.nom_structure,
+        structure.lieu_structure
+    FROM matchs
+    INNER JOIN equipe    AS domicile ON matchs.id_equipe_domicile = domicile.id_equipe
+    INNER JOIN equipe    AS visiteur ON matchs.id_equipe_visiteur = visiteur.id_equipe
+    INNER JOIN structure             ON matchs.id_structure       = structure.id_structure
+    WHERE matchs.id_matchs = :id_match";
+
     // Requête SQL pour récupérer les détails d'un match spécifique et les statistiques associées
 
     $requete_match = $mysqlClient->prepare($sqlQuery);
@@ -90,17 +76,18 @@ if (isset($_GET['id_match'])) {
         // Détermine le résultat du match pour chaque équipe
 
         // Requête pour obtenir les informations des joueurs de l'équipe domicile
-        $sqlJoueursDomicile = "SELECT 
-                J.numero_bonnet, 
-                J.nom_joueur, 
-                J.prenom_joueur, 
-                J.annee_naissance, 
-                (SELECT COUNT(*) 
-                 FROM But 
-                 WHERE But.id_joueur = J.id_joueur 
-                   AND But.id_matchs = :id_match) AS buts_marques
-            FROM Joueur J
-            WHERE J.id_equipe = :id_equipe_domicile";
+       $sqlJoueursDomicile = "SELECT 
+        j.iuf,
+        j.nom_joueur,
+        j.annee_naissance,
+        p.numero_bonnet,
+        p.buts   AS buts_marques,
+        p.exclu
+    FROM participation p
+    INNER JOIN joueur j ON p.id_joueur = j.id_joueur
+    WHERE p.id_matchs = :id_match
+      AND j.id_equipe = :id_equipe_domicile
+    ORDER BY p.numero_bonnet";
 
         $requete_joueurs_domicile = $mysqlClient->prepare($sqlJoueursDomicile);
         $requete_joueurs_domicile->execute(['id_match' => $id_match, 'id_equipe_domicile' => $match['id_equipe_domicile']]);
@@ -108,17 +95,18 @@ if (isset($_GET['id_match'])) {
         // Exécute la requête et récupère les informations des joueurs de l'équipe domicile
 
         // Requête pour obtenir les informations des joueurs de l'équipe visiteur
-        $sqlJoueursVisiteur = "SELECT 
-                J.numero_bonnet, 
-                J.nom_joueur, 
-                J.prenom_joueur, 
-                J.annee_naissance, 
-                (SELECT COUNT(*) 
-                 FROM But 
-                 WHERE But.id_joueur = J.id_joueur 
-                   AND But.id_matchs = :id_match) AS buts_marques
-            FROM Joueur J
-            WHERE J.id_equipe = :id_equipe_visiteur";
+       $sqlJoueursVisiteur = "SELECT 
+        j.iuf,
+        j.nom_joueur,
+        j.annee_naissance,
+        p.numero_bonnet,
+        p.buts   AS buts_marques,
+        p.exclu
+    FROM participation p
+    INNER JOIN joueur j ON p.id_joueur = j.id_joueur
+    WHERE p.id_matchs = :id_match
+      AND j.id_equipe = :id_equipe_visiteur
+    ORDER BY p.numero_bonnet";
 
         $requete_joueurs_visiteur = $mysqlClient->prepare($sqlJoueursVisiteur);
         $requete_joueurs_visiteur->execute(['id_match' => $id_match, 'id_equipe_visiteur' => $match['id_equipe_visiteur']]);
@@ -155,13 +143,12 @@ if (isset($_GET['id_match'])) {
                 <!-- Liste des joueurs de l'équipe domicile -->
                 <?php foreach ($joueurs_domicile as $joueur) { ?>
                   <li class="ddm_equipe">
-                    <span>J<?=$joueur['numero_bonnet']?></span>
-                    <span><?=$joueur['nom_joueur']?></span>
-                    <span><?=$joueur['prenom_joueur']?></span>
-                    <span><?=$joueur['annee_naissance']?></span>
-                    <span>: <?=$joueur['buts_marques']?></span>
-                    <!-- Affiche le numéro, le nom, le prénom, l'année de naissance et le nombre de buts marqués par chaque joueur de l'équipe domicile -->
-                  </li>
+    <span>J<?=$joueur['numero_bonnet']?></span>
+    <span><?=$joueur['nom_joueur']?></span>
+    <span><?=$joueur['annee_naissance']?></span>
+    <span>: <?=$joueur['buts_marques']?> but(s)</span>
+    <?php if ($joueur['exclu']) echo '<span style="color:red"> ⛔ Exclu</span>'; ?>
+</li>
                 <?php } ?>
               </ul>
             </div>
@@ -185,22 +172,31 @@ if (isset($_GET['id_match'])) {
               <ul class="player-list">
                 <!-- Liste des joueurs de l'équipe visiteur -->
                 <?php foreach ($joueurs_visiteur as $joueur) { ?>
-                  <li class="ddm_equipe">
-                    <span>J<?=$joueur['numero_bonnet']?></span>
-                    <span><?=$joueur['nom_joueur']?></span>
-                    <span><?=$joueur['prenom_joueur']?></span>
-                    <span><?=$joueur['annee_naissance']?></span>
-                    <span>: <?=$joueur['buts_marques']?></span>
-                    <!-- Affiche le numéro, le nom, le prénom, l'année de naissance et le nombre de buts marqués par chaque joueur de l'équipe visiteur -->
-                  </li>
+                 <li class="ddm_equipe">
+    <span>J<?=$joueur['numero_bonnet']?></span>
+    <span><?=$joueur['nom_joueur']?></span>
+    <span><?=$joueur['annee_naissance']?></span>
+    <span>: <?=$joueur['buts_marques']?> but(s)</span>
+    <?php if ($joueur['exclu']) echo '<span style="color:red"> ⛔ Exclu</span>'; ?>
+</li>
                 <?php } ?>
               </ul>
             </div>
           </div>
         </div>
       </div>
-      <h2 class="arbitre">Arbitré par: <?php echo $match['prenom_arbitre'] . ' ' . $match['nom_arbitre']; ?></h2>
-      <!-- Affiche le nom de l'arbitre -->
+      
+<?php
+$sqlArb = "SELECT o.nom_prenom FROM officiel o
+           INNER JOIN match_officiel mo ON o.id_officiel = mo.id_officiel
+           WHERE mo.id_matchs = :id_match AND o.role = 'ARBITRE'";
+$reqArb = $mysqlClient->prepare($sqlArb);
+$reqArb->execute([':id_match' => $id_match]);
+$arbitres = $reqArb->fetchAll(PDO::FETCH_COLUMN);
+if ($arbitres) {
+    echo '<h2 class="arbitre">Arbitré par : ' . implode(' &amp; ', $arbitres) . '</h2>';
+}
+?>
       <h2 class="structure">Structure: <?php echo $match['lieu_structure'] . ', ' . $match['nom_structure']; ?></h2>
       <!-- Affiche les informations de la structure où le match a eu lieu -->
     <?php
@@ -216,12 +212,6 @@ if (isset($_GET['id_match'])) {
     </article>
   </section>
 
-  <div style="margin: 20px 0; text-align: center;">
-    <a href="generer_excel.php?id=<?php echo $id_match; ?>" 
-       style="background-color: #28a745; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block; border: 1px solid #1e7e34;">
-       📥 Générer la Feuille de Match Excel
-    </a>
-</div>
   <footer>
     <div class="style_footer">
       <img class="imgfooter" src="images/footer_wave.svg" alt="imgfooter">

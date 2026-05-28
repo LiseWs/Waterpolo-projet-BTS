@@ -29,12 +29,17 @@
     /* En cas d'erreur de connexion, affiche un message d'erreur et arrête le script */
   }
 
-  $sql = "SELECT j.id_joueur, j.nom_joueur, j.prenom_joueur, e.nom_equipe, COUNT(b.id_but) as total_buts
-          FROM but b
-          JOIN joueur j ON b.id_joueur = j.id_joueur
-          JOIN equipe e ON j.id_equipe = e.id_equipe
-          GROUP BY j.id_joueur, j.nom_joueur, j.prenom_joueur, e.nom_equipe
-          ORDER BY total_buts DESC";
+  $sql = "SELECT 
+        j.id_joueur,
+        j.nom_joueur,
+        e.nom_equipe,
+        SUM(p.buts) AS total_buts
+    FROM participation p
+    JOIN joueur j ON p.id_joueur = j.id_joueur
+    JOIN equipe e ON j.id_equipe = e.id_equipe
+    WHERE p.buts > 0
+    GROUP BY j.id_joueur, j.nom_joueur, e.nom_equipe
+    ORDER BY total_buts DESC";
   /* Requête SQL pour sélectionner les joueurs et le nombre de buts marqués, groupés par joueur et équipe, triés par nombre de buts décroissant */
   $stmt = $mysqlClient->prepare($sql);
   /* Prépare la requête SQL */
@@ -76,9 +81,7 @@
           <tr>
             <th class="tt">Rang</th>
             <!-- Colonne pour le rang -->
-            <th class="tt">Nom</th>
-            <!-- Colonne pour le nom -->
-            <th class="tt">Prénom</th>
+            <th class="tt" colspan="2">Nom - Prénom</th>
             <!-- Colonne pour le prénom -->
             <th class="tt">Équipe</th>
             <!-- Colonne pour l'équipe -->
@@ -107,10 +110,7 @@
             /* Début de la ligne du tableau pour chaque joueur */
             echo "<td>{$rank}</td>";
             /* Affiche le rang */
-            echo "<td>{$joueur['nom_joueur']}</td>";
-            /* Affiche le nom du joueur */
-            echo "<td>{$joueur['prenom_joueur']}</td>";
-            /* Affiche le prénom du joueur */
+           echo "<td colspan='2'>{$joueur['nom_joueur']}</td>";
             echo "<td>{$joueur['nom_equipe']}</td>";
             /* Affiche le nom de l'équipe */
             echo "<td>{$joueur['total_buts']}</td>";
