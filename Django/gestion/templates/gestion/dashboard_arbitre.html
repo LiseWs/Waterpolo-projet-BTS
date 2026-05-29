@@ -21,7 +21,6 @@
             --ext:     #3b82f6;
 
             --but:     #22c55e;
-            --faute:   #eab308;
             --excl:    #ef4444;
             --pen:     #f97316;
             --info:    #8b5cf6;
@@ -184,59 +183,32 @@
             0%,100% { opacity: 1; }
             50%      { opacity: 0.3; }
         }
-        .shot-clock-btns {
-            display: flex;
-            gap: 3px;
-        }
+        .shot-clock-btns { display: flex; gap: 3px; }
         .sc-btn {
-            height: 20px;
-            padding: 0 7px;
-            border: 1px solid #333;
-            border-radius: 4px;
-            background: #1c1c28;
-            color: #aaa;
-            font-size: 0.58rem;
-            font-weight: 700;
-            cursor: pointer;
-            transition: background .15s;
+            height: 20px; padding: 0 7px;
+            border: 1px solid #333; border-radius: 4px;
+            background: #1c1c28; color: #aaa;
+            font-size: 0.58rem; font-weight: 700;
+            cursor: pointer; transition: background .15s;
         }
         .sc-btn:hover { background: #28283c; color: #fff; }
         .sc-btn.sc-reset { background: #7c2d12; border-color: #c2410c; color: #fed7aa; }
         .sc-btn.sc-reset:hover { background: #9a3412; }
 
-        /* Espace hint */
-        .space-hint {
-            font-size: 0.58rem;
-            color: var(--muted);
-            text-align: center;
-            letter-spacing: .3px;
-        }
-
         /* Barre contrôles */
         .ctrl-bar {
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            overflow-x: auto;
+            display: flex; align-items: center;
+            gap: 5px; overflow-x: auto;
         }
         .ctrl-bar::-webkit-scrollbar { display: none; }
 
         .ctrl-btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 5px;
-            height: 28px;
-            padding: 0 10px;
-            border: none;
-            border-radius: 5px;
-            font-weight: 700;
-            font-size: 0.68rem;
-            text-transform: uppercase;
-            cursor: pointer;
-            white-space: nowrap;
-            text-decoration: none;
-            transition: opacity .15s, transform .1s;
-            color: #fff;
+            display: inline-flex; align-items: center; gap: 5px;
+            height: 28px; padding: 0 10px;
+            border: none; border-radius: 5px;
+            font-weight: 700; font-size: 0.68rem; text-transform: uppercase;
+            cursor: pointer; white-space: nowrap; text-decoration: none;
+            transition: opacity .15s, transform .1s; color: #fff;
         }
         .ctrl-btn:hover { opacity: .8; transform: translateY(-1px); }
         .ctrl-btn:active { transform: scale(.95); }
@@ -248,154 +220,87 @@
         .sep        { width: 1px; height: 18px; background: var(--border); flex-shrink: 0; }
         .btn-feuille {
             background: linear-gradient(135deg, #14532d, #166534);
-            border: 1px solid #22c55e55;
-            color: #bbf7d0;
-            font-size: 0.72rem;
-            letter-spacing: .4px;
+            border: 1px solid #22c55e55; color: #bbf7d0;
+            font-size: 0.72rem; letter-spacing: .4px;
             box-shadow: 0 0 8px rgba(34,197,94,.15);
         }
         .btn-feuille:hover {
             background: linear-gradient(135deg, #166534, #15803d);
-            box-shadow: 0 0 14px rgba(34,197,94,.35);
-            opacity: 1 !important;
+            box-shadow: 0 0 14px rgba(34,197,94,.35); opacity: 1 !important;
         }
 
         /* Modal feuille de match */
         .modal-backdrop {
-            display: none;
-            position: fixed;
-            inset: 0;
-            background: rgba(0,0,0,.75);
-            z-index: 100;
-            align-items: center;
-            justify-content: center;
+            display: none; position: fixed; inset: 0;
+            background: rgba(0,0,0,.75); z-index: 100;
+            align-items: center; justify-content: center;
         }
         .modal-backdrop.open { display: flex; }
         .modal-box {
-            background: #13131e;
-            border: 1px solid #2a2a3e;
-            border-radius: 12px;
-            padding: 24px 28px;
-            width: min(480px, 92vw);
-            box-shadow: 0 20px 60px rgba(0,0,0,.6);
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
+            background: #13131e; border: 1px solid #2a2a3e;
+            border-radius: 12px; padding: 24px 28px;
+            width: min(480px, 92vw); box-shadow: 0 20px 60px rgba(0,0,0,.6);
+            display: flex; flex-direction: column; gap: 16px;
         }
         .modal-title {
-            font-size: 1rem;
-            font-weight: 800;
-            text-transform: uppercase;
-            letter-spacing: .6px;
-            color: #bbf7d0;
-            display: flex;
-            align-items: center;
-            gap: 8px;
+            font-size: 1rem; font-weight: 800;
+            text-transform: uppercase; letter-spacing: .6px;
+            color: #bbf7d0; display: flex; align-items: center; gap: 8px;
         }
-        .modal-section {
-            border-top: 1px solid #26263a;
-            padding-top: 12px;
-        }
+        .modal-section { border-top: 1px solid #26263a; padding-top: 12px; }
         .modal-section-title {
-            font-size: 0.65rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: .8px;
-            color: var(--muted);
-            margin-bottom: 8px;
+            font-size: 0.65rem; font-weight: 700;
+            text-transform: uppercase; letter-spacing: .8px;
+            color: var(--muted); margin-bottom: 8px;
         }
         .modal-score {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 16px;
-            font-size: 2.4rem;
-            font-weight: 900;
-            letter-spacing: 2px;
+            display: flex; align-items: center; justify-content: center;
+            gap: 16px; font-size: 2.4rem; font-weight: 900; letter-spacing: 2px;
         }
         .modal-score .ms-dom { color: var(--dom); }
         .modal-score .ms-sep { color: var(--muted); font-size: 1.8rem; }
         .modal-score .ms-ext { color: var(--ext); }
         .modal-team-names {
-            display: flex;
-            justify-content: space-between;
-            font-size: 0.7rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            color: var(--muted);
-            margin-top: 4px;
+            display: flex; justify-content: space-between;
+            font-size: 0.7rem; font-weight: 700;
+            text-transform: uppercase; color: var(--muted); margin-top: 4px;
         }
-        .modal-periods {
-            display: flex;
-            gap: 6px;
-            justify-content: center;
-        }
+        .modal-periods { display: flex; gap: 6px; justify-content: center; }
         .modal-period-cell {
-            background: #1c1c2e;
-            border: 1px solid #2e2e45;
-            border-radius: 6px;
-            padding: 5px 10px;
-            text-align: center;
-            min-width: 64px;
+            background: #1c1c2e; border: 1px solid #2e2e45;
+            border-radius: 6px; padding: 5px 10px;
+            text-align: center; min-width: 64px;
         }
         .modal-period-cell .mpc-label {
-            font-size: 0.55rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            color: var(--muted);
+            font-size: 0.55rem; font-weight: 700;
+            text-transform: uppercase; color: var(--muted);
         }
         .modal-period-cell .mpc-score {
-            font-size: 0.85rem;
-            font-weight: 800;
-            color: var(--text);
-            margin-top: 2px;
+            font-size: 0.85rem; font-weight: 800;
+            color: var(--text); margin-top: 2px;
         }
-        .modal-events-summary {
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-        }
+        .modal-events-summary { display: flex; gap: 8px; flex-wrap: wrap; }
         .modal-badge {
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            background: #1c1c2e;
-            border: 1px solid #2e2e45;
-            border-radius: 6px;
-            padding: 4px 10px;
-            font-size: 0.68rem;
-            font-weight: 700;
+            display: flex; align-items: center; gap: 4px;
+            background: #1c1c2e; border: 1px solid #2e2e45;
+            border-radius: 6px; padding: 4px 10px;
+            font-size: 0.68rem; font-weight: 700;
         }
-        .modal-badge .mb-count {
-            font-size: 1rem;
-            font-weight: 900;
-        }
-        .mb-but   { color: var(--but); }
-        .mb-excl  { color: var(--excl); }
-        .mb-pen   { color: var(--pen); }
-        .mb-faute { color: var(--faute); }
+        .modal-badge .mb-count { font-size: 1rem; font-weight: 900; }
+        .mb-but  { color: var(--but); }
+        .mb-excl { color: var(--excl); }
+        .mb-pen  { color: var(--pen); }
+        .mb-tm   { color: #9ca3af; }
         .modal-actions {
-            display: flex;
-            gap: 8px;
-            justify-content: flex-end;
-            padding-top: 4px;
+            display: flex; gap: 8px; justify-content: flex-end; padding-top: 4px;
         }
         .modal-btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            height: 36px;
-            padding: 0 16px;
-            border-radius: 7px;
-            font-size: 0.72rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: .4px;
-            cursor: pointer;
-            border: none;
-            text-decoration: none;
-            transition: opacity .15s, transform .1s;
-            color: #fff;
+            display: inline-flex; align-items: center; gap: 6px;
+            height: 36px; padding: 0 16px; border-radius: 7px;
+            font-size: 0.72rem; font-weight: 700;
+            text-transform: uppercase; letter-spacing: .4px;
+            cursor: pointer; border: none; text-decoration: none;
+            transition: opacity .15s, transform .1s; color: #fff;
         }
         .modal-btn:hover { opacity: .85; transform: translateY(-1px); }
         .modal-btn:active { transform: scale(.97); }
@@ -409,100 +314,73 @@
             flex: 1;
             display: grid;
             grid-template-columns: 1fr 210px 1fr;
-            gap: 8px;
-            padding: 8px;
-            min-height: 0;
+            gap: 8px; padding: 8px; min-height: 0;
         }
 
         /* ==========================================================================
            COLONNES ÉQUIPES
            ========================================================================== */
         .team-col {
-            display: flex;
-            flex-direction: column;
-            background: var(--bg-panel);
-            border-radius: var(--r-md);
-            overflow: hidden;
-            border-top: 3px solid;
-            min-height: 0;
+            display: flex; flex-direction: column;
+            background: var(--bg-panel); border-radius: var(--r-md);
+            overflow: hidden; border-top: 3px solid; min-height: 0;
         }
         .team-col.dom { border-top-color: var(--dom); }
         .team-col.ext { border-top-color: var(--ext); }
 
         .col-head {
             flex-shrink: 0;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+            display: flex; justify-content: space-between; align-items: center;
             padding: 7px 10px;
-            background: rgba(0,0,0,.25);
-            border-bottom: 1px solid var(--border);
+            background: rgba(0,0,0,.25); border-bottom: 1px solid var(--border);
         }
         .col-head-title {
-            font-size: 0.75rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: .5px;
+            font-size: 0.75rem; font-weight: 700;
+            text-transform: uppercase; letter-spacing: .5px;
         }
         .team-col.dom .col-head-title { color: var(--dom); }
         .team-col.ext .col-head-title { color: var(--ext); }
 
         .tm-btn {
-            height: 26px;
-            padding: 0 10px;
-            background: transparent;
-            border: 1px solid #444;
-            border-radius: 5px;
-            font-size: 0.63rem;
-            font-weight: 700;
-            color: #aaa;
-            cursor: pointer;
-            transition: background .2s;
+            height: 28px; padding: 0 10px;
+            background: transparent; border: 1px solid #444;
+            border-radius: 5px; font-size: 0.63rem; font-weight: 700;
+            color: #aaa; cursor: pointer; transition: background .2s, border-color .2s;
+            display: inline-flex; align-items: center; gap: 5px;
         }
-        .tm-btn:hover { background: rgba(255,255,255,.08); }
+        .tm-btn:hover:not(:disabled) { background: rgba(255,255,255,.08); }
+        .tm-btn:disabled { opacity: .35; cursor: not-allowed; }
+        .tm-counter { font-size: 0.58rem; color: #9ca3af; }
+        .tm-btn.tm-used-1 { border-color: #ca8a04; color: #fde68a; }
+        .tm-btn.tm-full   { border-color: #dc2626; color: #fca5a5; }
 
         /* Grille joueurs scrollable */
         .player-grid {
-            flex: 1;
-            overflow-y: auto;
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            align-content: start;
-            gap: 5px;
-            padding: 5px;
+            flex: 1; overflow-y: auto;
+            display: grid; grid-template-columns: repeat(2, 1fr);
+            align-content: start; gap: 5px; padding: 5px;
         }
 
         /* ==========================================================================
            CARTE JOUEUR
            ========================================================================== */
         .pcard {
-            position: relative;
-            display: flex;
-            flex-direction: column;
-            background: var(--bg-card);
-            border-radius: var(--r-sm);
-            border: 1px solid transparent;
-            overflow: hidden;
+            position: relative; display: flex; flex-direction: column;
+            background: var(--bg-card); border-radius: var(--r-sm);
+            border: 1px solid transparent; overflow: hidden;
             transition: border-color .15s;
         }
         .pcard:hover { border-color: #333; background: var(--bg-card-hover); }
 
         .pcard-top {
-            display: flex;
-            align-items: center;
-            gap: 0;
+            display: flex; align-items: center; gap: 0;
             border-bottom: 1px solid rgba(255,255,255,.04);
         }
 
         .p-num {
-            width: 32px;
-            flex-shrink: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 6px 0;
-            font-size: 1.05rem;
-            font-weight: 900;
+            width: 32px; flex-shrink: 0;
+            display: flex; align-items: center; justify-content: center;
+            padding: 6px 0; font-size: 1.05rem; font-weight: 900;
             background: rgba(255,255,255,.03);
             border-right: 1px solid var(--border);
         }
@@ -510,90 +388,94 @@
         .team-col.ext .p-num { color: var(--ext); }
 
         .p-info {
-            flex: 1;
-            padding: 4px 6px;
-            min-width: 0;
+            flex: 1; padding: 3px 6px; min-width: 0;
+        }
+        .p-name-row {
+            display: flex; align-items: center; gap: 4px;
         }
         .p-name {
-            font-size: 0.72rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
+            flex: 1;
+            font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
             line-height: 1.2;
         }
-        .p-fautes {
-            display: flex;
-            gap: 3px;
-            margin-top: 2px;
-        }
+        .p-fautes { display: flex; gap: 3px; margin-top: 2px; }
         .fdot {
-            width: 7px;
-            height: 7px;
-            border-radius: 50%;
-            background: var(--faute);
-            box-shadow: 0 0 4px var(--faute);
+            width: 7px; height: 7px; border-radius: 50%;
+            background: #eab308; box-shadow: 0 0 4px #eab308;
         }
 
+        /* Bouton présence terrain */
+        .terrain-btn {
+            width: 20px; height: 20px; flex-shrink: 0;
+            background: rgba(255,255,255,.04); border: 1px solid #333;
+            border-radius: 3px; color: #555; font-size: 0.65rem;
+            cursor: pointer; transition: background .15s, color .15s, border-color .15s;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .terrain-btn:hover { background: rgba(255,255,255,.1); }
+        .terrain-btn.on { background: rgba(34,197,94,.15); border-color: #22c55e; color: #22c55e; }
+
         .pcard-actions {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 0;
+            display: grid; grid-template-columns: repeat(4, 1fr); gap: 0;
         }
 
         .abt {
-            height: 30px;
-            border: none;
-            font-size: 0.62rem;
-            font-weight: 900;
-            cursor: pointer;
-            text-transform: uppercase;
-            letter-spacing: .3px;
+            height: 30px; border: none;
+            font-size: 0.62rem; font-weight: 900; cursor: pointer;
+            text-transform: uppercase; letter-spacing: .3px;
             transition: filter .1s, transform .08s;
-            color: #fff;
-            border-top: 1px solid rgba(0,0,0,.3);
+            color: #fff; border-top: 1px solid rgba(0,0,0,.3);
         }
         .abt + .abt { border-left: 1px solid rgba(0,0,0,.25); }
         .abt:active { transform: scale(.93); filter: brightness(1.3); }
         .abt:hover  { filter: brightness(1.15); }
 
-        .abt-but   { background: var(--but);  color: #000; font-size: 0.7rem; }
-        .abt-ft    { background: var(--faute); color: #000; }
-        .abt-excl  { background: var(--excl); }
-        .abt-pen   { background: var(--pen);  color: #000; }
+        .abt-but  { background: var(--but); color: #000; font-size: 0.72rem; }
+        .abt-excl { background: var(--excl); }
+        .abt-pen  { background: var(--pen); color: #000; }
+        .abt-eda  { background: #450a0a; border: 1px solid #7f1d1d; color: #fca5a5; font-size: 0.58rem; }
+
+        /* Ligne d'actions secondaires */
+        .pcard-actions-2 {
+            display: grid; grid-template-columns: repeat(6, 1fr); gap: 0;
+            border-top: 1px solid rgba(255,255,255,.06);
+        }
+        .abt2 {
+            height: 22px; border: none;
+            font-size: 0.51rem; font-weight: 900; cursor: pointer;
+            text-transform: uppercase; letter-spacing: .2px;
+            transition: filter .1s, transform .07s; color: #fff;
+            border-top: 1px solid rgba(0,0,0,.25);
+        }
+        .abt2 + .abt2 { border-left: 1px solid rgba(0,0,0,.2); }
+        .abt2:active { transform: scale(.92); filter: brightness(1.4); }
+        .abt2:hover  { filter: brightness(1.2); }
+        .abt2-edap { background: #450a0a; color: #fca5a5; }
+        .abt2-a    { background: #172554; color: #93c5fd; }
+        .abt2-r    { background: #1c1917; color: #d6d3d1; }
+        .abt2-cje  { background: #431407; color: #fef08a; }
+        .abt2-cr   { background: #7f1d1d; color: #fca5a5; }
+        .abt2-tm   { background: #111827; color: #6b7280; }
 
         /* Overlays exclusion / EDA */
         .p-overlay {
-            position: absolute;
-            inset: 0;
-            display: none;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.95rem;
-            font-weight: 900;
-            z-index: 5;
+            position: absolute; inset: 0; display: none;
+            align-items: center; justify-content: center;
+            font-size: 0.95rem; font-weight: 900; z-index: 5;
             border-radius: var(--r-sm);
         }
         .p-overlay.excl {
-            display: flex;
-            background: rgba(185,28,28,.93);
-            cursor: not-allowed;
+            display: flex; background: rgba(185,28,28,.93); cursor: not-allowed;
         }
         .p-overlay.ready {
-            display: flex;
-            background: rgba(22,163,74,.95);
-            cursor: pointer;
-            color: #000;
-            animation: pulse-ready 1.4s infinite;
+            display: flex; background: rgba(22,163,74,.95);
+            cursor: pointer; color: #000; animation: pulse-ready 1.4s infinite;
         }
         .p-overlay.eda {
-            display: flex;
-            background: rgba(0,0,0,.88);
-            color: var(--excl);
-            border: 2px solid var(--excl);
-            cursor: not-allowed;
-            font-size: 0.85rem;
+            display: flex; background: rgba(0,0,0,.88);
+            color: var(--excl); border: 2px solid var(--excl);
+            cursor: not-allowed; font-size: 0.85rem;
         }
         @keyframes pulse-ready {
             0%,100% { transform: scale(1); }
@@ -604,99 +486,54 @@
            COLONNE CENTRALE
            ========================================================================== */
         .center-col {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            min-height: 0;
+            display: flex; flex-direction: column; gap: 8px; min-height: 0;
         }
 
         .adj-panel {
-            background: var(--bg-panel);
-            border-radius: var(--r-md);
-            padding: 8px;
-            flex-shrink: 0;
+            background: var(--bg-panel); border-radius: var(--r-md);
+            padding: 8px; flex-shrink: 0;
         }
         .adj-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 4px;
-            margin-bottom: 6px;
+            display: grid; grid-template-columns: repeat(4, 1fr);
+            gap: 4px; margin-bottom: 6px;
         }
         .adj-btn {
-            height: 30px;
-            background: #1c1c28;
-            border: 1px solid #2e2e40;
-            border-radius: 5px;
-            color: #bbb;
-            font-size: 0.72rem;
-            font-weight: 700;
-            cursor: pointer;
-            transition: background .15s, color .15s;
+            height: 30px; background: #1c1c28; border: 1px solid #2e2e40;
+            border-radius: 5px; color: #bbb; font-size: 0.72rem;
+            font-weight: 700; cursor: pointer; transition: background .15s, color .15s;
         }
         .adj-btn:hover { background: #28283c; color: #fff; }
 
-        .period-btns {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 4px;
-        }
+        .period-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
         .p-btn {
-            height: 34px;
-            border: none;
-            border-radius: 5px;
-            font-size: 0.68rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            cursor: pointer;
-            color: #fff;
+            height: 34px; border: none; border-radius: 5px;
+            font-size: 0.68rem; font-weight: 700; text-transform: uppercase;
+            cursor: pointer; color: #fff;
         }
         .p-btn.next  { background: var(--info); }
         .p-btn.reset { background: #1f2937; color: #aaa; }
 
         /* Historique */
         .history-panel {
-            flex: 1;
-            background: var(--bg-panel);
-            border-radius: var(--r-md);
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-            min-height: 0;
+            flex: 1; background: var(--bg-panel); border-radius: var(--r-md);
+            display: flex; flex-direction: column; overflow: hidden; min-height: 0;
         }
         .hist-head {
-            flex-shrink: 0;
-            padding: 7px 10px;
+            flex-shrink: 0; padding: 7px 10px;
             border-bottom: 1px solid var(--border);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 0.7rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            color: var(--muted);
+            display: flex; justify-content: space-between; align-items: center;
+            font-size: 0.7rem; font-weight: 700; text-transform: uppercase; color: var(--muted);
         }
         .hist-count {
-            background: #1e1e2e;
-            padding: 1px 8px;
-            border-radius: 8px;
-            font-size: 0.65rem;
-            color: #aaa;
+            background: #1e1e2e; padding: 1px 8px;
+            border-radius: 8px; font-size: 0.65rem; color: #aaa;
         }
-        .hist-body {
-            flex: 1;
-            overflow-y: auto;
-            padding: 5px;
-        }
+        .hist-body { flex: 1; overflow-y: auto; padding: 5px; }
         .hist-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 5px 7px;
-            background: rgba(255,255,255,.025);
-            border-radius: 5px;
-            margin-bottom: 3px;
-            border-left: 3px solid transparent;
-            font-size: 0.67rem;
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 5px 7px; background: rgba(255,255,255,.025);
+            border-radius: 5px; margin-bottom: 3px;
+            border-left: 3px solid transparent; font-size: 0.67rem;
             transition: background .15s;
         }
         .hist-item:hover { background: rgba(255,255,255,.045); }
@@ -705,39 +542,31 @@
 
         .h-time { font-family: var(--mono); color: var(--muted); margin-right: 5px; font-size: 0.63rem; }
         .h-badge {
-            display: inline-block;
-            padding: 1px 5px;
-            border-radius: 3px;
-            font-weight: 800;
-            margin-right: 5px;
-            font-size: 0.6rem;
+            display: inline-block; padding: 1px 5px; border-radius: 3px;
+            font-weight: 800; margin-right: 5px; font-size: 0.6rem;
         }
-        .b-BUT     { background: var(--but); color: #000; }
-        .b-EXCL    { background: var(--excl); color: #fff; }
-        .b-PENALTY { background: var(--pen); color: #000; }
-        .b-EDA     { background: #000; color: var(--excl); border: 1px solid var(--excl); }
-        .b-TM      { background: #4b5563; color: #fff; }
-        .b-FAUTE   { background: var(--faute); color: #000; }
-
         .h-del {
-            color: var(--excl);
-            cursor: pointer;
-            padding: 3px 5px;
-            opacity: .5;
-            transition: opacity .2s;
-            font-size: 0.7rem;
+            color: var(--excl); cursor: pointer;
+            padding: 3px 5px; opacity: .5; transition: opacity .2s; font-size: 0.7rem;
         }
         .h-del:hover { opacity: 1; }
-
         .hist-empty {
-            text-align: center;
-            color: var(--muted);
-            padding: 20px;
-            font-size: 0.75rem;
+            text-align: center; color: var(--muted); padding: 20px; font-size: 0.75rem;
         }
 
         /* UI lock */
         .ui-locked { opacity: .5; pointer-events: none; }
+
+        /* Toast notification */
+        .toast {
+            position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%);
+            background: #1e293b; color: #e2e8f0; border: 1px solid #334155;
+            border-radius: 8px; padding: 8px 18px;
+            font-size: 0.75rem; font-weight: 700; z-index: 500;
+            opacity: 0; transition: opacity .25s;
+            pointer-events: none; white-space: nowrap;
+        }
+        .toast.show { opacity: 1; }
 
         /* ==========================================================================
            RESPONSIVE
@@ -751,11 +580,10 @@
                 grid-template-rows: 1fr auto;
                 grid-template-areas: "dom ext" "center center";
             }
-            .team-col.dom  { grid-area: dom; }
-            .team-col.ext  { grid-area: ext; }
-            .center-col    { grid-area: center; flex-direction: row; height: 150px; }
-            .adj-panel     { width: 210px; flex-shrink: 0; }
-            .sep           { display: none; }
+            .team-col.dom { grid-area: dom; }
+            .team-col.ext { grid-area: ext; }
+            .center-col   { grid-area: center; flex-direction: row; height: 150px; }
+            .adj-panel    { width: 210px; flex-shrink: 0; }
         }
         @media (max-width: 600px) {
             .team-name { display: none; }
@@ -765,6 +593,8 @@
     </style>
 </head>
 <body>
+
+    <div id="toast" class="toast"></div>
 
     <!-- ════ HEADER ════ -->
     <header class="app-header">
@@ -854,19 +684,19 @@
                 <div class="modal-events-summary">
                     <div class="modal-badge">
                         <span class="mb-count mb-but" id="modal-nb-buts">–</span>
-                        <span>Buts</span>
+                        <span>Buts (B)</span>
                     </div>
                     <div class="modal-badge">
                         <span class="mb-count mb-excl" id="modal-nb-excl">–</span>
-                        <span>Exclusions</span>
+                        <span>Exclusions (E/EDA)</span>
                     </div>
                     <div class="modal-badge">
                         <span class="mb-count mb-pen" id="modal-nb-pen">–</span>
-                        <span>Penalties</span>
+                        <span>Penalties (P)</span>
                     </div>
                     <div class="modal-badge">
-                        <span class="mb-count mb-faute" id="modal-nb-faute">–</span>
-                        <span>Fautes</span>
+                        <span class="mb-count mb-tm" id="modal-nb-tm">–</span>
+                        <span>Temps morts</span>
                     </div>
                 </div>
             </div>
@@ -889,7 +719,11 @@
         <section class="team-col dom">
             <header class="col-head">
                 <span class="col-head-title">⬜ {{ match.nom_equipe_domicile|truncatechars:18 }}</span>
-                <button class="tm-btn" data-equipe="DOM">TIME-OUT</button>
+                <button class="tm-btn {% if tm_dom == 1 %}tm-used-1{% elif tm_dom >= match.nb_temps_morts %}tm-full{% endif %}"
+                        data-equipe="DOM" id="tm-btn-dom"
+                        {% if tm_dom >= match.nb_temps_morts %}disabled{% endif %}>
+                    TM <span class="tm-counter" id="tm-count-dom">{{ tm_dom }}/{{ match.nb_temps_morts }}</span>
+                </button>
             </header>
             <div class="player-grid">
                 {% for p in joueurs_dom %}
@@ -897,23 +731,38 @@
                          data-excl-end="{{ p.fin_exclusion|date:'U'|default:'0' }}"
                          data-eda="{{ p.est_exclu_definitif|yesno:'true,false' }}">
                     <div class="p-overlay {% if p.est_exclu_definitif %}eda{% endif %}"
-                         id="ov-{{ p.id }}" onclick="tryReturn({{ p.id }})">
+                         id="ov-{{ p.id }}" data-pid="{{ p.id }}">
                         <span id="ovtxt-{{ p.id }}">{% if p.est_exclu_definitif %}EDA{% endif %}</span>
                     </div>
                     <div class="pcard-top">
                         <div class="p-num">{{ p.numero_bonnet }}</div>
                         <div class="p-info">
-                            <div class="p-name" title="{{ p.nom }} {{ p.prenom }}">{{ p.nom }} {{ p.prenom|first }}.</div>
+                            <div class="p-name-row">
+                                <div class="p-name" title="{{ p.nom }} {{ p.prenom }}">{{ p.nom }} {{ p.prenom|first }}.</div>
+                                <button class="terrain-btn {% if p.est_sur_terrain %}on{% endif %}"
+                                        id="terrain-btn-{{ p.id }}"
+                                        data-pid="{{ p.id }}" title="Présence terrain">
+                                    {% if p.est_sur_terrain %}✓{% else %}·{% endif %}
+                                </button>
+                            </div>
                             <div class="p-fautes">
                                 {% for i in range_fautes %}{% if forloop.counter <= p.nb_fautes_personnelles %}<span class="fdot"></span>{% endif %}{% endfor %}
                             </div>
                         </div>
                     </div>
                     <div class="pcard-actions">
-                        <button class="abt abt-but"  data-action="BUT"     data-pid="{{ p.id }}">BUT</button>
-                        <button class="abt abt-ft"   data-action="FAUTE"   data-pid="{{ p.id }}">FT</button>
-                        <button class="abt abt-excl" data-action="EXCL"    data-pid="{{ p.id }}">{{ match.duree_exclusion }}s</button>
-                        <button class="abt abt-pen"  data-action="PENALTY" data-pid="{{ p.id }}">PEN</button>
+                        <button class="abt abt-but"  data-action="B"   data-pid="{{ p.id }}">B</button>
+                        <button class="abt abt-excl" data-action="E"   data-pid="{{ p.id }}">{{ match.duree_exclusion }}s</button>
+                        <button class="abt abt-pen"  data-action="P"   data-pid="{{ p.id }}">P</button>
+                        <button class="abt abt-eda"  data-action="EDA" data-pid="{{ p.id }}">EDA</button>
+                    </div>
+                    <div class="pcard-actions-2">
+                        <button class="abt2 abt2-edap" data-action="EDAP" data-pid="{{ p.id }}" title="Exclusion déf. après 4 min">EDAP</button>
+                        <button class="abt2 abt2-a"    data-action="A"    data-pid="{{ p.id }}" title="Accident">A</button>
+                        <button class="abt2 abt2-r"    data-action="R"    data-pid="{{ p.id }}" title="Réclamation">R</button>
+                        <button class="abt2 abt2-cje"  data-action="CJ€"  data-pid="{{ p.id }}" title="Carton Jaune Équipe">CJ€</button>
+                        <button class="abt2 abt2-cr"   data-action="CR"   data-pid="{{ p.id }}" title="Carton Rouge">CR</button>
+                        <button class="abt2 abt2-tm"   data-action="TM"   data-pid="{{ p.id }}" title="Temps mort">TM</button>
                     </div>
                 </article>
                 {% endfor %}
@@ -949,7 +798,11 @@
         <!-- EXTÉRIEUR -->
         <section class="team-col ext">
             <header class="col-head">
-                <button class="tm-btn" data-equipe="EXT">TIME-OUT</button>
+                <button class="tm-btn {% if tm_ext == 1 %}tm-used-1{% elif tm_ext >= match.nb_temps_morts %}tm-full{% endif %}"
+                        data-equipe="EXT" id="tm-btn-ext"
+                        {% if tm_ext >= match.nb_temps_morts %}disabled{% endif %}>
+                    TM <span class="tm-counter" id="tm-count-ext">{{ tm_ext }}/{{ match.nb_temps_morts }}</span>
+                </button>
                 <span class="col-head-title">🔵 {{ match.nom_equipe_exterieur|truncatechars:18 }}</span>
             </header>
             <div class="player-grid">
@@ -958,23 +811,38 @@
                          data-excl-end="{{ p.fin_exclusion|date:'U'|default:'0' }}"
                          data-eda="{{ p.est_exclu_definitif|yesno:'true,false' }}">
                     <div class="p-overlay {% if p.est_exclu_definitif %}eda{% endif %}"
-                         id="ov-{{ p.id }}" onclick="tryReturn({{ p.id }})">
+                         id="ov-{{ p.id }}" data-pid="{{ p.id }}">
                         <span id="ovtxt-{{ p.id }}">{% if p.est_exclu_definitif %}EDA{% endif %}</span>
                     </div>
                     <div class="pcard-top">
                         <div class="p-num">{{ p.numero_bonnet }}</div>
                         <div class="p-info">
-                            <div class="p-name" title="{{ p.nom }} {{ p.prenom }}">{{ p.nom }} {{ p.prenom|first }}.</div>
+                            <div class="p-name-row">
+                                <div class="p-name" title="{{ p.nom }} {{ p.prenom }}">{{ p.nom }} {{ p.prenom|first }}.</div>
+                                <button class="terrain-btn {% if p.est_sur_terrain %}on{% endif %}"
+                                        id="terrain-btn-{{ p.id }}"
+                                        data-pid="{{ p.id }}" title="Présence terrain">
+                                    {% if p.est_sur_terrain %}✓{% else %}·{% endif %}
+                                </button>
+                            </div>
                             <div class="p-fautes">
                                 {% for i in range_fautes %}{% if forloop.counter <= p.nb_fautes_personnelles %}<span class="fdot"></span>{% endif %}{% endfor %}
                             </div>
                         </div>
                     </div>
                     <div class="pcard-actions">
-                        <button class="abt abt-but"  data-action="BUT"     data-pid="{{ p.id }}">BUT</button>
-                        <button class="abt abt-ft"   data-action="FAUTE"   data-pid="{{ p.id }}">FT</button>
-                        <button class="abt abt-excl" data-action="EXCL"    data-pid="{{ p.id }}">{{ match.duree_exclusion }}s</button>
-                        <button class="abt abt-pen"  data-action="PENALTY" data-pid="{{ p.id }}">PEN</button>
+                        <button class="abt abt-but"  data-action="B"   data-pid="{{ p.id }}">B</button>
+                        <button class="abt abt-excl" data-action="E"   data-pid="{{ p.id }}">{{ match.duree_exclusion }}s</button>
+                        <button class="abt abt-pen"  data-action="P"   data-pid="{{ p.id }}">P</button>
+                        <button class="abt abt-eda"  data-action="EDA" data-pid="{{ p.id }}">EDA</button>
+                    </div>
+                    <div class="pcard-actions-2">
+                        <button class="abt2 abt2-edap" data-action="EDAP" data-pid="{{ p.id }}" title="Exclusion déf. après 4 min">EDAP</button>
+                        <button class="abt2 abt2-a"    data-action="A"    data-pid="{{ p.id }}" title="Accident">A</button>
+                        <button class="abt2 abt2-r"    data-action="R"    data-pid="{{ p.id }}" title="Réclamation">R</button>
+                        <button class="abt2 abt2-cje"  data-action="CJ€"  data-pid="{{ p.id }}" title="Carton Jaune Équipe">CJ€</button>
+                        <button class="abt2 abt2-cr"   data-action="CR"   data-pid="{{ p.id }}" title="Carton Rouge">CR</button>
+                        <button class="abt2 abt2-tm"   data-action="TM"   data-pid="{{ p.id }}" title="Temps mort">TM</button>
                     </div>
                 </article>
                 {% endfor %}
@@ -983,16 +851,34 @@
 
     </main>
 
+    <!-- Valeurs Django isolées du parseur JS de VS Code -->
+    <script id="match-cfg" type="application/json">
+    {"id":{{ match.id }},"dureeExcl":{{ match.duree_exclusion }},"nbTm":{{ match.nb_temps_morts }},"dureePeriode":{{ match.duree_periode }},"tempsPossession":{{ match.temps_possession }},"nbPeriodes":{{ match.nb_periodes }},"periodeActuelle":{{ match.periode_actuelle }},"chronoRunning":{{ match.chrono_en_cours|yesno:"true,false" }},"tempsRestant":{{ match.temps_restant|default:"480" }},"klaxonUrl":"{% static 'gestion/klaxon.mp3' %}","tmDom":{{ tm_dom }},"tmExt":{{ tm_ext }}}
+    </script>
+
     <script>
-        const matchId   = {{ match.id }};
-        const dureeExcl = {{ match.duree_exclusion }};
+        const CFG       = JSON.parse(document.getElementById('match-cfg').textContent);
+        const matchId   = CFG.id;
+        const dureeExcl = CFG.dureeExcl;
+        const NB_TM     = CFG.nbTm;
         let isProcessing = false;
 
         /* ── Klaxon ───────────────────────────────────────────────────────── */
-        const klaxon = new Audio("{% static 'gestion/klaxon.mp3' %}");
+        const klaxon = new Audio(CFG.klaxonUrl);
         klaxon.preload = 'auto';
         function playKlaxon() {
             try { klaxon.currentTime = 0; klaxon.play(); } catch (e) {}
+        }
+
+        /* ── Toast ───────────────────────────────────────────────────────── */
+        let toastTimer = null;
+        function showToast(msg) {
+            const el = document.getElementById('toast');
+            if (!el) return;
+            el.textContent = msg;
+            el.classList.add('show');
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => el.classList.remove('show'), 1800);
         }
 
         /* ── Utilitaires ─────────────────────────────────────────────────── */
@@ -1005,10 +891,29 @@
             return String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(Math.floor(s % 60)).padStart(2, '0');
         };
 
+        /* ── Couleurs badges historique ───────────────────────────────────── */
+        const ACTION_BADGE = {
+            'B':    { bg: '#22c55e', fg: '#000' },
+            'E':    { bg: '#ef4444', fg: '#fff' },
+            'P':    { bg: '#f97316', fg: '#000' },
+            'EDA':  { bg: '#000',    fg: '#ef4444', border: '1px solid #ef4444' },
+            'EDAP': { bg: '#450a0a', fg: '#fca5a5', border: '1px solid #7f1d1d' },
+            'TM':   { bg: '#4b5563', fg: '#fff' },
+            'A':    { bg: '#1e3a5f', fg: '#93c5fd' },
+            'R':    { bg: '#292524', fg: '#d6d3d1' },
+            'CJ€':  { bg: '#713f12', fg: '#fef08a' },
+            'CR':   { bg: '#7f1d1d', fg: '#fca5a5' },
+        };
+        function badgeHtml(action) {
+            const s = ACTION_BADGE[action] || { bg: '#374151', fg: '#fff' };
+            const bdr = s.border ? `border:${s.border};` : '';
+            return `<span class="h-badge" style="background:${s.bg};color:${s.fg};${bdr}">${esc(action)}</span>`;
+        }
+
         /* ── Chrono (source de vérité : serveur) ─────────────────────────── */
         let C = {
-            running:    {{ match.chrono_en_cours|yesno:"true,false" }},
-            frozenTime: {{ match.temps_restant|default:"480" }},
+            running:    CFG.chronoRunning,
+            frozenTime: CFG.tempsRestant,
             startedAt:  null,
             alertedEnd: false,
         };
@@ -1053,14 +958,11 @@
             }
         });
 
-        /* ── Shot Clock (source de vérité : serveur) ─────────────────────── */
-        const SHOT_MAX = Number("{{ match.temps_possession }}");
+        /* ── Shot Clock ──────────────────────────────────────────────────── */
+        const SHOT_MAX = CFG.tempsPossession;
         let SC = {
-            running:    false,
-            frozenTime: SHOT_MAX,
-            startedAt:  null,
-            max:        SHOT_MAX,
-            alertedEnd: false,
+            running: false, frozenTime: SHOT_MAX,
+            startedAt: null, max: SHOT_MAX, alertedEnd: false,
         };
 
         const scEl = document.getElementById('shotClock');
@@ -1088,7 +990,6 @@
             scEl.classList.toggle('urgent',  SC.running && v <= 5 && v > 0);
             rafraichirAfficheur(v);
 
-            /* Auto-restart quand le shot clock atteint 0 et que le chrono tourne */
             if (SC.running && raw <= 0 && !SC.alertedEnd && !shotAutoResetting) {
                 SC.alertedEnd = true;
                 playKlaxon();
@@ -1105,7 +1006,6 @@
         })();
 
         scEl.addEventListener('click', scReset);
-
         function scReset() {
             if (!isProcessing)
                 api({ action: 'shot_reset' }).then(r => { if (r.shot) applyServerShot(r.shot); });
@@ -1153,8 +1053,6 @@
         async function rafraichirAfficheur(v) {
             if (!writer || v === dernierChiffreEnvoye) return;
             try {
-                /* L'Arduino lit Serial.read() = 1 seul octet brut.
-                   On envoie la valeur directement en binaire (Uint8Array d'un byte). */
                 await writer.write(new Uint8Array([v & 0xFF]));
                 dernierChiffreEnvoye = v;
             } catch (e) {
@@ -1194,7 +1092,7 @@
         }
 
         function resetPeriod() {
-            const d = {{ match.duree_periode }};
+            const d = CFG.dureePeriode;
             if (!confirm('Réinitialiser à ' + String(d).padStart(2, '0') + ':00 ?')) return;
             api({ action: 'reset_period' }).then(r => {
                 applyServerChrono(r.chrono);
@@ -1205,21 +1103,28 @@
         function nextPeriod() {
             if (isProcessing || !confirm('Passer à la période suivante ?')) return;
             lock(true);
-            api({ action: 'next_period' }).then(r => {
-                applyServerChrono(r.chrono);
-                if (r.shot) applyServerShot(r.shot);
-                document.getElementById('periodeDisplay').textContent = r.period;
-                document.querySelectorAll('.pcard').forEach(c => {
-                    c.dataset.exclEnd = '0';
-                    c.dataset.eda     = 'false';
-                });
-                checkExcl();
-                lock(false);
-            });
+            api({ action: 'next_period' })
+                .then(r => {
+                    applyServerChrono(r.chrono);
+                    if (r.shot) applyServerShot(r.shot);
+                    document.getElementById('periodeDisplay').textContent = r.period;
+                    document.querySelectorAll('.pcard').forEach(c => {
+                        c.dataset.exclEnd = '0';
+                        c.dataset.eda     = 'false';
+                    });
+                    checkExcl();
+                })
+                .catch(err => { console.error('next_period error:', err); alert('❌ Erreur serveur'); })
+                .finally(() => lock(false));
         }
 
         /* ── Délégation d'événements ──────────────────────────────────────── */
         document.addEventListener('click', e => {
+            const ov = e.target.closest('.p-overlay');
+            if (ov && !isProcessing) {
+                tryReturn(ov.dataset.pid);
+                return;
+            }
             const btn = e.target.closest('.abt');
             if (btn && !isProcessing) {
                 const type = btn.dataset.action;
@@ -1228,9 +1133,62 @@
                 sendAction(type, pid);
                 return;
             }
+            const terrainBtn = e.target.closest('.terrain-btn');
+            if (terrainBtn && !isProcessing) {
+                const pid = terrainBtn.dataset.pid;
+                if (pid) { toggleTerrain(pid); return; }
+            }
+            const btn2 = e.target.closest('.abt2');
+            if (btn2 && !isProcessing) {
+                const type = btn2.dataset.action;
+                const pid  = btn2.dataset.pid;
+                if (['EDA', 'EDAP', 'CR'].includes(type) && !confirm('⚠️ CONFIRMER ' + type + ' ?')) return;
+                if (type === 'TM') {
+                    const card = document.getElementById('card-' + pid);
+                    const equipe = card && card.closest('.team-col.dom') ? 'DOM' : 'EXT';
+                    sendAction('TM', pid, equipe);
+                } else {
+                    sendAction(type, pid);
+                }
+                return;
+            }
             const tm = e.target.closest('.tm-btn');
-            if (tm && !isProcessing) sendAction('TM', null, tm.dataset.equipe);
+            if (tm && !isProcessing && !tm.disabled) {
+                sendAction('TM', null, tm.dataset.equipe);
+            }
         });
+
+        /* ── Présence terrain ────────────────────────────────────────────── */
+        async function toggleTerrain(pid) {
+            lock(true);
+            try {
+                const res = await api({ action: 'toggle_sur_terrain', participation_id: pid });
+                if (res.status === 'ok') {
+                    const on = res.est_sur_terrain;
+                    const iconBtn = document.getElementById('terrain-btn-' + pid);
+                    if (iconBtn) {
+                        iconBtn.textContent = on ? '✓' : '·';
+                        iconBtn.classList.toggle('on', on);
+                    }
+                }
+            } finally { lock(false); }
+        }
+
+        /* ── Compteurs temps morts ───────────────────────────────────────── */
+        function updateTmButtons(tmDom, tmExt, nbTm) {
+            ['DOM', 'EXT'].forEach(side => {
+                const count = side === 'DOM' ? tmDom : tmExt;
+                const btn = document.getElementById('tm-btn-' + side.toLowerCase());
+                const cnt = document.getElementById('tm-count-' + side.toLowerCase());
+                if (cnt) cnt.textContent = count + '/' + nbTm;
+                if (btn) {
+                    btn.disabled = count >= nbTm;
+                    btn.className = 'tm-btn' +
+                        (count >= nbTm ? ' tm-full' :
+                         count === nbTm - 1 ? ' tm-used-1' : '');
+                }
+            });
+        }
 
         async function sendAction(type, pId, equipe = null) {
             lock(true);
@@ -1241,21 +1199,51 @@
                     equipe,
                     chrono_display:   fmt(Math.ceil(timeLeft())),
                 });
-                if (res.status !== 'ok') return;
+                if (res.status !== 'ok') {
+                    if (res.message) alert('⚠️ ' + res.message);
+                    return;
+                }
                 refreshUI(res);
                 if (res.shot) applyServerShot(res.shot);
 
-                if (type === 'EXCL' && pId) {
-                    document.getElementById('card-' + pId).dataset.exclEnd =
-                        Math.floor(Date.now() / 1000) + dureeExcl;
-                    checkExcl();
+                // Appliquer l'état du joueur renvoyé par le serveur (source de vérité)
+                if (res.joueur_state) {
+                    const js = res.joueur_state;
+                    const card = document.getElementById('card-' + js.id);
+                    if (card) {
+                        if (js.est_exclu_definitif) {
+                            card.dataset.eda     = 'true';
+                            card.dataset.exclEnd = '0';
+                        } else if (js.est_exclu && js.fin_exclusion_ts > 0) {
+                            card.dataset.eda     = 'false';
+                            card.dataset.exclEnd = String(js.fin_exclusion_ts);
+                        } else {
+                            card.dataset.eda     = 'false';
+                            card.dataset.exclEnd = '0';
+                        }
+                        checkExcl();
+                    }
+                } else {
+                    // Fallback pour les types qui n'envoient pas joueur_state
+                    if (type === 'E' && pId) {
+                        document.getElementById('card-' + pId).dataset.exclEnd =
+                            Math.floor(Date.now() / 1000) + dureeExcl;
+                        checkExcl();
+                    }
+                    if ((type === 'EDA' || type === 'EDAP') && pId) {
+                        document.getElementById('card-' + pId).dataset.eda = 'true';
+                        checkExcl();
+                    }
                 }
-                if (type === 'EDA' && pId) {
-                    document.getElementById('card-' + pId).dataset.eda = 'true';
-                    checkExcl();
-                }
-                if (type === 'BUT') bumpScore(pId);
-                if (type === 'TM')  setTimeout(() => playKlaxon(), 60000);
+                if (type === 'B') bumpScore(pId);
+                if (type === 'TM') setTimeout(() => playKlaxon(), 60000);
+
+                const LABELS = {
+                    B:'✓ But', E:'⏱ Exclusion', P:'● Penalty', EDA:'🔴 EDA',
+                    EDAP:'🔴 EDAP', A:'A Accident', R:'R Réclamation',
+                    'CJ€':'🟡 Carton Jaune', CR:'🔴 Carton Rouge', TM:'⏸ Temps mort',
+                };
+                showToast(LABELS[type] || '✓ ' + type);
             } catch (err) {
                 console.error(err);
                 alert('❌ Erreur serveur');
@@ -1276,11 +1264,13 @@
             const ov = document.getElementById('ov-' + pId);
             if (!ov.classList.contains('ready')) return;
             lock(true);
-            api({ action: 'return_play', participation_id: pId }).then(() => {
-                document.getElementById('card-' + pId).dataset.exclEnd = '0';
-                checkExcl();
-                lock(false);
-            });
+            api({ action: 'return_play', participation_id: pId })
+                .then(() => {
+                    document.getElementById('card-' + pId).dataset.exclEnd = '0';
+                    checkExcl();
+                })
+                .catch(err => { console.error('return_play error:', err); alert('❌ Erreur serveur'); })
+                .finally(() => lock(false));
         }
 
         async function deleteEvent(evtId, type) {
@@ -1289,7 +1279,7 @@
             try {
                 const res = await api({ action: 'delete_event', event_id: evtId });
                 refreshUI(res);
-                if (['EXCL', 'EDA'].includes(type)) setTimeout(() => location.reload(), 350);
+                if (['E', 'EDA', 'EDAP'].includes(type)) setTimeout(() => location.reload(), 350);
             } catch { alert('❌ Erreur'); }
             finally { lock(false); }
         }
@@ -1301,6 +1291,8 @@
             if (res.score_ext !== undefined)
                 document.getElementById('scoreExt').textContent = res.score_ext;
             if (res.history !== undefined) renderHistory(res.history);
+            if (res.tm_dom !== undefined)
+                updateTmButtons(res.tm_dom, res.tm_ext, res.nb_temps_morts || NB_TM);
         }
 
         function renderHistory(history) {
@@ -1318,7 +1310,7 @@
                 return `<div class="hist-item ${esc(side)}">
                     <span>
                         <span class="h-time">${esc(e.chrono_match) || '00:00'}</span>
-                        <span class="h-badge b-${esc(e.type_action)}">${esc(e.type_action)}</span>
+                        ${badgeHtml(e.type_action)}
                         <span>${lbl}</span>
                     </span>
                     <span class="h-del" onclick="deleteEvent(${Number(e.id)},'${esc(e.type_action)}')">
@@ -1328,7 +1320,7 @@
             }).join('');
         }
 
-        /* ── Overlays exclusions + klaxon fin exclusion ───────────────────── */
+        /* ── Overlays exclusions ─────────────────────────────────────────── */
         const prevExclState = {};
         function checkExcl() {
             const now = Date.now() / 1000;
@@ -1366,11 +1358,23 @@
         setInterval(checkExcl, 400);
 
         /* ── API ─────────────────────────────────────────────────────────── */
-        const api = payload => fetch('/api/match/' + matchId + '/', {
-            method:  'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body:    JSON.stringify(payload),
-        }).then(r => r.json());
+        const api = payload => {
+            const ctrl = new AbortController();
+            const tid  = setTimeout(() => ctrl.abort(), 10000);
+            return fetch('/api/match/' + matchId + '/', {
+                method:  'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body:    JSON.stringify(payload),
+                signal:  ctrl.signal,
+            }).then(r => {
+                clearTimeout(tid);
+                if (!r.ok) throw new Error('HTTP ' + r.status);
+                return r.json();
+            }).catch(err => {
+                clearTimeout(tid);
+                throw err;
+            });
+        };
 
         function lock(on) {
             isProcessing = on;
@@ -1386,20 +1390,20 @@
                 document.getElementById('scoreExt').textContent;
 
             const items = document.querySelectorAll('.hist-item');
-            let buts = 0, excl = 0, pen = 0, fautes = 0;
+            let buts = 0, excl = 0, pen = 0, tm = 0;
             items.forEach(item => {
                 const badge = item.querySelector('.h-badge');
                 if (!badge) return;
                 const t = badge.textContent.trim();
-                if (t === 'BUT')              buts++;
-                else if (t === 'EXCL' || t === 'EDA') excl++;
-                else if (t === 'PENALTY')     pen++;
-                else if (t === 'FAUTE')       fautes++;
+                if (t === 'B')                             buts++;
+                else if (['E','EDA','EDAP'].includes(t))   excl++;
+                else if (t === 'P')                        pen++;
+                else if (t === 'TM')                       tm++;
             });
-            document.getElementById('modal-nb-buts').textContent  = buts;
-            document.getElementById('modal-nb-excl').textContent  = excl;
-            document.getElementById('modal-nb-pen').textContent   = pen;
-            document.getElementById('modal-nb-faute').textContent = fautes;
+            document.getElementById('modal-nb-buts').textContent = buts;
+            document.getElementById('modal-nb-excl').textContent = excl;
+            document.getElementById('modal-nb-pen').textContent  = pen;
+            document.getElementById('modal-nb-tm').textContent   = tm;
 
             document.getElementById('feuilleModal').classList.add('open');
         }
@@ -1410,12 +1414,14 @@
         }
 
         document.addEventListener('keydown', e => {
-            if (e.code === 'Escape')
+            if (e.code === 'Escape') {
                 document.getElementById('feuilleModal').classList.remove('open');
+            }
         });
 
         /* ── Init ────────────────────────────────────────────────────────── */
         checkExcl();
+        updateTmButtons(CFG.tmDom, CFG.tmExt, CFG.nbTm);
         api({ action: 'refresh' }).then(r => {
             applyServerChrono(r.chrono);
             if (r.shot) applyServerShot(r.shot);

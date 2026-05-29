@@ -144,6 +144,7 @@ class Participation(models.Model):
     est_exclu = models.BooleanField(default=False)
     fin_exclusion = models.DateTimeField(null=True, blank=True)
     est_exclu_definitif = models.BooleanField(default=False)
+    est_sur_terrain = models.BooleanField(default=False)
 
     class Meta:
         ordering = ['equipe_concernee', 'numero_bonnet']
@@ -159,12 +160,16 @@ class Participation(models.Model):
 
 class Evenement(models.Model):
     TYPE_CHOICES = [
-        ('BUT',     'But'),
-        ('FAUTE',   'Faute ordinaire'),
-        ('EXCL',    'Exclusion temporaire'),
-        ('EDA',     'Exclusion définitive'),
-        ('PENALTY', 'Penalty'),
-        ('TM',      'Temps mort'),
+        ('B',    'But'),
+        ('E',    'Exclusion temporaire'),
+        ('P',    'Penalty'),
+        ('EDA',  'Exclusion définitive'),
+        ('EDAP', 'Exclusion déf. après 4 min'),
+        ('A',    'Accident'),
+        ('R',    'Réclamation'),
+        ('TM',   'Temps mort'),
+        ('CJ€',  'Carton Jaune Équipe'),
+        ('CR',   'Carton Rouge'),
     ]
 
     match = models.ForeignKey(Match, on_delete=models.CASCADE,
