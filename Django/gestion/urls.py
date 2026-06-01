@@ -18,4 +18,8 @@ urlpatterns = [
 
     # Export Excel (feuille de match officielle FFN)
     path('match/<int:match_id>/export/',     views.export_excel,      name='export_excel'),
+
+    # Sponsors
+    path('match/<int:match_id>/sponsors/upload/', views.upload_sponsor,  name='upload_sponsor'),
+    path('sponsors/<int:sponsor_id>/delete/',     views.delete_sponsor,  name='delete_sponsor'),
 ]

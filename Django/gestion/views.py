@@ -1,13 +1,14 @@
 import json
 import os
 from datetime import timedelta
+from io import BytesIO
 
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import JsonResponse, HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.utils import timezone
 
-from .models import Match, Equipe, Joueur, Participation, Evenement, ScorePeriode
+from .models import Match, Equipe, Joueur, Participation, Evenement, ScorePeriode, Sponsor
 
 
 # ==========================================
@@ -34,17 +35,22 @@ def accueil(request):
             nom_dom = request.POST.get('input_domicile', '').strip()
             eq_dom_obj = None
             if id_dom:
-                eq_dom_obj = Equipe.objects.get(id=id_dom)
-                nom_dom = eq_dom_obj.nom
+                eq_dom_obj = Equipe.objects.filter(id=id_dom).first()
+                if eq_dom_obj:
+                    nom_dom = eq_dom_obj.nom
 
             id_ext = request.POST.get('select_exterieur')
             nom_ext = request.POST.get('input_exterieur', '').strip()
             eq_ext_obj = None
             if id_ext:
-                eq_ext_obj = Equipe.objects.get(id=id_ext)
-                nom_ext = eq_ext_obj.nom
+                eq_ext_obj = Equipe.objects.filter(id=id_ext).first()
+                if eq_ext_obj:
+                    nom_ext = eq_ext_obj.nom
 
-            duree_periode = int(request.POST.get('duree_periode', 8))
+            try:
+                duree_periode = int(request.POST.get('duree_periode', 8))
+            except (ValueError, TypeError):
+                duree_periode = 8
 
             heure_raw = request.POST.get('heure_debut', '').strip()
             heure_val = None
@@ -55,6 +61,12 @@ def accueil(request):
                     heure_val = dtime(int(h), int(m))
                 except (ValueError, TypeError):
                     pass
+
+            def _post_int(key, default):
+                try:
+                    return int(request.POST.get(key, default))
+                except (ValueError, TypeError):
+                    return default
 
             match = Match.objects.create(
                 nom_equipe_domicile=nom_dom,
@@ -68,12 +80,12 @@ def accueil(request):
                 heure_debut=heure_val,
                 # Règles
                 duree_periode=duree_periode,
-                nb_periodes=int(request.POST.get('nb_periodes', 4)),
-                temps_possession=int(request.POST.get('temps_possession', 30)),
-                duree_exclusion=int(request.POST.get('duree_exclusion', 20)),
-                nb_temps_morts=int(request.POST.get('nb_temps_morts', 2)),
-                max_fautes_perso=int(request.POST.get('max_fautes_perso', 3)),
-                nb_remplacants=int(request.POST.get('nb_remplacants', 6)),
+                nb_periodes=_post_int('nb_periodes', 4),
+                temps_possession=_post_int('temps_possession', 30),
+                duree_exclusion=_post_int('duree_exclusion', 20),
+                nb_temps_morts=_post_int('nb_temps_morts', 2),
+                max_fautes_perso=_post_int('max_fautes_perso', 3),
+                nb_remplacants=_post_int('nb_remplacants', 6),
                 # Officiels
                 arbitre1_nom=request.POST.get('arbitre1_nom', ''),
                 arbitre1_iuf=request.POST.get('arbitre1_iuf', ''),
@@ -94,6 +106,20 @@ def accueil(request):
                 # Chrono initial
                 temps_restant=duree_periode * 60,
             )
+            # ── Logos équipes ────────────────────────────────────────────────
+            logo_dom_file = request.FILES.get('logo_dom')
+            logo_ext_file = request.FILES.get('logo_ext')
+            if logo_dom_file:
+                match.logo_dom = logo_dom_file
+                match.save(update_fields=['logo_dom'])
+            if logo_ext_file:
+                match.logo_ext = logo_ext_file
+                match.save(update_fields=['logo_ext'])
+
+            # ── Sponsors ─────────────────────────────────────────────────────
+            for idx, sponsor_file in enumerate(request.FILES.getlist('sponsors')):
+                Sponsor.objects.create(match=match, image=sponsor_file, ordre=idx)
+
             return redirect('compo_equipe', match_id=match.id)
 
     return render(request, 'gestion/accueil.html', {'equipes': equipes_existantes})
@@ -224,11 +250,17 @@ def dashboard_arbitre(request, match_id):
     joueurs_ext = Participation.objects.filter(
         match=match, equipe_concernee='EXT').order_by('numero_bonnet')
     events = Evenement.objects.filter(match=match).order_by('-heure_creation')
+    tm_qs = Evenement.objects.filter(match=match, type_action='TM')
+    tm_dom = tm_qs.filter(equipe_attribuee='DOM').count()
+    tm_ext = tm_qs.filter(equipe_attribuee='EXT').count()
     return render(request, 'gestion/dashboard_arbitre.html', {
         'match': match,
         'joueurs_dom': joueurs_dom,
         'joueurs_ext': joueurs_ext,
         'events': events,
+        'range_fautes': range(1, match.max_fautes_perso + 1),
+        'tm_dom': tm_dom,
+        'tm_ext': tm_ext,
     })
 
 
@@ -247,6 +279,33 @@ def _chrono_payload(match):
         'started_at':  started_at,
         'server_ts':   now_ts,
     }
+
+
+def _shot_payload(match):
+    """Bloc shot clock renvoyé à chaque réponse API (source de vérité).
+    Si shot_top est None, on renvoie running=False — pas de started_at=now
+    qui ferait croire au client que le chrono vient de démarrer (boucle)."""
+    now_ts = timezone.now().timestamp()
+    running = match.shot_en_cours and match.shot_top is not None
+    started_at = match.shot_top.timestamp() if match.shot_top else 0.0
+    return {
+        'running':     running,
+        'frozen_time': float(match.shot_restant),
+        'started_at':  started_at,
+        'server_ts':   now_ts,
+        'max':         match.temps_possession,
+    }
+
+
+def _reset_shot(match):
+    """Remet le shot clock à zéro (modifie l'objet, pas de save)."""
+    match.shot_restant = match.temps_possession
+    if match.chrono_en_cours:
+        match.shot_en_cours = True
+        match.shot_top = timezone.now()
+    else:
+        match.shot_en_cours = False
+        match.shot_top = None
 
 
 def _history_qs(match):
@@ -279,36 +338,63 @@ def api_match_action(request, match_id):
 
     if action == 'start_timer':
         if not match.chrono_en_cours:
+            now = timezone.now()
             match.chrono_en_cours = True
-            match.dernier_top_chrono = timezone.now()
-            match.save(update_fields=['chrono_en_cours', 'dernier_top_chrono'])
-        return JsonResponse({'status': 'ok', 'chrono': _chrono_payload(match)})
+            match.dernier_top_chrono = now
+            if not match.shot_en_cours or match.shot_top is None:
+                match.shot_en_cours = True
+                match.shot_top = now
+            match.save(update_fields=['chrono_en_cours', 'dernier_top_chrono',
+                                       'shot_en_cours', 'shot_top'])
+        return JsonResponse({'status': 'ok', 'chrono': _chrono_payload(match),
+                             'shot': _shot_payload(match)})
 
     elif action == 'stop_timer':
         if match.chrono_en_cours:
+            now = timezone.now()
             if match.dernier_top_chrono:
-                delta = (timezone.now() - match.dernier_top_chrono).total_seconds()
+                delta = (now - match.dernier_top_chrono).total_seconds()
                 match.temps_restant = max(0, int(match.temps_restant - delta))
             match.chrono_en_cours = False
             match.dernier_top_chrono = None
-            match.save(update_fields=['chrono_en_cours', 'temps_restant', 'dernier_top_chrono'])
-        return JsonResponse({'status': 'ok', 'chrono': _chrono_payload(match)})
+            if match.shot_en_cours and match.shot_top:
+                elapsed = (now - match.shot_top).total_seconds()
+                match.shot_restant = max(0, int(match.shot_restant - elapsed))
+            match.shot_en_cours = False
+            match.shot_top = None
+            match.save(update_fields=['chrono_en_cours', 'temps_restant', 'dernier_top_chrono',
+                                       'shot_en_cours', 'shot_restant', 'shot_top'])
+        return JsonResponse({'status': 'ok', 'chrono': _chrono_payload(match),
+                             'shot': _shot_payload(match)})
 
     elif action == 'adjust_time':
-        delta = int(data.get('delta', 0))
+        try:
+            delta = int(data.get('delta', 0))
+        except (ValueError, TypeError):
+            delta = 0
+        delta = max(-600, min(600, delta))  # borne ±10 minutes max
         match.temps_restant = max(0, match.temps_restant + delta)
         match.save(update_fields=['temps_restant'])
-        return JsonResponse({'status': 'ok', 'chrono': _chrono_payload(match)})
+        return JsonResponse({'status': 'ok', 'chrono': _chrono_payload(match),
+                             'shot': _shot_payload(match)})
+
+    elif action == 'shot_reset':
+        _reset_shot(match)
+        match.save(update_fields=['shot_en_cours', 'shot_restant', 'shot_top'])
+        return JsonResponse({'status': 'ok', 'chrono': _chrono_payload(match),
+                             'shot': _shot_payload(match)})
 
     elif action == 'reset_period':
         match.chrono_en_cours = False
         match.dernier_top_chrono = None
         match.temps_restant = match.duree_periode * 60
-        match.save(update_fields=['chrono_en_cours', 'dernier_top_chrono', 'temps_restant'])
-        return JsonResponse({'status': 'ok', 'chrono': _chrono_payload(match)})
+        _reset_shot(match)
+        match.save(update_fields=['chrono_en_cours', 'dernier_top_chrono', 'temps_restant',
+                                   'shot_en_cours', 'shot_restant', 'shot_top'])
+        return JsonResponse({'status': 'ok', 'chrono': _chrono_payload(match),
+                             'shot': _shot_payload(match)})
 
     elif action == 'next_period':
-        # Snapshot du score en fin de période
         ScorePeriode.objects.update_or_create(
             match=match,
             numero_periode=match.periode_actuelle,
@@ -319,14 +405,17 @@ def api_match_action(request, match_id):
         match.dernier_top_chrono = None
         match.periode_actuelle += 1
         match.temps_restant = match.duree_periode * 60
+        _reset_shot(match)
         match.save(update_fields=[
             'chrono_en_cours', 'dernier_top_chrono',
             'periode_actuelle', 'temps_restant',
+            'shot_en_cours', 'shot_restant', 'shot_top',
         ])
         return JsonResponse({
             'status': 'ok',
             'period': match.periode_actuelle,
             'chrono': _chrono_payload(match),
+            'shot':   _shot_payload(match),
         })
 
     # ── Retour en jeu ─────────────────────────────────────────────────────────
@@ -339,73 +428,100 @@ def api_match_action(request, match_id):
         joueur.save(update_fields=['est_exclu', 'fin_exclusion'])
         return JsonResponse({'status': 'ok', 'chrono': _chrono_payload(match)})
 
+    # ── Présence terrain ──────────────────────────────────────────────────────
+
+    elif action == 'toggle_sur_terrain':
+        p_id = data.get('participation_id')
+        joueur = get_object_or_404(Participation, id=p_id, match=match)
+        joueur.est_sur_terrain = not joueur.est_sur_terrain
+        joueur.save(update_fields=['est_sur_terrain'])
+        return JsonResponse({'status': 'ok', 'est_sur_terrain': joueur.est_sur_terrain})
+
     # ── Actions de jeu ────────────────────────────────────────────────────────
 
-    elif action in ('BUT', 'EXCL', 'EDA', 'PENALTY', 'TM', 'FAUTE'):
+    elif action == 'TM':
+        chrono_display = data.get('chrono_display', '00:00')
+        # equipe peut venir directement ou être dérivée du joueur (side panel)
+        equipe = data.get('equipe')
+        if not equipe and data.get('participation_id'):
+            j = Participation.objects.filter(id=data['participation_id'], match=match).first()
+            if j:
+                equipe = j.equipe_concernee
+        if not equipe:
+            return JsonResponse({'status': 'error', 'message': 'Équipe non identifiée'})
+        tm_count = Evenement.objects.filter(
+            match=match, type_action='TM', equipe_attribuee=equipe).count()
+        if tm_count >= match.nb_temps_morts:
+            return JsonResponse({'status': 'error',
+                                 'message': 'Temps morts épuisés pour cette équipe'})
+        Evenement.objects.create(
+            match=match, type_action='TM',
+            chrono_match=chrono_display, periode=match.periode_actuelle,
+            equipe_attribuee=equipe,
+            score_dom_apres=match.score_domicile,
+            score_ext_apres=match.score_exterieur,
+        )
+
+    elif action in ('B', 'E', 'EDA', 'EDAP', 'P', 'A', 'R', 'CJ€', 'CR'):
         p_id = data.get('participation_id')
         chrono_display = data.get('chrono_display', '00:00')
 
-        evt_kwargs = dict(
-            match=match,
-            type_action=action,
-            chrono_match=chrono_display,
-            periode=match.periode_actuelle,
-        )
-
-        if action == 'TM':
-            equipe = data.get('equipe')
-            Evenement.objects.create(
-                **evt_kwargs,
-                equipe_attribuee=equipe,
-                score_dom_apres=match.score_domicile,
-                score_ext_apres=match.score_exterieur,
-            )
-        else:
+        joueur = None
+        if p_id:
             joueur = get_object_or_404(Participation, id=p_id, match=match)
 
-            if action == 'BUT':
-                if joueur.equipe_concernee == 'DOM':
-                    match.score_domicile += 1
-                else:
-                    match.score_exterieur += 1
+        score_shot_changed = False
 
-            elif action in ('FAUTE', 'PENALTY'):
-                joueur.nb_fautes_personnelles += 1
-                if joueur.nb_fautes_personnelles >= match.max_fautes_perso:
-                    joueur.est_exclu_definitif = True
-                joueur.save(update_fields=['nb_fautes_personnelles', 'est_exclu_definitif'])
+        if action == 'B':
+            if joueur.equipe_concernee == 'DOM':
+                match.score_domicile += 1
+            else:
+                match.score_exterieur += 1
+            _reset_shot(match)
+            score_shot_changed = True
 
-            elif action == 'EXCL':
-                joueur.nb_fautes_personnelles += 1
-                joueur.est_exclu = True
-                # Durée lue depuis le modèle (corrige le bug du hardcode 20s)
-                joueur.fin_exclusion = (timezone.now()
-                                        + timedelta(seconds=match.duree_exclusion))
-                if joueur.nb_fautes_personnelles >= match.max_fautes_perso:
-                    joueur.est_exclu_definitif = True
-                    joueur.est_exclu = False  # définitif prend la priorité
-                joueur.save(update_fields=[
-                    'nb_fautes_personnelles', 'est_exclu',
-                    'fin_exclusion', 'est_exclu_definitif',
-                ])
+        elif action == 'P':
+            joueur.nb_fautes_personnelles += 1
+            if joueur.nb_fautes_personnelles >= match.max_fautes_perso:
+                joueur.est_exclu_definitif = True
+            joueur.save(update_fields=['nb_fautes_personnelles', 'est_exclu_definitif'])
 
-            elif action == 'EDA':
+        elif action == 'E':
+            joueur.nb_fautes_personnelles += 1
+            joueur.est_exclu = True
+            joueur.fin_exclusion = timezone.now() + timedelta(seconds=match.duree_exclusion)
+            if joueur.nb_fautes_personnelles >= match.max_fautes_perso:
                 joueur.est_exclu_definitif = True
                 joueur.est_exclu = False
-                joueur.nb_fautes_personnelles += 1
-                joueur.save(update_fields=[
-                    'est_exclu_definitif', 'est_exclu', 'nb_fautes_personnelles'
-                ])
+            joueur.save(update_fields=[
+                'nb_fautes_personnelles', 'est_exclu',
+                'fin_exclusion', 'est_exclu_definitif',
+            ])
 
-            match.save(update_fields=['score_domicile', 'score_exterieur'])
+        elif action in ('EDA', 'EDAP'):
+            joueur.est_exclu_definitif = True
+            joueur.est_exclu = False
+            joueur.nb_fautes_personnelles += 1
+            joueur.save(update_fields=[
+                'est_exclu_definitif', 'est_exclu', 'nb_fautes_personnelles',
+            ])
 
-            Evenement.objects.create(
-                **evt_kwargs,
-                joueur=joueur,
-                equipe_attribuee=joueur.equipe_concernee,
-                score_dom_apres=match.score_domicile,
-                score_ext_apres=match.score_exterieur,
-            )
+        # A, R, CJ€, CR : simple log, no state change
+
+        if score_shot_changed:
+            match.save(update_fields=[
+                'score_domicile', 'score_exterieur',
+                'shot_en_cours', 'shot_restant', 'shot_top',
+            ])
+
+        Evenement.objects.create(
+            match=match, type_action=action,
+            chrono_match=chrono_display, periode=match.periode_actuelle,
+            joueur=joueur,
+            equipe_attribuee=joueur.equipe_concernee if joueur else data.get('equipe'),
+            score_dom_apres=match.score_domicile,
+            score_ext_apres=match.score_exterieur,
+        )
 
     # ── Annulation ───────────────────────────────────────────────────────────
 
@@ -413,36 +529,58 @@ def api_match_action(request, match_id):
         evt_id = data.get('event_id')
         evt = get_object_or_404(Evenement, id=evt_id, match=match)
 
-        if evt.type_action == 'BUT':
+        if evt.type_action == 'B':
             if evt.equipe_attribuee == 'DOM':
                 match.score_domicile = max(0, match.score_domicile - 1)
             else:
                 match.score_exterieur = max(0, match.score_exterieur - 1)
             match.save(update_fields=['score_domicile', 'score_exterieur'])
 
-        elif evt.type_action in ('EXCL', 'EDA', 'PENALTY', 'FAUTE') and evt.joueur:
+        elif evt.type_action in ('E', 'EDA', 'EDAP', 'P') and evt.joueur:
             j = evt.joueur
             j.nb_fautes_personnelles = max(0, j.nb_fautes_personnelles - 1)
-            if evt.type_action == 'EXCL':
+            if evt.type_action == 'E':
                 j.est_exclu = False
                 j.fin_exclusion = None
-            if evt.type_action == 'EDA':
+                if j.nb_fautes_personnelles < match.max_fautes_perso:
+                    j.est_exclu_definitif = False
+            elif evt.type_action in ('EDA', 'EDAP'):
                 j.est_exclu_definitif = False
             j.save()
 
         evt.delete()
 
-    # ── Refresh (état courant sans action) ───────────────────────────────────
-    # Géré par le fallback final (pas de clause elif nécessaire)
+    # ── Refresh (état courant sans action) ────────────────────────────────────
 
-    return JsonResponse({
-        'status': 'ok',
-        'score_dom': match.score_domicile,
-        'score_ext': match.score_exterieur,
-        'period':    match.periode_actuelle,
-        'history':   _history_qs(match),
-        'chrono':    _chrono_payload(match),
-    })
+    tm_qs = Evenement.objects.filter(match=match, type_action='TM')
+
+    # Inclure l'état du joueur si une action vient de le modifier
+    joueur_state = None
+    _joueur = locals().get('joueur')
+    if _joueur:
+        joueur_state = {
+            'id':              _joueur.id,
+            'est_exclu_definitif': _joueur.est_exclu_definitif,
+            'est_exclu':       _joueur.est_exclu,
+            'fin_exclusion_ts': (_joueur.fin_exclusion.timestamp()
+                                 if _joueur.fin_exclusion else 0),
+        }
+
+    resp = {
+        'status':         'ok',
+        'score_dom':      match.score_domicile,
+        'score_ext':      match.score_exterieur,
+        'period':         match.periode_actuelle,
+        'history':        _history_qs(match),
+        'chrono':         _chrono_payload(match),
+        'shot':           _shot_payload(match),
+        'tm_dom':         tm_qs.filter(equipe_attribuee='DOM').count(),
+        'tm_ext':         tm_qs.filter(equipe_attribuee='EXT').count(),
+        'nb_temps_morts': match.nb_temps_morts,
+    }
+    if joueur_state:
+        resp['joueur_state'] = joueur_state
+    return JsonResponse(resp)
 
 
 # ==========================================
@@ -451,16 +589,35 @@ def api_match_action(request, match_id):
 
 def score_board(request, match_id):
     match = get_object_or_404(Match, id=match_id)
-    joueurs_dom = Participation.objects.filter(
-        match=match, equipe_concernee='DOM').order_by('numero_bonnet')
-    joueurs_ext = Participation.objects.filter(
-        match=match, equipe_concernee='EXT').order_by('numero_bonnet')
     return render(request, 'gestion/score_board.html', {
         'match': match,
-        'joueurs_dom': joueurs_dom,
-        'joueurs_ext': joueurs_ext,
         'range_15': range(1, 16),
     })
+
+
+@csrf_exempt
+def upload_sponsor(request, match_id):
+    """Upload one or more sponsor images for a match."""
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST only'}, status=405)
+    match = get_object_or_404(Match, id=match_id)
+    count = Sponsor.objects.filter(match=match).count()
+    created = []
+    for idx, f in enumerate(request.FILES.getlist('sponsors')):
+        s = Sponsor.objects.create(match=match, image=f, ordre=count + idx)
+        created.append({'id': s.id, 'url': request.build_absolute_uri(s.image.url)})
+    return JsonResponse({'created': created})
+
+
+@csrf_exempt
+def delete_sponsor(request, sponsor_id):
+    """Delete a sponsor image."""
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST only'}, status=405)
+    s = get_object_or_404(Sponsor, id=sponsor_id)
+    s.image.delete(save=False)
+    s.delete()
+    return JsonResponse({'status': 'deleted'})
 
 
 @csrf_exempt
@@ -478,17 +635,45 @@ def api_match_state(request, match_id):
         else:
             state, end_time = 'OK', 0
         players_state[p.id] = {
-            'state': state,
+            'state':   state,
             'end_time': end_time,
-            'fautes': p.nb_fautes_personnelles,
+            'fautes':  p.nb_fautes_personnelles,
+            'side':    p.equipe_concernee,
+            'bonnet':  p.numero_bonnet,
         }
 
+    # Temps morts utilisés par équipe
+    tm_qs = Evenement.objects.filter(match=match, type_action='TM')
+    tm_dom = tm_qs.filter(equipe_attribuee='DOM').count()
+    tm_ext = tm_qs.filter(equipe_attribuee='EXT').count()
+
+    # Logos et sponsors
+    request_host = request.build_absolute_uri('/')[:-1]
+    logo_dom_url = (request_host + match.logo_dom.url) if match.logo_dom else None
+    logo_ext_url = (request_host + match.logo_ext.url) if match.logo_ext else None
+    sponsor_urls = [
+        request_host + s.image.url
+        for s in Sponsor.objects.filter(match=match)
+    ]
+
     return JsonResponse({
-        'score_dom': match.score_domicile,
-        'score_ext': match.score_exterieur,
-        'periode':   match.periode_actuelle,
-        'players':   players_state,
-        'chrono':    _chrono_payload(match),
+        'score_dom':      match.score_domicile,
+        'score_ext':      match.score_exterieur,
+        'periode':        match.periode_actuelle,
+        'players':        players_state,
+        'chrono':         _chrono_payload(match),
+        'tm_dom':         tm_dom,
+        'tm_ext':         tm_ext,
+        'nb_temps_morts': match.nb_temps_morts,
+        'temps_possession': match.temps_possession,
+        'nom_dom':        match.nom_equipe_domicile,
+        'nom_ext':        match.nom_equipe_exterieur,
+        'logo_dom':       logo_dom_url,
+        'logo_ext':       logo_ext_url,
+        'sponsors':       sponsor_urls,
+        'couleur_dom':    match.couleur_bonnet_dom,
+        'couleur_ext':    match.couleur_bonnet_ext,
+        'shot':           _shot_payload(match),
     })
 
 
@@ -501,8 +686,6 @@ def export_excel(request, match_id):
     Génère et télécharge la feuille de match officielle FFN en .xlsx.
     Mapping précis calé sur la structure réelle du template FFN.
     """
-    import os
-
     try:
         from openpyxl import load_workbook
     except ImportError:
@@ -515,36 +698,23 @@ def export_excel(request, match_id):
     match = get_object_or_404(Match, id=match_id)
 
     template_path = os.path.join(
-        os.path.dirname(os.path.dirname(__file__)),
+        os.path.dirname(__file__),          # Django/gestion/
         'static', 'gestion', 'feuille_match_template.xlsx'
     )
     if not os.path.exists(template_path):
         return HttpResponse(
-            'Template Excel introuvable : static/gestion/feuille_match_template.xlsx',
-            status=500, content_type='text/plain',
+            f'Template Excel introuvable.\nChemin attendu : {template_path}\n'
+            'Copiez Feuille_de_match_Excel.xlsx dans gestion/static/gestion/ '
+            'sous le nom feuille_match_template.xlsx',
+            status=500, content_type='text/plain; charset=utf-8',
         )
 
     wb = load_workbook(template_path)
     ws = wb['Feuile de Match']   # typo intentionnelle du template FFN
 
+    # Alias local pour éviter de répéter ws à chaque appel
     def w(row, col, value):
-        """Écrit dans une cellule, remonte à la cellule maître si fusionnée."""
-        if value is None or value == '':
-            return
-        from openpyxl.cell.cell import MergedCell
-        cell = ws.cell(row=row, column=col)
-        if isinstance(cell, MergedCell):
-            for merged_range in ws.merged_cells.ranges:
-                if (merged_range.min_row <= row <= merged_range.max_row
-                        and merged_range.min_col <= col <= merged_range.max_col):
-                    cell = ws.cell(
-                        row=merged_range.min_row,
-                        column=merged_range.min_col,
-                    )
-                    break
-            else:
-                return
-        cell.value = value
+        _safe_write(ws, row, col, value)
 
     # ── Infos générales ──────────────────────────────────────────────────────
     # Nom équipe 1 : C3 (fusion C3:Q3)
@@ -587,33 +757,38 @@ def export_excel(request, match_id):
     w(25, 3, match.entraineur_adj_dom)
     w(26, 3, match.suppleant_dom)
 
-    # ── Temps morts par période ───────────────────────────────────────────────
-    # Équipe DOM : ligne 5, colonnes I-L (9-12)  |  EXT : ligne 31, colonnes I-L
-    tm_dom = {1: 0, 2: 0, 3: 0, 4: 0}
-    tm_ext = {1: 0, 2: 0, 3: 0, 4: 0}
-    for ev in Evenement.objects.filter(match=match, type_action='TM'):
-        p = ev.periode
-        if 1 <= p <= 4:
-            if ev.equipe_attribuee == 'DOM':
-                tm_dom[p] += 1
-            elif ev.equipe_attribuee == 'EXT':
-                tm_ext[p] += 1
-    for p in range(1, 5):
-        if tm_dom[p]:
-            w(5,  8 + p, tm_dom[p])   # I=9, J=10, K=11, L=12
-        if tm_ext[p]:
-            w(31, 8 + p, tm_ext[p])
+    # ── Temps morts : slots chronologiques, format "X {période}" ─────────────
+    # DOM : ligne 5, colonnes I(9) J(10) K(11) L(12)
+    # EXT : ligne 31, mêmes colonnes
+    tm_slots = [9, 10, 11, 12]
+    tm_events_dom = list(
+        Evenement.objects
+        .filter(match=match, type_action='TM', equipe_attribuee='DOM')
+        .order_by('heure_creation')
+    )
+    tm_events_ext = list(
+        Evenement.objects
+        .filter(match=match, type_action='TM', equipe_attribuee='EXT')
+        .order_by('heure_creation')
+    )
+    for i, ev in enumerate(tm_events_dom[:len(tm_slots)]):
+        w(5,  tm_slots[i], f"X {ev.periode}")
+    for i, ev in enumerate(tm_events_ext[:len(tm_slots)]):
+        w(31, tm_slots[i], f"X {ev.periode}")
 
-    # ── Résultats par période (lignes 26-30, col AD=30 DOM / AE=31 EXT) ──────
-    # Attention : la période 3 partage la ligne 29 avec le nom de l'équipe 2
+    # ── Résultats par période : delta (pas cumulatif) ─────────────────────────
     scores = {sp.numero_periode: sp
               for sp in ScorePeriode.objects.filter(match=match)}
     score_rows = {1: 26, 2: 27, 3: 29, 4: 30}
-    for p_num, p_row in score_rows.items():
+    prev_dom, prev_ext = 0, 0
+    for p_num in sorted(score_rows.keys()):
         sp = scores.get(p_num)
+        p_row = score_rows[p_num]
         if sp:
-            w(p_row, 30, sp.score_dom)
-            w(p_row, 31, sp.score_ext)
+            w(p_row, 30, sp.score_dom - prev_dom)
+            w(p_row, 31, sp.score_ext - prev_ext)
+            prev_dom = sp.score_dom
+            prev_ext = sp.score_ext
 
     # Score final – zone « RESULTAT FINAL » (R3C31 DOM, R5C31 EXT)
     w(3, 31, match.score_domicile)
@@ -645,32 +820,66 @@ def export_excel(request, match_id):
     # ── Journal des événements (zone droite, 3 colonnes, lignes 13-39) ────────
     # 3 groupes démarrant aux colonnes 34 (AH), 40 (AN), 46 (AT)
     # Chaque groupe : TEMPS | B(dom) | N(ext) | CODE | SCORE
-    # Max 27 lignes par groupe (lignes 13-39) avant la section officiels (l.40+)
+    # Max 27 lignes par groupe. 2 lignes grises séparent chaque période.
+    from openpyxl.styles import PatternFill
+    _gray = PatternFill('solid', fgColor='BBBBBB')
+
     events = list(
         Evenement.objects.filter(match=match).order_by('heure_creation')
     )
     groups = [(34, 13), (40, 13), (46, 13)]
     max_per_group = 27
 
-    for idx, evt in enumerate(events):
-        grp_idx = idx // max_per_group
-        if grp_idx >= len(groups):
-            break
-        start_col, start_row = groups[grp_idx]
-        row = start_row + (idx % max_per_group)
+    # Regrouper par période
+    events_by_period = {}
+    for evt in events:
+        events_by_period.setdefault(evt.periode, []).append(evt)
 
-        bonnet = evt.joueur.numero_bonnet if evt.joueur else ''
-        dom_b  = bonnet if evt.equipe_attribuee == 'DOM' else ''
-        ext_b  = bonnet if evt.equipe_attribuee == 'EXT' else ''
+    row_cursor = 0
+    grp_idx = 0
+    first_period = True
 
-        w(row, start_col,     evt.chrono_match)
-        w(row, start_col + 1, dom_b)
-        w(row, start_col + 2, ext_b)
-        w(row, start_col + 3, evt.type_action)
-        w(row, start_col + 4, f"{evt.score_dom_apres}-{evt.score_ext_apres}")
+    for periode in sorted(events_by_period.keys()):
+        # 2 lignes séparatrices grises entre chaque période
+        if not first_period:
+            for _ in range(2):
+                if grp_idx >= len(groups):
+                    break
+                if row_cursor >= max_per_group:
+                    grp_idx += 1
+                    row_cursor = 0
+                if grp_idx >= len(groups):
+                    break
+                sc, sr = groups[grp_idx]
+                sep_row = sr + row_cursor
+                for c in range(sc, sc + 5):
+                    ws.cell(row=sep_row, column=c).fill = _gray
+                row_cursor += 1
+        first_period = False
+
+        for evt in events_by_period[periode]:
+            if grp_idx >= len(groups):
+                break
+            if row_cursor >= max_per_group:
+                grp_idx += 1
+                row_cursor = 0
+            if grp_idx >= len(groups):
+                break
+            sc, sr = groups[grp_idx]
+            row = sr + row_cursor
+
+            bonnet = evt.joueur.numero_bonnet if evt.joueur else ''
+            dom_b  = bonnet if evt.equipe_attribuee == 'DOM' else ''
+            ext_b  = bonnet if evt.equipe_attribuee == 'EXT' else ''
+
+            w(row, sc,     evt.chrono_match)
+            w(row, sc + 1, dom_b)
+            w(row, sc + 2, ext_b)
+            w(row, sc + 3, evt.type_action)
+            w(row, sc + 4, f"{evt.score_dom_apres}-{evt.score_ext_apres}")
+            row_cursor += 1
 
     # ── Sauvegarde en mémoire et envoi HTTP ────────────────────────────────────
-    from io import BytesIO
     buf = BytesIO()
     wb.save(buf)
     buf.seek(0)
@@ -714,33 +923,44 @@ def _safe_write(ws, row, col, value):
 
 def _fill_players(ws, joueurs, start_row, match):
     """
-    Remplit les lignes de joueurs dans le template.
-    start_row : première ligne de données (9 pour DOM, 35 pour EXT).
-    Les bonnets vont de 1 à 15 ; on place chaque joueur sur la bonne ligne.
+    Remplit les lignes de joueurs dans le template FFN.
+    start_row : 9 pour DOM, 35 pour EXT.
 
-    Colonnes par joueur (numérotation openpyxl) :
-      B(2)=Licence  C(3)=Nom Prénom  P(16)=Naissance  Q(17)=X(EDA)
-      R(18)=N°Bonnet  S(19)=Buts
+    Colonnes :
+      B(2)=Licence  C(3)=Nom Prénom  P(16)=Naissance  Q(17)=Présence terrain
+      R(18)=N°Bonnet
+      S(19)=Buts P1  T(20)=Buts P2  U(21)=Buts P3  W(23)=Buts P4
       Z(26)+AA(27) = Code1+Période1
       AB(28)+AC(29) = Code2+Période2
       AD(30)+AE(31) = Code3+Période3
     """
-    # Buts par joueur
-    buts_map = {
-        p.id: Evenement.objects.filter(match=match, joueur=p, type_action='BUT').count()
-        for p in joueurs
-    }
+    from django.db.models import Count
 
-    # Sanctions par joueur (EXCL, EDA, PENALTY) – max 3 slots dans le template
-    events_map = {
-        p.id: list(
-            Evenement.objects.filter(
-                match=match, joueur=p,
-                type_action__in=('EXCL', 'EDA', 'PENALTY'),
-            ).order_by('heure_creation')[:3]
-        )
-        for p in joueurs
-    }
+    joueur_ids = [p.id for p in joueurs]
+
+    # Buts par joueur par période (2 requêtes au lieu de N)
+    buts_per_period = {}
+    for item in (
+        Evenement.objects
+        .filter(match=match, type_action='B', joueur_id__in=joueur_ids)
+        .values('joueur_id', 'periode')
+        .annotate(cnt=Count('id'))
+    ):
+        buts_per_period.setdefault(item['joueur_id'], {})[item['periode']] = item['cnt']
+
+    # Sanctions par joueur (E, EDA, EDAP, P)
+    sanctions = list(
+        Evenement.objects
+        .filter(match=match, type_action__in=('E', 'EDA', 'EDAP', 'P'), joueur_id__in=joueur_ids)
+        .order_by('joueur_id', 'heure_creation')
+    )
+    events_map = {}
+    for evt in sanctions:
+        pid = evt.joueur_id
+        if pid not in events_map:
+            events_map[pid] = []
+        if len(events_map[pid]) < 3:
+            events_map[pid].append(evt)
 
     by_bonnet = {p.numero_bonnet: p for p in joueurs}
 
@@ -753,13 +973,18 @@ def _fill_players(ws, joueurs, start_row, match):
         _safe_write(ws, row, 2,  p.numero_licence or '')
         _safe_write(ws, row, 3,  f"{p.nom} {p.prenom}")
         _safe_write(ws, row, 16, p.annee_naissance or '')
-        # Colonne X (17) : marque l'exclusion définitive
-        if p.est_exclu_definitif:
+        # Col Q(17) : présence sur le terrain (X = présent)
+        if p.est_sur_terrain:
             _safe_write(ws, row, 17, 'X')
         _safe_write(ws, row, 18, bonnet)
-        buts = buts_map.get(p.id, 0)
-        if buts:
-            _safe_write(ws, row, 19, buts)
+
+        # Buts par période : S=P1(19), T=P2(20), U=P3(21), W=P4(23)
+        period_cols = {1: 19, 2: 20, 3: 21, 4: 23}
+        player_buts = buts_per_period.get(p.id, {})
+        for period, col in period_cols.items():
+            goals = player_buts.get(period, 0)
+            if goals:
+                _safe_write(ws, row, col, goals)
 
         # 3 slots de sanctions : (Code, Période) aux colonnes Z/AA, AB/AC, AD/AE
         code_cols = [(26, 27), (28, 29), (30, 31)]
