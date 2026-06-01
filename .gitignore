@@ -9,3 +9,8 @@ __pycache__/
 # Environnements virtuels
 venv/
 env/
+
+# Outils Claude (doivent rester en local uniquement)
+.claude/
+CLAUDE.md
+.claude.json
