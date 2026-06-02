@@ -697,19 +697,26 @@ def export_excel(request, match_id):
 
     match = get_object_or_404(Match, id=match_id)
 
-    template_path = os.path.join(
-        os.path.dirname(__file__),          # Django/gestion/
-        'static', 'gestion', 'feuille_match_template.xlsx'
-    )
-    if not os.path.exists(template_path):
+    # Accepte .xlsm (avec macros) en priorité, puis .xlsx en fallback
+    base_dir = os.path.join(os.path.dirname(__file__), 'static', 'gestion')
+    xlsm_path = os.path.join(base_dir, 'feuille_match_template.xlsm')
+    xlsx_path  = os.path.join(base_dir, 'feuille_match_template.xlsx')
+    if os.path.exists(xlsm_path):
+        template_path = xlsm_path
+        is_xlsm = True
+    elif os.path.exists(xlsx_path):
+        template_path = xlsx_path
+        is_xlsm = False
+    else:
         return HttpResponse(
-            f'Template Excel introuvable.\nChemin attendu : {template_path}\n'
-            'Copiez Feuille_de_match_Excel.xlsx dans gestion/static/gestion/ '
-            'sous le nom feuille_match_template.xlsx',
+            f'Template Excel introuvable.\n'
+            f'Chemin attendu : {xlsm_path} (ou .xlsx)\n'
+            'Copiez le template dans gestion/static/gestion/ '
+            'sous le nom feuille_match_template.xlsm',
             status=500, content_type='text/plain; charset=utf-8',
         )
 
-    wb = load_workbook(template_path)
+    wb = load_workbook(template_path, keep_vba=is_xlsm)
     ws = wb['Feuile de Match']   # typo intentionnelle du template FFN
 
     # Alias local pour éviter de répéter ws à chaque appel
@@ -888,12 +895,15 @@ def export_excel(request, match_id):
         f"{match.nom_equipe_domicile}_vs_{match.nom_equipe_exterieur}"
         .replace(' ', '_')[:60]
     )
-    filename = f"feuille_match_{equipes_slug}.xlsx"
-
-    response = HttpResponse(
-        buf.read(),
-        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    ext      = 'xlsm' if is_xlsm else 'xlsx'
+    filename = f"feuille_match_{equipes_slug}.{ext}"
+    mime     = (
+        'application/vnd.ms-excel.sheet.macroEnabled.12'
+        if is_xlsm else
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     )
+
+    response = HttpResponse(buf.read(), content_type=mime)
     response['Content-Disposition'] = f'attachment; filename="{filename}"'
     return response
 
@@ -943,6 +953,7 @@ def _fill_players(ws, joueurs, start_row, match):
     for item in (
         Evenement.objects
         .filter(match=match, type_action='B', joueur_id__in=joueur_ids)
+        .order_by()          # efface l'ordering par défaut (heure_creation) qui polluerait le GROUP BY
         .values('joueur_id', 'periode')
         .annotate(cnt=Count('id'))
     ):
