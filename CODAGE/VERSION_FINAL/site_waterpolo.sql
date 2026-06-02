@@ -67,6 +67,9 @@ CREATE TABLE `joueur` (
   `id_joueur`        INT AUTO_INCREMENT PRIMARY KEY,
   `iuf`              VARCHAR(20)  NOT NULL,
   `nom_joueur`       VARCHAR(100) NOT NULL,
+  -- prenom / nationalite : complétés par l'entraîneur via le site (absents de la feuille de match)
+  `prenom`           VARCHAR(100) DEFAULT NULL,
+  `nationalite`      VARCHAR(50)  DEFAULT NULL,
   `annee_naissance`  YEAR,
   `id_equipe`        INT          NOT NULL,
   UNIQUE KEY `uq_iuf` (`iuf`),
