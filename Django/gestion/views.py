@@ -797,6 +797,20 @@ def export_excel(request, match_id):
             prev_dom = sp.score_dom
             prev_ext = sp.score_ext
 
+    # Dernier tronçon : si la période finale n'a pas de ScorePeriode (cas habituel
+    # pour la P4 car on ne passe jamais à une P5), on écrit le delta restant.
+    delta_dom = match.score_domicile - prev_dom
+    delta_ext = match.score_exterieur - prev_ext
+    if delta_dom or delta_ext:
+        for p_num in sorted(score_rows.keys()):
+            if p_num not in scores:
+                p_row = score_rows[p_num]
+                if delta_dom:
+                    w(p_row, 30, delta_dom)
+                if delta_ext:
+                    w(p_row, 31, delta_ext)
+                break
+
     # Score final – zone « RESULTAT FINAL » (R3C31 DOM, R5C31 EXT)
     w(3, 31, match.score_domicile)
     w(5, 31, match.score_exterieur)
