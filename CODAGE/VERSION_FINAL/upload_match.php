@@ -22,22 +22,21 @@ if (!isset($_SESSION['user'])) {
     <nav>
       <ul>
         
-        <li class="bouton"><a href="index1.php">Résultat</a></li> <!-- Lien vers la page des résultats -->
+         <li class="bouton"><a href="index1.php">Résultat</a></li> <!-- Lien vers la page des résultats -->
         <li class="bouton"><a href="Meilleur_buteurs.php">Meilleurs buteurs </a></li> <!-- Lien vers la page des meilleurs buteurs -->
         <li class="bouton"><a href="règle_water-polo.php">Réglement</a></li> <!-- Lien vers la page du règlement -->
-        <li class="bouton"><a href="affichage_feuille_match.php">Feuille de Match</a></li> <!-- Lien vers la page du affichage feuille de match -->
-
+        <li class="bouton"><a href="gestion_championnats.php">Gestion Championnat</a></li> <!-- Upload de la feuille de match sur la BDD -->
+        <li class="bouton"><a href="classement.php">Classement Championnat</a></li> <!-- Upload de la feuille de match sur la BDD -->
         <?php if (isset($_SESSION['user'])): ?>
             <li class="bouton"><a href="logout.php">Se déconnecter</a></li>
         <?php else: ?>
             <li><a href="login.php">Se connecter</a></li>
         <?php endif; ?>
-
-
-
       </ul>
-    </nav> 
-  <form action="import_feuille_match.php" method="POST" enctype="multipart/form-data">
+      <form action="import_feuille_match.php" method="POST" enctype="multipart/form-data">
     <input type="file" name="xlsx_file" accept=".xlsx">
     <button type="submit">Importer</button>
-</form>
+  </form>
+
+    </nav> 
+  
