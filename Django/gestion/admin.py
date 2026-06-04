@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Match, Equipe, Joueur, Participation, Evenement
+from .models import Match, Equipe, Joueur, Participation, Evenement, SponsorGlobal
 
 
 @admin.register(Match)
@@ -13,7 +13,14 @@ class MatchAdmin(admin.ModelAdmin):
 
 @admin.register(Equipe)
 class EquipeAdmin(admin.ModelAdmin):
-    list_display  = ('nom', 'entraineur')
+    list_display  = ('nom', 'entraineur', 'logo')
+    search_fields = ('nom',)
+
+
+@admin.register(SponsorGlobal)
+class SponsorGlobalAdmin(admin.ModelAdmin):
+    list_display  = ('__str__', 'nom', 'image', 'ordre')
+    list_editable = ('ordre',)
     search_fields = ('nom',)
 
 

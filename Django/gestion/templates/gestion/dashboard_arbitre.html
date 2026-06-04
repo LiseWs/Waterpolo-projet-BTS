@@ -57,8 +57,8 @@
             flex-shrink: 0;
             display: flex;
             flex-direction: column;
-            gap: 6px;
-            padding: 6px 14px 8px;
+            gap: 3px;
+            padding: 4px 12px 4px;
             background: #0c0c14;
             border-bottom: 1px solid var(--border);
             z-index: 10;
@@ -74,7 +74,7 @@
         .team-info {
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 8px;
             width: 36%;
             min-width: 0;
         }
@@ -93,12 +93,12 @@
         .team-info.ext .team-name { color: var(--ext); }
 
         .score-number {
-            font-size: clamp(2.2rem, 4.5vw, 3.2rem);
+            font-size: clamp(1.6rem, 3.2vw, 2.4rem);
             font-weight: 900;
             line-height: 1;
-            min-width: 65px;
+            min-width: 48px;
             text-align: center;
-            padding: 4px 16px;
+            padding: 3px 10px;
             border-radius: var(--r-md);
             border: 2px solid;
             background: rgba(255,255,255,0.04);
@@ -119,17 +119,17 @@
         .chrono-inner-row {
             display: flex;
             align-items: center;
-            gap: 14px;
+            gap: 8px;
         }
 
         .chrono-display {
             font-family: var(--mono);
-            font-size: clamp(2.8rem, 5.5vw, 4rem);
+            font-size: clamp(2rem, 4vw, 3rem);
             font-weight: 900;
             line-height: 1;
             color: var(--excl);
             cursor: pointer;
-            letter-spacing: 2px;
+            letter-spacing: 1px;
             transition: color 0.3s;
         }
         .chrono-display.running {
@@ -143,9 +143,9 @@
 
         .period-badge {
             background: var(--info);
-            padding: 2px 10px;
+            padding: 1px 8px;
             border-radius: 10px;
-            font-size: 0.7rem;
+            font-size: 0.62rem;
             font-weight: 700;
             color: #fff;
             white-space: nowrap;
@@ -167,7 +167,7 @@
         }
         .shot-clock-display {
             font-family: var(--mono);
-            font-size: clamp(1.6rem, 3vw, 2.4rem);
+            font-size: clamp(1.2rem, 2.2vw, 1.8rem);
             font-weight: 900;
             line-height: 1;
             color: var(--pen);
@@ -185,15 +185,19 @@
         }
         .shot-clock-btns { display: flex; gap: 3px; }
         .sc-btn {
-            height: 20px; padding: 0 7px;
+            height: 17px; padding: 0 5px;
             border: 1px solid #333; border-radius: 4px;
             background: #1c1c28; color: #aaa;
-            font-size: 0.58rem; font-weight: 700;
+            font-size: 0.52rem; font-weight: 700;
             cursor: pointer; transition: background .15s;
         }
         .sc-btn:hover { background: #28283c; color: #fff; }
-        .sc-btn.sc-reset { background: #7c2d12; border-color: #c2410c; color: #fed7aa; }
-        .sc-btn.sc-reset:hover { background: #9a3412; }
+        /* ↺ 28s : possession neutre (standard) */
+        .sc-btn.sc-28 { background: #7c2d12; border-color: #c2410c; color: #fed7aa; }
+        .sc-btn.sc-28:hover { background: #9a3412; }
+        /* ↺ 18s : situation offensive (coin, rebond) */
+        .sc-btn.sc-18 { background: #431407; border-color: #ea580c; color: #fdba74; }
+        .sc-btn.sc-18:hover { background: #7c2d12; }
 
         /* Barre contrôles */
         .ctrl-bar {
@@ -203,10 +207,10 @@
         .ctrl-bar::-webkit-scrollbar { display: none; }
 
         .ctrl-btn {
-            display: inline-flex; align-items: center; gap: 5px;
-            height: 28px; padding: 0 10px;
+            display: inline-flex; align-items: center; gap: 4px;
+            height: 24px; padding: 0 8px;
             border: none; border-radius: 5px;
-            font-weight: 700; font-size: 0.68rem; text-transform: uppercase;
+            font-weight: 700; font-size: 0.62rem; text-transform: uppercase;
             cursor: pointer; white-space: nowrap; text-decoration: none;
             transition: opacity .15s, transform .1s; color: #fff;
         }
@@ -313,8 +317,10 @@
         .app-main {
             flex: 1;
             display: grid;
-            grid-template-columns: 1fr 210px 1fr;
-            gap: 8px; padding: 8px; min-height: 0;
+            grid-template-columns: 1fr 190px 1fr;
+            grid-template-rows: minmax(0, 1fr);
+            gap: 5px; padding: 5px; min-height: 0;
+            overflow: hidden;
         }
 
         /* ==========================================================================
@@ -331,7 +337,7 @@
         .col-head {
             flex-shrink: 0;
             display: flex; justify-content: space-between; align-items: center;
-            padding: 7px 10px;
+            padding: 4px 8px;
             background: rgba(0,0,0,.25); border-bottom: 1px solid var(--border);
         }
         .col-head-title {
@@ -342,11 +348,11 @@
         .team-col.ext .col-head-title { color: var(--ext); }
 
         .tm-btn {
-            height: 28px; padding: 0 10px;
+            height: 22px; padding: 0 7px;
             background: transparent; border: 1px solid #444;
-            border-radius: 5px; font-size: 0.63rem; font-weight: 700;
+            border-radius: 5px; font-size: 0.58rem; font-weight: 700;
             color: #aaa; cursor: pointer; transition: background .2s, border-color .2s;
-            display: inline-flex; align-items: center; gap: 5px;
+            display: inline-flex; align-items: center; gap: 4px;
         }
         .tm-btn:hover:not(:disabled) { background: rgba(255,255,255,.08); }
         .tm-btn:disabled { opacity: .35; cursor: not-allowed; }
@@ -358,7 +364,7 @@
         .player-grid {
             flex: 1; overflow-y: auto;
             display: grid; grid-template-columns: repeat(2, 1fr);
-            align-content: start; gap: 5px; padding: 5px;
+            align-content: start; gap: 3px; padding: 4px;
         }
 
         /* ==========================================================================
@@ -378,9 +384,9 @@
         }
 
         .p-num {
-            width: 32px; flex-shrink: 0;
+            width: 26px; flex-shrink: 0;
             display: flex; align-items: center; justify-content: center;
-            padding: 6px 0; font-size: 1.05rem; font-weight: 900;
+            padding: 4px 0; font-size: 0.9rem; font-weight: 900;
             background: rgba(255,255,255,.03);
             border-right: 1px solid var(--border);
         }
@@ -388,14 +394,14 @@
         .team-col.ext .p-num { color: var(--ext); }
 
         .p-info {
-            flex: 1; padding: 3px 6px; min-width: 0;
+            flex: 1; padding: 2px 5px; min-width: 0;
         }
         .p-name-row {
-            display: flex; align-items: center; gap: 4px;
+            display: flex; align-items: center; gap: 3px;
         }
         .p-name {
             flex: 1;
-            font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
+            font-size: 0.65rem; font-weight: 700; text-transform: uppercase;
             white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
             line-height: 1.2;
         }
@@ -421,8 +427,8 @@
         }
 
         .abt {
-            height: 30px; border: none;
-            font-size: 0.62rem; font-weight: 900; cursor: pointer;
+            height: 24px; border: none;
+            font-size: 0.58rem; font-weight: 900; cursor: pointer;
             text-transform: uppercase; letter-spacing: .3px;
             transition: filter .1s, transform .08s;
             color: #fff; border-top: 1px solid rgba(0,0,0,.3);
@@ -431,7 +437,7 @@
         .abt:active { transform: scale(.93); filter: brightness(1.3); }
         .abt:hover  { filter: brightness(1.15); }
 
-        .abt-but  { background: var(--but); color: #000; font-size: 0.72rem; }
+        .abt-but  { background: var(--but); color: #000; font-size: 0.64rem; }
         .abt-excl { background: var(--excl); }
         .abt-pen  { background: var(--pen); color: #000; }
         .abt-eda  { background: #450a0a; border: 1px solid #7f1d1d; color: #fca5a5; font-size: 0.58rem; }
@@ -442,8 +448,8 @@
             border-top: 1px solid rgba(255,255,255,.06);
         }
         .abt2 {
-            height: 22px; border: none;
-            font-size: 0.51rem; font-weight: 900; cursor: pointer;
+            height: 17px; border: none;
+            font-size: 0.46rem; font-weight: 900; cursor: pointer;
             text-transform: uppercase; letter-spacing: .2px;
             transition: filter .1s, transform .07s; color: #fff;
             border-top: 1px solid rgba(0,0,0,.25);
@@ -486,28 +492,29 @@
            COLONNE CENTRALE
            ========================================================================== */
         .center-col {
-            display: flex; flex-direction: column; gap: 8px; min-height: 0;
+            display: flex; flex-direction: column; gap: 8px;
+            min-height: 0; overflow: hidden;
         }
 
         .adj-panel {
             background: var(--bg-panel); border-radius: var(--r-md);
-            padding: 8px; flex-shrink: 0;
+            padding: 5px; flex-shrink: 0;
         }
         .adj-grid {
             display: grid; grid-template-columns: repeat(4, 1fr);
-            gap: 4px; margin-bottom: 6px;
+            gap: 3px; margin-bottom: 4px;
         }
         .adj-btn {
-            height: 30px; background: #1c1c28; border: 1px solid #2e2e40;
-            border-radius: 5px; color: #bbb; font-size: 0.72rem;
+            height: 24px; background: #1c1c28; border: 1px solid #2e2e40;
+            border-radius: 5px; color: #bbb; font-size: 0.65rem;
             font-weight: 700; cursor: pointer; transition: background .15s, color .15s;
         }
         .adj-btn:hover { background: #28283c; color: #fff; }
 
-        .period-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+        .period-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 3px; }
         .p-btn {
-            height: 34px; border: none; border-radius: 5px;
-            font-size: 0.68rem; font-weight: 700; text-transform: uppercase;
+            height: 26px; border: none; border-radius: 5px;
+            font-size: 0.62rem; font-weight: 700; text-transform: uppercase;
             cursor: pointer; color: #fff;
         }
         .p-btn.next  { background: var(--info); }
@@ -519,21 +526,21 @@
             display: flex; flex-direction: column; overflow: hidden; min-height: 0;
         }
         .hist-head {
-            flex-shrink: 0; padding: 7px 10px;
+            flex-shrink: 0; padding: 4px 8px;
             border-bottom: 1px solid var(--border);
             display: flex; justify-content: space-between; align-items: center;
-            font-size: 0.7rem; font-weight: 700; text-transform: uppercase; color: var(--muted);
+            font-size: 0.62rem; font-weight: 700; text-transform: uppercase; color: var(--muted);
         }
         .hist-count {
             background: #1e1e2e; padding: 1px 8px;
             border-radius: 8px; font-size: 0.65rem; color: #aaa;
         }
-        .hist-body { flex: 1; overflow-y: auto; padding: 5px; }
+        .hist-body { flex: 1; overflow-y: auto; padding: 4px; }
         .hist-item {
             display: flex; justify-content: space-between; align-items: center;
-            padding: 5px 7px; background: rgba(255,255,255,.025);
-            border-radius: 5px; margin-bottom: 3px;
-            border-left: 3px solid transparent; font-size: 0.67rem;
+            padding: 3px 6px; background: rgba(255,255,255,.025);
+            border-radius: 4px; margin-bottom: 2px;
+            border-left: 3px solid transparent; font-size: 0.6rem;
             transition: background .15s;
         }
         .hist-item:hover { background: rgba(255,255,255,.045); }
@@ -590,6 +597,110 @@
             .center-col { flex-direction: column; height: auto; }
             .adj-panel  { width: 100%; }
         }
+
+        /* =====================================================================
+           POLISH VISUEL
+           ===================================================================== */
+
+        /* Header : dégradé profond + lueur en bas */
+        .app-header {
+            background: linear-gradient(180deg, #0e0e1d 0%, #09090f 100%);
+            border-bottom: 1px solid rgba(99,102,241,.15);
+            box-shadow: 0 2px 18px rgba(0,0,0,.55);
+        }
+
+        /* Score : lueur douce par équipe */
+        .team-info.dom .score-number {
+            text-shadow: 0 0 22px rgba(240,240,240,.22);
+            background: rgba(255,255,255,.05);
+        }
+        .team-info.ext .score-number {
+            text-shadow: 0 0 22px rgba(59,130,246,.45);
+            background: rgba(59,130,246,.05);
+        }
+
+        /* Chrono : lueur rouge au repos, verte en cours */
+        .chrono-display          { text-shadow: 0 0 14px rgba(239,68,68,.35); }
+        .chrono-display.running  { text-shadow: 0 0 22px rgba(34,197,94,.7); }
+
+        /* Badge période : halo violet */
+        .period-badge { box-shadow: 0 0 10px rgba(139,92,246,.35); }
+
+        /* Colonnes équipes : bordure top + ombre douce */
+        .team-col.dom {
+            border-top-width: 2px;
+            box-shadow: inset 0 1px 0 rgba(255,255,255,.06), 0 0 20px rgba(0,0,0,.45);
+        }
+        .team-col.ext {
+            border-top-width: 2px;
+            box-shadow: inset 0 1px 0 rgba(59,130,246,.08), 0 0 20px rgba(0,0,0,.45);
+        }
+
+        /* En-tête de colonne : dégradé discret */
+        .col-head {
+            background: linear-gradient(180deg, rgba(255,255,255,.04) 0%, rgba(0,0,0,.25) 100%);
+        }
+
+        /* Cartes joueur : fond dégradé + hover amélioré */
+        .pcard {
+            background: linear-gradient(160deg, #1c1c26 0%, #141419 100%);
+            border-color: rgba(255,255,255,.03);
+        }
+        .pcard:hover {
+            background: linear-gradient(160deg, #25253a 0%, #1b1b26 100%);
+            border-color: rgba(255,255,255,.12);
+        }
+
+        /* Boutons d'action principale : légère élévation */
+        .abt { transition: filter .1s, transform .08s, box-shadow .1s; }
+        .abt:hover { box-shadow: 0 2px 8px rgba(0,0,0,.4); }
+        .abt-but  { box-shadow: 0 0 8px rgba(34,197,94,.2); }
+        .abt-excl { box-shadow: 0 0 6px rgba(239,68,68,.15); }
+
+        /* Panneau ajustement + historique */
+        .adj-panel {
+            background: linear-gradient(180deg, #131321 0%, #0e0e16 100%);
+            border: 1px solid rgba(255,255,255,.05);
+            box-shadow: inset 0 1px 0 rgba(255,255,255,.04);
+        }
+        .adj-btn {
+            background: linear-gradient(135deg, #1d1d2e 0%, #161622 100%);
+            border-color: rgba(255,255,255,.08);
+            box-shadow: 0 1px 3px rgba(0,0,0,.3);
+        }
+        .adj-btn:hover { background: linear-gradient(135deg, #272740, #1e1e30) !important; }
+        .p-btn.next  { box-shadow: 0 0 12px rgba(139,92,246,.25); }
+        .p-btn.reset { border: 1px solid rgba(255,255,255,.08); }
+
+        /* Ctrl-bar : boutons alignés à droite + styling */
+        .ctrl-bar { justify-content: flex-end; }
+        .btn-tool {
+            background: linear-gradient(135deg, #252d40 0%, #1a2030 100%) !important;
+            border: 1px solid rgba(255,255,255,.1) !important;
+            box-shadow: 0 1px 5px rgba(0,0,0,.4);
+        }
+        .btn-tool:hover {
+            opacity: 1 !important;
+            background: linear-gradient(135deg, #303c55, #222c40) !important;
+            box-shadow: 0 2px 10px rgba(0,0,0,.4);
+        }
+        .btn-feuille {
+            box-shadow: 0 0 14px rgba(34,197,94,.18), 0 1px 5px rgba(0,0,0,.4) !important;
+        }
+
+        /* Panel historique */
+        .history-panel {
+            border: 1px solid rgba(255,255,255,.04);
+            box-shadow: inset 0 1px 0 rgba(255,255,255,.03);
+        }
+        .hist-head {
+            background: linear-gradient(180deg, rgba(255,255,255,.03) 0%, transparent 100%);
+        }
+        .hist-item {
+            background: rgba(255,255,255,.02);
+            border-radius: 4px;
+        }
+        .hist-item:hover { background: rgba(255,255,255,.05) !important; }
     </style>
 </head>
 <body>
@@ -611,7 +722,8 @@
                         <div class="shot-clock-label">⚡ Attaque</div>
                         <div id="shotClock" class="shot-clock-display" title="Clic = reset possession">{{ match.temps_possession }}</div>
                         <div class="shot-clock-btns">
-                            <button class="sc-btn sc-reset" onclick="scReset()" title="Remettre à {{ match.temps_possession }}s">↺ {{ match.temps_possession }}s</button>
+                            <button class="sc-btn sc-28" onclick="scReset(28)" title="Possession neutre (28s)">↺ 28s</button>
+                            <button class="sc-btn sc-18" onclick="scReset(18)" title="Corner / rebond offensif (18s)">↺ 18s</button>
                         </div>
                     </div>
                 </div>
@@ -625,15 +737,7 @@
         </div>
 
         <div class="ctrl-bar">
-            <button class="ctrl-btn btn-start" onclick="startTimer()"><i class="fas fa-play"></i> Start</button>
-            <button class="ctrl-btn btn-stop"  onclick="stopTimer()"><i class="fas fa-pause"></i> Stop</button>
-            <div class="sep"></div>
-            <button class="ctrl-btn btn-adj" onclick="safeAdj(-60)">−1m</button>
-            <button class="ctrl-btn btn-adj" onclick="safeAdj(-10)">−10s</button>
-            <button class="ctrl-btn btn-adj" onclick="safeAdj(10)">+10s</button>
-            <button class="ctrl-btn btn-adj" onclick="safeAdj(60)">+1m</button>
-            <div class="sep"></div>
-            <button class="ctrl-btn btn-tool" id="btnArduino" onclick="connecterAfficheur()" style="background:#e65100;">
+            <button class="ctrl-btn btn-tool" id="btnArduino" onclick="connecterAfficheur()">
                 <i class="fas fa-usb"></i> Connecter Afficheur
             </button>
             <a href="{% url 'score_board' match.id %}" target="_blank" class="ctrl-btn btn-tool">
@@ -951,10 +1055,13 @@
         });
 
         document.addEventListener('keydown', e => {
-            if (['INPUT', 'TEXTAREA', 'BUTTON', 'A'].includes(e.target.tagName)) return;
-            if (e.code === 'Space' && !isProcessing) {
+            if (e.code === 'Space') {
+                // Exclure seulement les champs de saisie texte
+                if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+                // preventDefault AVANT tout autre check — empêche le navigateur
+                // d'activer le bouton actuellement focalisé (bug re-déclenchement action)
                 e.preventDefault();
-                C.running ? stopTimer() : startTimer();
+                if (!isProcessing) C.running ? stopTimer() : startTimer();
             }
         });
 
@@ -991,23 +1098,24 @@
 
             if (SC.running && raw <= 0 && !SC.alertedEnd && !shotAutoResetting) {
                 SC.alertedEnd = true;
+                // KLAXON : fin du shot clock (priorité maximale)
                 playKlaxon();
-                if (C.running) {
-                    shotAutoResetting = true;
-                    api({ action: 'shot_reset' }).then(r => {
-                        if (r.shot) applyServerShot(r.shot);
-                        SC.alertedEnd     = false;
-                        shotAutoResetting = false;
-                    }).catch(() => { shotAutoResetting = false; });
-                }
+                shotAutoResetting = true;
+                // Arrêt du match clock + remise shot à 28s (possession adverse)
+                api({ action: 'shot_expired' }).then(r => {
+                    if (r.chrono) applyServerChrono(r.chrono);
+                    if (r.shot)   applyServerShot(r.shot);
+                    SC.alertedEnd     = false;
+                    shotAutoResetting = false;
+                }).catch(() => { shotAutoResetting = false; });
             }
             requestAnimationFrame(shotRaf);
         })();
 
-        scEl.addEventListener('click', scReset);
-        function scReset() {
+        scEl.addEventListener('click', () => scReset(28));
+        function scReset(value) {
             if (!isProcessing)
-                api({ action: 'shot_reset' }).then(r => { if (r.shot) applyServerShot(r.shot); });
+                api({ action: 'shot_reset', value }).then(r => { if (r.shot) applyServerShot(r.shot); });
         }
 
         /* ── Arduino / Web Serial ────────────────────────────────────────── */
@@ -1249,7 +1357,6 @@
                     }
                 }
                 if (type === 'B') bumpScore(pId);
-                if (type === 'TM') setTimeout(() => playKlaxon(), 60000);
 
                 const LABELS = {
                     B:'✓ But', E:'⏱ Exclusion', P:'● Penalty', EDA:'🔴 EDA',
@@ -1299,6 +1406,8 @@
 
         /* ── Mise à jour UI ──────────────────────────────────────────────── */
         function refreshUI(res) {
+            // Appliquer d'abord le chrono (actions comme B/E/A/R stoppent les pendules)
+            if (res.chrono) applyServerChrono(res.chrono);
             if (res.score_dom !== undefined)
                 document.getElementById('scoreDom').textContent = res.score_dom;
             if (res.score_ext !== undefined)
@@ -1357,7 +1466,7 @@
                         txt.textContent = Math.ceil(rem) + 's';
                         prevExclState[id] = 'excl';
                     } else {
-                        if (prevExclState[id] === 'excl') playKlaxon();
+                        // Fin d'exclusion → overlay vert "✓ OK" (pas de klaxon selon spec)
                         ov.className    = 'p-overlay ready';
                         txt.textContent = '✓ OK';
                         prevExclState[id] = 'ready';

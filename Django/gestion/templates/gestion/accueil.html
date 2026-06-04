@@ -33,6 +33,14 @@
             color: #7c3aed; font-weight: 700; margin-bottom: 15px;
             display: flex; align-items: center; gap: 8px;
         }
+        .scoreboard-group {
+            background: white; border-radius: 8px; padding: 15px;
+            margin-bottom: 15px; border-left: 4px solid #e65100;
+        }
+        .scoreboard-group h6 {
+            color: #e65100; font-weight: 700; margin-bottom: 15px;
+            display: flex; align-items: center; gap: 8px;
+        }
         .badge-ffn {
             background: linear-gradient(135deg, #1976d2 0%, #2196f3 100%);
             color: white; padding: 5px 15px; border-radius: 20px;
@@ -52,6 +60,63 @@
             box-shadow: 0 6px 20px rgba(25, 118, 210, 0.4);
         }
         .iuf-field { font-size: 0.85rem; }
+
+        /* Logo preview */
+        .logo-preview {
+            width: 64px; height: 64px; border-radius: 50%;
+            object-fit: contain; border: 2px solid #dee2e6;
+            background: #f8f9fa; display: none;
+        }
+        .logo-preview.visible { display: block; }
+        .logo-saved-badge {
+            font-size: 0.7rem; color: #198754;
+            display: none; align-items: center; gap: 3px;
+        }
+        .logo-saved-badge.visible { display: flex; }
+
+        /* Galerie sponsors globaux */
+        .sponsor-gallery {
+            display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px;
+        }
+        .sponsor-item {
+            position: relative; width: 90px;
+            border: 2px solid #dee2e6; border-radius: 8px;
+            padding: 6px; background: white; cursor: pointer;
+            transition: border-color .15s, box-shadow .15s;
+        }
+        .sponsor-item:hover { border-color: #2196f3; box-shadow: 0 2px 8px rgba(33,150,243,.2); }
+        .sponsor-item.selected { border-color: #1976d2; box-shadow: 0 0 0 3px rgba(33,150,243,.25); }
+        .sponsor-item img { width: 100%; height: 60px; object-fit: contain; }
+        .sponsor-item .sp-check {
+            position: absolute; top: -6px; right: -6px;
+            width: 20px; height: 20px; border-radius: 50%;
+            background: #1976d2; color: white;
+            font-size: 11px; display: none;
+            align-items: center; justify-content: center;
+        }
+        .sponsor-item.selected .sp-check { display: flex; }
+        .sponsor-item .sp-del {
+            position: absolute; top: -6px; left: -6px;
+            width: 18px; height: 18px; border-radius: 50%;
+            background: #dc3545; color: white;
+            font-size: 10px; border: none; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            opacity: 0; transition: opacity .15s;
+        }
+        .sponsor-item:hover .sp-del { opacity: 1; }
+
+        /* Sliders personnalisation */
+        .range-wrap {
+            display: flex; align-items: center; gap: 10px;
+        }
+        .range-wrap input[type=range] { flex: 1; }
+        .range-val {
+            min-width: 48px; text-align: right;
+            font-weight: 700; color: #e65100; font-size: 0.9rem;
+        }
+        .sb-preview-hint {
+            font-size: 0.75rem; color: #6c757d; margin-top: 4px;
+        }
     </style>
 </head>
 <body>
@@ -87,13 +152,14 @@
                     <!-- ÉQUIPES                                            -->
                     <!-- ══════════════════════════════════════════════════ -->
                     <div class="row mb-4">
+                        <!-- DOMICILE -->
                         <div class="col-md-6 border-end">
                             <h5 class="text-primary mb-3">
                                 <i class="bi bi-house-fill"></i> Domicile (Bonnets Blancs)
                             </h5>
                             <label class="small text-muted mb-1">Équipe existante</label>
-                            <select name="select_domicile" class="form-select mb-3"
-                                    onchange="fillInput(this, 'input_domicile')">
+                            <select name="select_domicile" id="sel_dom" class="form-select mb-3"
+                                    onchange="onTeamSelect(this, 'dom')">
                                 <option value="">-- Nouvelle équipe --</option>
                                 {% for eq in equipes %}
                                 <option value="{{ eq.id }}">{{ eq.nom }}</option>
@@ -111,17 +177,31 @@
                                 <option value="VERT">Vert</option>
                                 <option value="JAUNE">Jaune</option>
                             </select>
-                            <label class="small text-muted mb-1">Logo équipe (PNG sans fond)</label>
-                            <input type="file" name="logo_dom" accept="image/*" class="form-control form-control-sm">
+
+                            <!-- Logo + prévisualisation -->
+                            <div class="d-flex align-items-center gap-3 mt-2">
+                                <img id="logo-preview-dom" class="logo-preview" src="" alt="logo équipe dom">
+                                <div>
+                                    <label class="small text-muted mb-1">Logo équipe (PNG sans fond)</label>
+                                    <input type="file" name="logo_dom" id="logo_input_dom"
+                                           accept="image/*" class="form-control form-control-sm"
+                                           onchange="previewLogo(this, 'dom')">
+                                    <div class="logo-saved-badge mt-1" id="logo-saved-dom">
+                                        <i class="bi bi-check-circle-fill"></i>
+                                        <span>Logo sauvegardé pour cette équipe</span>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
+                        <!-- EXTÉRIEUR -->
                         <div class="col-md-6">
                             <h5 class="text-primary mb-3">
                                 <i class="bi bi-airplane-fill"></i> Extérieur (Bonnets Bleus)
                             </h5>
                             <label class="small text-muted mb-1">Équipe existante</label>
-                            <select name="select_exterieur" class="form-select mb-3"
-                                    onchange="fillInput(this, 'input_exterieur')">
+                            <select name="select_exterieur" id="sel_ext" class="form-select mb-3"
+                                    onchange="onTeamSelect(this, 'ext')">
                                 <option value="">-- Nouvelle équipe --</option>
                                 {% for eq in equipes %}
                                 <option value="{{ eq.id }}">{{ eq.nom }}</option>
@@ -139,8 +219,21 @@
                                 <option value="VERT">Vert</option>
                                 <option value="JAUNE">Jaune</option>
                             </select>
-                            <label class="small text-muted mb-1">Logo équipe (PNG sans fond)</label>
-                            <input type="file" name="logo_ext" accept="image/*" class="form-control form-control-sm">
+
+                            <!-- Logo + prévisualisation -->
+                            <div class="d-flex align-items-center gap-3 mt-2">
+                                <img id="logo-preview-ext" class="logo-preview" src="" alt="logo équipe ext">
+                                <div>
+                                    <label class="small text-muted mb-1">Logo équipe (PNG sans fond)</label>
+                                    <input type="file" name="logo_ext" id="logo_input_ext"
+                                           accept="image/*" class="form-control form-control-sm"
+                                           onchange="previewLogo(this, 'ext')">
+                                    <div class="logo-saved-badge mt-1" id="logo-saved-ext">
+                                        <i class="bi bi-check-circle-fill"></i>
+                                        <span>Logo sauvegardé pour cette équipe</span>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -193,9 +286,9 @@
                                 </div>
                                 <div class="col-md-4">
                                     <label class="small fw-bold mb-1">Temps d'attaque (s)</label>
-                                    <input type="number" name="temps_possession" value="30"
-                                           min="20" max="45" class="form-control" required>
-                                    <small class="text-muted">FFN 2024+: 30 s</small>
+                                    <input type="number" name="temps_possession" value="28"
+                                           min="18" max="45" class="form-control" required>
+                                    <small class="text-muted">FFN: 28 s (standard)</small>
                                 </div>
                             </div>
                         </div>
@@ -206,9 +299,9 @@
                             <div class="row g-3">
                                 <div class="col-md-4">
                                     <label class="small fw-bold mb-1">Durée exclusion (s)</label>
-                                    <input type="number" name="duree_exclusion" value="20"
+                                    <input type="number" name="duree_exclusion" value="18"
                                            min="15" max="30" class="form-control" required>
-                                    <small class="text-muted">FFN: 20 s</small>
+                                    <small class="text-muted">FFN: 18 s</small>
                                 </div>
                                 <div class="col-md-4">
                                     <label class="small fw-bold mb-1">Fautes → EDA</label>
@@ -333,16 +426,101 @@
                         </div>
                     </div>
 
-                    <!-- Sponsors scoreboard -->
+                    <!-- ══════════════════════════════════════════════════ -->
+                    <!-- SPONSORS                                           -->
+                    <!-- ══════════════════════════════════════════════════ -->
                     <div class="param-group mt-3">
                         <h6><i class="bi bi-image-fill"></i> Sponsors (affichés sur le scoreboard)</h6>
+
+                        <!-- Bibliothèque de sponsors globaux -->
+                        {% if sponsors_globaux %}
+                        <p class="small fw-bold mb-2">
+                            <i class="bi bi-bookmark-star-fill text-primary"></i>
+                            Sponsors sauvegardés — cliquez pour sélectionner :
+                        </p>
+                        <div class="sponsor-gallery" id="sponsorGallery">
+                            {% for sg in sponsors_globaux %}
+                            <div class="sponsor-item" id="sg-{{ sg.id }}"
+                                 onclick="toggleSponsor({{ sg.id }}, this)"
+                                 title="{{ sg.nom|default:'Sponsor' }}">
+                                <div class="sp-check"><i class="bi bi-check-lg"></i></div>
+                                <img src="{{ sg.image.url }}" alt="sponsor">
+                                <button type="button" class="sp-del"
+                                        onclick="event.stopPropagation(); deleteSponsorGlobal({{ sg.id }});"
+                                        title="Supprimer de la bibliothèque">
+                                    <i class="bi bi-x"></i>
+                                </button>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        <div id="selected-sponsors-inputs"></div>
+                        <hr class="my-3">
+                        {% endif %}
+
                         <div class="row g-2">
                             <div class="col-12">
                                 <label class="small text-muted mb-1">
-                                    Logos sponsors PNG (fond transparent recommandé, plusieurs fichiers possibles)
+                                    Ajouter de nouveaux logos (PNG, fond transparent recommandé) —
+                                    <strong>ils seront sauvegardés automatiquement dans la bibliothèque</strong>
                                 </label>
                                 <input type="file" name="sponsors" multiple accept="image/png,image/*"
                                        class="form-control">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ══════════════════════════════════════════════════ -->
+                    <!-- PERSONNALISATION SCOREBOARD                        -->
+                    <!-- ══════════════════════════════════════════════════ -->
+                    <div class="scoreboard-group mt-3">
+                        <h6><i class="bi bi-display-fill"></i> Personnalisation de l'écran scoreboard</h6>
+                        <p class="small text-muted mb-3">
+                            Ajustez la taille de chaque section de l'affichage public en temps réel.
+                        </p>
+
+                        <div class="row g-3">
+                            <!-- Taille du score -->
+                            <div class="col-md-4">
+                                <label class="small fw-bold mb-2">
+                                    <i class="bi bi-123"></i> Taille du score
+                                </label>
+                                <div class="range-wrap">
+                                    <input type="range" name="scoreboard_score_scale"
+                                           id="sb_score_scale" min="60" max="200" value="100"
+                                           oninput="document.getElementById('sb_score_val').textContent = this.value + '%'">
+                                    <span class="range-val" id="sb_score_val">100%</span>
+                                </div>
+                                <div class="sb-preview-hint">60% = compact · 100% = défaut · 200% = géant</div>
+                            </div>
+
+                            <!-- Hauteur barre sponsors -->
+                            <div class="col-md-4">
+                                <label class="small fw-bold mb-2">
+                                    <i class="bi bi-image"></i> Hauteur sponsors
+                                </label>
+                                <div class="range-wrap">
+                                    <input type="range" name="scoreboard_sponsor_height"
+                                           id="sb_sponsor_h" min="5" max="30" value="10"
+                                           oninput="document.getElementById('sb_sponsor_val').textContent = this.value + 'vh'">
+                                    <span class="range-val" id="sb_sponsor_val">10vh</span>
+                                </div>
+                                <div class="sb-preview-hint">5vh = petite barre · 30vh = grande barre</div>
+                            </div>
+
+                            <!-- Zone joueurs -->
+                            <div class="col-md-4">
+                                <label class="small fw-bold mb-2">
+                                    <i class="bi bi-people-fill"></i> Zone joueurs
+                                </label>
+                                <div class="form-check form-switch mt-2">
+                                    <input class="form-check-input" type="checkbox"
+                                           name="scoreboard_players_visible"
+                                           id="sb_players_vis" value="true" checked>
+                                    <label class="form-check-label" for="sb_players_vis">
+                                        Afficher les joueurs sur le scoreboard
+                                    </label>
+                                </div>
+                                <div class="sb-preview-hint">Désactiver pour un affichage minimaliste</div>
                             </div>
                         </div>
                     </div>
@@ -363,12 +541,23 @@
                 <div class="list-group list-group-flush" style="max-height: 650px; overflow-y: auto;">
                     {% for eq in equipes %}
                     <div class="list-group-item d-flex justify-content-between align-items-center">
-                        <div>
-                            <strong class="d-block">{{ eq.nom }}</strong>
-                            <small class="text-muted">
-                                <i class="bi bi-people"></i>
-                                {{ eq.effectif.count }} joueur{{ eq.effectif.count|pluralize }}
-                            </small>
+                        <div class="d-flex align-items-center gap-2">
+                            {% if eq.logo %}
+                            <img src="{{ eq.logo.url }}" alt="logo"
+                                 style="width:32px;height:32px;object-fit:contain;border-radius:50%;border:1px solid #dee2e6;">
+                            {% else %}
+                            <div style="width:32px;height:32px;border-radius:50%;background:#e3f2fd;display:flex;align-items:center;justify-content:center;font-size:1rem;">
+                                🤽
+                            </div>
+                            {% endif %}
+                            <div>
+                                <strong class="d-block">{{ eq.nom }}</strong>
+                                <small class="text-muted">
+                                    <i class="bi bi-people"></i>
+                                    {{ eq.effectif.count }} joueur{{ eq.effectif.count|pluralize }}
+                                    {% if eq.logo %}<span class="text-success ms-1"><i class="bi bi-image-fill"></i> logo</span>{% endif %}
+                                </small>
+                            </div>
                         </div>
                         <form method="post"
                               onsubmit="return confirm('⚠️ Supprimer {{ eq.nom }} ?');"
@@ -396,11 +585,16 @@
                 </div>
                 <div class="card-body small">
                     <p class="mb-2"><strong>Valeurs recommandées FFN :</strong></p>
-                    <ul class="mb-0">
+                    <ul class="mb-2">
                         <li>Senior : 4×8 min, attaque 30 s, excl. 20 s</li>
                         <li>Junior : 4×7 min, attaque 30 s, excl. 20 s</li>
                         <li>Cadet : 4×6 min, attaque 30 s, excl. 20 s</li>
                     </ul>
+                    <p class="mb-1"><strong>Logos équipes :</strong></p>
+                    <p class="mb-0">
+                        Uploadez le logo une fois → il est sauvegardé automatiquement
+                        pour cette équipe. Pas besoin de le ré-importer au prochain match.
+                    </p>
                 </div>
             </div>
         </div>
@@ -444,13 +638,101 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-    function fillInput(selectObj, inputId) {
+    /* ── Données logos des équipes ─────────────────────────────────────────── */
+    const EQUIPES_LOGOS = {{ equipes_logos_json|safe }};
+
+    /* ── Sélection équipe → remplir nom + preview logo ────────────────────── */
+    function onTeamSelect(selectObj, side) {
+        const inputId = 'input_' + (side === 'dom' ? 'domicile' : 'exterieur');
         const input = document.getElementById(inputId);
-        input.value = selectObj.selectedIndex > 0
-            ? selectObj.options[selectObj.selectedIndex].text
-            : '';
+        const preview = document.getElementById('logo-preview-' + side);
+        const savedBadge = document.getElementById('logo-saved-' + side);
+
+        const selectedId = selectObj.value;
+        if (selectObj.selectedIndex > 0) {
+            input.value = selectObj.options[selectObj.selectedIndex].text;
+        } else {
+            input.value = '';
+        }
+
+        // Preview du logo existant de l'équipe
+        if (selectedId && EQUIPES_LOGOS[selectedId]) {
+            preview.src = EQUIPES_LOGOS[selectedId];
+            preview.classList.add('visible');
+            savedBadge.classList.add('visible');
+        } else {
+            preview.classList.remove('visible');
+            preview.src = '';
+            savedBadge.classList.remove('visible');
+        }
     }
 
+    /* ── Preview d'un logo sélectionné manuellement ──────────────────────── */
+    function previewLogo(input, side) {
+        const preview = document.getElementById('logo-preview-' + side);
+        const file = input.files && input.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = e => {
+                preview.src = e.target.result;
+                preview.classList.add('visible');
+            };
+            reader.readAsDataURL(file);
+        } else {
+            preview.classList.remove('visible');
+        }
+    }
+
+    /* ── Sélection sponsors globaux ───────────────────────────────────────── */
+    const selectedSponsors = new Set();
+
+    function toggleSponsor(id, el) {
+        if (selectedSponsors.has(id)) {
+            selectedSponsors.delete(id);
+            el.classList.remove('selected');
+        } else {
+            selectedSponsors.add(id);
+            el.classList.add('selected');
+        }
+        renderSponsorInputs();
+    }
+
+    function renderSponsorInputs() {
+        const container = document.getElementById('selected-sponsors-inputs');
+        if (!container) return;
+        container.innerHTML = '';
+        selectedSponsors.forEach(id => {
+            const inp = document.createElement('input');
+            inp.type = 'hidden';
+            inp.name = 'sponsors_globaux';
+            inp.value = id;
+            container.appendChild(inp);
+        });
+    }
+
+    /* ── Suppression sponsor global (fetch, sans form imbriqué) ──────────── */
+    function deleteSponsorGlobal(id) {
+        if (!confirm('Supprimer ce sponsor de la bibliothèque ?')) return;
+        const csrf = document.querySelector('[name=csrfmiddlewaretoken]').value;
+        const fd = new FormData();
+        fd.append('csrfmiddlewaretoken', csrf);
+        fd.append('action', 'supprimer_sponsor_global');
+        fd.append('sponsor_global_id', id);
+        fetch(window.location.href, { method: 'POST', body: fd })
+            .then(r => {
+                if (r.ok) {
+                    const el = document.getElementById('sg-' + id);
+                    if (el) el.remove();
+                    selectedSponsors.delete(id);
+                    renderSponsorInputs();
+                } else {
+                    alert('Erreur lors de la suppression');
+                }
+            })
+            .catch(() => alert('Erreur réseau'));
+    }
+
+    /* ── Validation formulaire ────────────────────────────────────────────── */
     document.getElementById('formMatch').addEventListener('submit', function (e) {
         const dom = document.getElementById('input_domicile').value.trim();
         const ext = document.getElementById('input_exterieur').value.trim();

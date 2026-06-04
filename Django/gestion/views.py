@@ -8,7 +8,7 @@ from django.http import JsonResponse, HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.utils import timezone
 
-from .models import Match, Equipe, Joueur, Participation, Evenement, ScorePeriode, Sponsor
+from .models import Match, Equipe, Joueur, Participation, Evenement, ScorePeriode, Sponsor, SponsorGlobal
 
 
 # ==========================================
@@ -17,6 +17,16 @@ from .models import Match, Equipe, Joueur, Participation, Evenement, ScorePeriod
 
 def accueil(request):
     equipes_existantes = Equipe.objects.all()
+    sponsors_globaux = SponsorGlobal.objects.all()
+
+    # Dictionnaire {id_equipe: url_logo} pour le JS (preview à la sélection)
+    equipes_logos = {}
+    for eq in equipes_existantes:
+        if eq.logo:
+            try:
+                equipes_logos[str(eq.id)] = request.build_absolute_uri(eq.logo.url)
+            except Exception:
+                pass
 
     if request.method == 'POST':
         action = request.POST.get('action')
@@ -27,6 +37,13 @@ def accueil(request):
 
         elif action == 'supprimer_equipe':
             Equipe.objects.filter(id=request.POST.get('equipe_id')).delete()
+            return redirect('accueil')
+
+        elif action == 'supprimer_sponsor_global':
+            sg = SponsorGlobal.objects.filter(id=request.POST.get('sponsor_global_id')).first()
+            if sg:
+                sg.image.delete(save=False)
+                sg.delete()
             return redirect('accueil')
 
         elif action == 'lancer_match':
@@ -105,24 +122,77 @@ def accueil(request):
                 delegue_ext_nom=request.POST.get('delegue_ext_nom', ''),
                 # Chrono initial
                 temps_restant=duree_periode * 60,
+                shot_restant=_post_int('temps_possession', 28),  # synchro avec temps_possession
+                # Personnalisation scoreboard
+                scoreboard_score_scale=_post_int('scoreboard_score_scale', 100),
+                scoreboard_sponsor_height=_post_int('scoreboard_sponsor_height', 10),
+                scoreboard_players_visible=(
+                    request.POST.get('scoreboard_players_visible') == 'true'),
             )
-            # ── Logos équipes ────────────────────────────────────────────────
+
+            # ── Logos équipes ─────────────────────────────────────────────────
+            # DOM : si un fichier est uploadé, on le sauvegarde sur l'équipe ET le match
             logo_dom_file = request.FILES.get('logo_dom')
-            logo_ext_file = request.FILES.get('logo_ext')
             if logo_dom_file:
-                match.logo_dom = logo_dom_file
+                if eq_dom_obj:
+                    eq_dom_obj.logo = logo_dom_file
+                    eq_dom_obj.save(update_fields=['logo'])
+                    match.logo_dom = eq_dom_obj.logo.name
+                    match.save(update_fields=['logo_dom'])
+                else:
+                    match.logo_dom = logo_dom_file
+                    match.save(update_fields=['logo_dom'])
+            elif eq_dom_obj and eq_dom_obj.logo:
+                # Pas de nouveau fichier → réutiliser le logo sauvegardé de l'équipe
+                match.logo_dom = eq_dom_obj.logo.name
                 match.save(update_fields=['logo_dom'])
+
+            # EXT
+            logo_ext_file = request.FILES.get('logo_ext')
             if logo_ext_file:
-                match.logo_ext = logo_ext_file
+                if eq_ext_obj:
+                    eq_ext_obj.logo = logo_ext_file
+                    eq_ext_obj.save(update_fields=['logo'])
+                    match.logo_ext = eq_ext_obj.logo.name
+                    match.save(update_fields=['logo_ext'])
+                else:
+                    match.logo_ext = logo_ext_file
+                    match.save(update_fields=['logo_ext'])
+            elif eq_ext_obj and eq_ext_obj.logo:
+                match.logo_ext = eq_ext_obj.logo.name
                 match.save(update_fields=['logo_ext'])
 
-            # ── Sponsors ─────────────────────────────────────────────────────
-            for idx, sponsor_file in enumerate(request.FILES.getlist('sponsors')):
-                Sponsor.objects.create(match=match, image=sponsor_file, ordre=idx)
+            # ── Nouveaux sponsors uploadés → sauvegardés globalement ──────────
+            next_ordre = SponsorGlobal.objects.count()
+            sponsor_match_ordre = 0
+            for sponsor_file in request.FILES.getlist('sponsors'):
+                sg = SponsorGlobal.objects.create(
+                    image=sponsor_file, ordre=next_ordre)
+                next_ordre += 1
+                # Référencer le même fichier dans le match (sans re-uploader)
+                s = Sponsor(match=match, ordre=sponsor_match_ordre)
+                s.image = sg.image.name
+                s.save()
+                sponsor_match_ordre += 1
+
+            # ── Sponsors globaux sélectionnés ─────────────────────────────────
+            for sg_id in request.POST.getlist('sponsors_globaux'):
+                try:
+                    sg = SponsorGlobal.objects.get(id=int(sg_id))
+                    s = Sponsor(match=match, ordre=sponsor_match_ordre)
+                    s.image = sg.image.name
+                    s.save()
+                    sponsor_match_ordre += 1
+                except (SponsorGlobal.DoesNotExist, ValueError):
+                    pass
 
             return redirect('compo_equipe', match_id=match.id)
 
-    return render(request, 'gestion/accueil.html', {'equipes': equipes_existantes})
+    return render(request, 'gestion/accueil.html', {
+        'equipes': equipes_existantes,
+        'sponsors_globaux': sponsors_globaux,
+        'equipes_logos_json': json.dumps(equipes_logos),
+    })
 
 
 # ==========================================
@@ -297,15 +367,34 @@ def _shot_payload(match):
     }
 
 
-def _reset_shot(match):
-    """Remet le shot clock à zéro (modifie l'objet, pas de save)."""
-    match.shot_restant = match.temps_possession
+def _reset_shot(match, value=None):
+    """Remet le shot clock (modifie l'objet, pas de save).
+    value=None → temps_possession (28s standard)
+    value=18   → 18s (coin, rebond offensif)"""
+    match.shot_restant = value if value is not None else match.temps_possession
     if match.chrono_en_cours:
         match.shot_en_cours = True
         match.shot_top = timezone.now()
     else:
         match.shot_en_cours = False
         match.shot_top = None
+
+
+def _stop_clocks(match):
+    """Arrête match clock ET shot clock (sauvegardes valeurs courantes).
+    Modifie l'objet, pas de save — appelé avant chaque action de jeu."""
+    now = timezone.now()
+    if match.chrono_en_cours:
+        if match.dernier_top_chrono:
+            delta = (now - match.dernier_top_chrono).total_seconds()
+            match.temps_restant = max(0, int(match.temps_restant - delta))
+        match.chrono_en_cours = False
+        match.dernier_top_chrono = None
+    if match.shot_en_cours and match.shot_top:
+        elapsed = (now - match.shot_top).total_seconds()
+        match.shot_restant = max(0, int(match.shot_restant - elapsed))
+    match.shot_en_cours = False
+    match.shot_top = None
 
 
 def _history_qs(match):
@@ -379,8 +468,31 @@ def api_match_action(request, match_id):
                              'shot': _shot_payload(match)})
 
     elif action == 'shot_reset':
-        _reset_shot(match)
+        # value=28 → possession neutre ; value=18 → situation offensive
+        try:
+            val = int(data.get('value', 0)) or None
+        except (ValueError, TypeError):
+            val = None
+        _reset_shot(match, val)
         match.save(update_fields=['shot_en_cours', 'shot_restant', 'shot_top'])
+        return JsonResponse({'status': 'ok', 'chrono': _chrono_payload(match),
+                             'shot': _shot_payload(match)})
+
+    elif action == 'shot_expired':
+        # Shot clock = 0 : klaxon déjà joué côté client.
+        # → arrêt du match clock + remise shot à 28s (prise de possession adverse)
+        now = timezone.now()
+        if match.chrono_en_cours:
+            if match.dernier_top_chrono:
+                delta = (now - match.dernier_top_chrono).total_seconds()
+                match.temps_restant = max(0, int(match.temps_restant - delta))
+            match.chrono_en_cours = False
+            match.dernier_top_chrono = None
+        match.shot_restant = match.temps_possession
+        match.shot_en_cours = False
+        match.shot_top = None
+        match.save(update_fields=['chrono_en_cours', 'temps_restant', 'dernier_top_chrono',
+                                   'shot_en_cours', 'shot_restant', 'shot_top'])
         return JsonResponse({'status': 'ok', 'chrono': _chrono_payload(match),
                              'shot': _shot_payload(match)})
 
@@ -470,23 +582,33 @@ def api_match_action(request, match_id):
         if p_id:
             joueur = get_object_or_404(Participation, id=p_id, match=match)
 
-        score_shot_changed = False
+        # Champs chrono à sauvegarder quand les pendules s'arrêtent
+        _CLOCK_FIELDS = [
+            'chrono_en_cours', 'temps_restant', 'dernier_top_chrono',
+            'shot_en_cours', 'shot_restant', 'shot_top',
+        ]
 
         if action == 'B':
+            # But → score + arrêt jeu + reset possession à 28s
             if joueur.equipe_concernee == 'DOM':
                 match.score_domicile += 1
             else:
                 match.score_exterieur += 1
-            _reset_shot(match)
-            score_shot_changed = True
+            _stop_clocks(match)          # arrêt match clock + shot clock
+            _reset_shot(match)           # shot à 28s (frozen car chrono=False)
+            match.save(update_fields=['score_domicile', 'score_exterieur'] + _CLOCK_FIELDS)
 
         elif action == 'P':
+            # Penalty → arrêt + faute personnelle
             joueur.nb_fautes_personnelles += 1
             if joueur.nb_fautes_personnelles >= match.max_fautes_perso:
                 joueur.est_exclu_definitif = True
             joueur.save(update_fields=['nb_fautes_personnelles', 'est_exclu_definitif'])
+            _stop_clocks(match)
+            match.save(update_fields=_CLOCK_FIELDS)
 
         elif action == 'E':
+            # Exclusion → arrêt + timer exclusion + shot clock gelé (reset manuel 18/28)
             joueur.nb_fautes_personnelles += 1
             joueur.est_exclu = True
             joueur.fin_exclusion = timezone.now() + timedelta(seconds=match.duree_exclusion)
@@ -497,22 +619,35 @@ def api_match_action(request, match_id):
                 'nb_fautes_personnelles', 'est_exclu',
                 'fin_exclusion', 'est_exclu_definitif',
             ])
+            _stop_clocks(match)
+            match.save(update_fields=_CLOCK_FIELDS)
 
         elif action in ('EDA', 'EDAP'):
+            # Exclusion définitive → arrêt + joueur hors jeu définitivement
             joueur.est_exclu_definitif = True
             joueur.est_exclu = False
             joueur.nb_fautes_personnelles += 1
             joueur.save(update_fields=[
                 'est_exclu_definitif', 'est_exclu', 'nb_fautes_personnelles',
             ])
+            _stop_clocks(match)
+            match.save(update_fields=_CLOCK_FIELDS)
 
-        # A, R, CJ€, CR : simple log, no state change
+        elif action == 'CR':
+            # Carton Rouge → exclusion définitive + arrêt
+            if joueur:
+                joueur.est_exclu_definitif = True
+                joueur.est_exclu = False
+                joueur.save(update_fields=['est_exclu_definitif', 'est_exclu'])
+            _stop_clocks(match)
+            match.save(update_fields=_CLOCK_FIELDS)
 
-        if score_shot_changed:
-            match.save(update_fields=[
-                'score_domicile', 'score_exterieur',
-                'shot_en_cours', 'shot_restant', 'shot_top',
-            ])
+        elif action in ('A', 'R'):
+            # Accident / Réclamation → arrêt neutre (pas de sanction)
+            _stop_clocks(match)
+            match.save(update_fields=_CLOCK_FIELDS)
+
+        # CJ€ : avertissement équipe — pas d'arrêt ni exclusion (purement administratif)
 
         Evenement.objects.create(
             match=match, type_action=action,

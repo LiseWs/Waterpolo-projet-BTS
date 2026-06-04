@@ -10,6 +10,7 @@ from datetime import timedelta
 class Equipe(models.Model):
     nom = models.CharField(max_length=100)
     entraineur = models.CharField(max_length=100, blank=True)
+    logo = models.FileField(upload_to='logos/', blank=True, null=True)
 
     def __str__(self):
         return self.nom
@@ -116,6 +117,14 @@ class Match(models.Model):
     shot_en_cours = models.BooleanField(default=False)
     shot_restant = models.IntegerField(default=30)   # secondes
     shot_top = models.DateTimeField(null=True, blank=True)
+
+    # ── Personnalisation scoreboard ───────────────────────────────────────────
+    scoreboard_score_scale = models.IntegerField(
+        default=100, help_text="Taille du score en % (60-200)")
+    scoreboard_sponsor_height = models.IntegerField(
+        default=10, help_text="Hauteur barre sponsors en vh (5-30)")
+    scoreboard_players_visible = models.BooleanField(
+        default=True, help_text="Afficher la zone joueurs sur le scoreboard")
 
     def __str__(self):
         return f"{self.nom_equipe_domicile} vs {self.nom_equipe_exterieur}"
@@ -236,3 +245,22 @@ class Sponsor(models.Model):
 
     def __str__(self):
         return f"Sponsor match {self.match_id} #{self.ordre}"
+
+
+# ==========================================
+# 7. SPONSORS GLOBAUX (bibliothèque réutilisable)
+# ==========================================
+
+class SponsorGlobal(models.Model):
+    """Logo sponsor sauvegardé, réutilisable sur plusieurs matchs."""
+    image = models.FileField(upload_to='sponsors/')
+    nom = models.CharField(max_length=100, blank=True)
+    ordre = models.IntegerField(default=0)
+
+    class Meta:
+        ordering = ['ordre', 'id']
+        verbose_name = 'Sponsor global'
+        verbose_name_plural = 'Sponsors globaux'
+
+    def __str__(self):
+        return self.nom or f"Sponsor global #{self.id}"

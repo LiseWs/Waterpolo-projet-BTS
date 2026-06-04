@@ -28,7 +28,12 @@
   --f-sub:  'Barlow Condensed', 'Arial Narrow', sans-serif;
 
   --top-h:    clamp(30px,4vh,46px);
-  --score-sz: clamp(4rem,10vw,12rem);
+  /* Taille du score — configurable via match.scoreboard_score_scale */
+  --score-sz: clamp(
+    calc(4rem * {{ match.scoreboard_score_scale }} / 100),
+    calc(10vw * {{ match.scoreboard_score_scale }} / 100),
+    calc(12rem * {{ match.scoreboard_score_scale }} / 100)
+  );
   --name-sz:  clamp(.9rem,2.2vw,3rem);
   --ch-sz:    clamp(3rem,8vw,10rem);
   --shot-sz:  clamp(1.8rem,3.5vw,4.5rem);
@@ -36,6 +41,8 @@
   --cell-r:   clamp(4px,.5vw,10px);
   --cell-g:   clamp(2px,.35vw,7px);
   --tm-dot:   clamp(7px,1.1vw,18px);
+  /* Hauteur barre sponsors — configurable via match.scoreboard_sponsor_height */
+  --sponsors-bar-h: {{ match.scoreboard_sponsor_height }}vh;
 }
 
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
@@ -44,7 +51,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);}
 body{
   font-family:var(--f-sub);color:#fff;
   display:grid;
-  grid-template-rows:var(--top-h) 1fr auto auto;
+  grid-template-rows:var(--top-h) 1fr {% if match.scoreboard_players_visible %}auto {% endif %}auto;
   height:100vh;
 }
 
@@ -355,18 +362,53 @@ body::before{
 /* ── SPONSORS ─────────────────────────────────────────── */
 .sponsors-bar{
   position:relative;z-index:2;
-  height:clamp(56px,10vh,110px);
-  background:rgba(5,8,16,.98);border-top:1px solid var(--bord);
+  height:var(--sponsors-bar-h);
+  background:rgba(4,6,14,.98);
+  border-top:1px solid rgba(0,212,255,.12);
+  box-shadow:0 -1px 24px rgba(0,0,0,.5);
   display:flex;align-items:center;overflow:hidden;
 }
-.sponsors-bar::before,.sponsors-bar::after{content:'';position:absolute;top:0;bottom:0;width:clamp(28px,5vw,70px);z-index:2;pointer-events:none;}
-.sponsors-bar::before{left:0;background:linear-gradient(90deg,rgba(5,8,16,1),transparent);}
-.sponsors-bar::after{right:0;background:linear-gradient(270deg,rgba(5,8,16,1),transparent);}
-.sponsors-track{display:flex;align-items:center;gap:clamp(20px,4vw,70px);padding:0 clamp(12px,2vw,40px);white-space:nowrap;animation:sponsorSlide 30s linear infinite;will-change:transform;}
-.sponsors-track.no-anim{animation:none;}
-@keyframes sponsorSlide{from{transform:translateX(0)}to{transform:translateX(-50%)}}
-.sponsor-img{height:clamp(32px,6.5vh,84px);max-width:clamp(90px,15vw,220px);width:auto;object-fit:contain;filter:brightness(1.1) drop-shadow(0 0 8px rgba(255,255,255,.15));flex-shrink:0;}
-.no-sponsors-label{font-size:clamp(.55rem,.75vw,.9rem);color:rgba(255,255,255,.3);letter-spacing:3px;text-transform:uppercase;}
+/* Fondu gauche/droite plus large pour masquer les coupures */
+.sponsors-bar::before,.sponsors-bar::after{
+  content:'';position:absolute;top:0;bottom:0;
+  width:clamp(48px,8vw,120px);z-index:2;pointer-events:none;
+}
+.sponsors-bar::before{left:0;background:linear-gradient(90deg,rgba(4,6,14,1) 40%,transparent);}
+.sponsors-bar::after{right:0;background:linear-gradient(270deg,rgba(4,6,14,1) 40%,transparent);}
+
+/* Track : --slide-px est positionné par JS (pixel exact de 1 lot) */
+.sponsors-track{
+  display:flex;align-items:center;
+  gap:clamp(30px,5vw,90px);
+  padding:0 clamp(20px,4vw,80px);
+  white-space:nowrap;
+  animation:sponsorSlide 30s linear infinite;
+  will-change:transform;
+  --slide-px:-50%;
+}
+/* Mode centré (1 sponsor ou no-anim forcé) */
+.sponsors-track.no-anim{
+  animation:none;
+  justify-content:center;
+  width:100%;
+  padding:0;
+}
+@keyframes sponsorSlide{
+  from{transform:translateX(0)}
+  to  {transform:translateX(var(--slide-px))}
+}
+.sponsor-img{
+  height:clamp(34px,7vh,88px);
+  max-width:clamp(100px,18vw,240px);
+  width:auto;object-fit:contain;flex-shrink:0;
+  filter:brightness(1.15) drop-shadow(0 0 10px rgba(255,255,255,.18));
+  transition:filter .3s;
+}
+.sponsor-img:hover{filter:brightness(1.4) drop-shadow(0 0 16px rgba(0,212,255,.5));}
+.no-sponsors-label{
+  font-size:clamp(.55rem,.75vw,.9rem);
+  color:rgba(255,255,255,.25);letter-spacing:4px;text-transform:uppercase;
+}
 
 /* ── RESPONSIVE ───────────────────────────────────────── */
 @media(max-height:650px){:root{--score-sz:clamp(3rem,8vw,8rem);--ch-sz:clamp(2.2rem,6vw,6.5rem);--shot-sz:clamp(1.4rem,2.8vw,3rem);--name-sz:clamp(.8rem,1.7vw,2rem);}}
@@ -457,6 +499,7 @@ body::before{
 </div>
 
 <!-- PLAYERS -->
+{% if match.scoreboard_players_visible %}
 <div class="players-zone">
   <div class="team-row">
     <div class="team-label dom-label" id="lbl-dom">{{ match.couleur_bonnet_dom }}</div>
@@ -479,6 +522,7 @@ body::before{
     </div>
   </div>
 </div>
+{% endif %}
 
 <!-- SPONSORS -->
 <div class="sponsors-bar" id="sponsors-bar">
@@ -670,15 +714,43 @@ function setLogo(side,url) {
 
 /* ── Sponsors ── */
 let currentSponsors=[];
+const _SP_COPIES=4; // assure qu'on remplit toujours l'écran, quel que soit le nombre de logos
+
+function _applyCarouselMetrics(track){
+  const singleW=track.scrollWidth/_SP_COPIES;
+  if(singleW<20) return; // images pas encore rendues
+  track.style.setProperty('--slide-px',`-${singleW}px`);
+  // Vitesse : 90 px/s → durée proportionnelle à la longueur d'un lot
+  track.style.animationDuration=Math.max(8,singleW/90)+'s';
+}
+
 function updateSponsors(urls) {
   if(!urls||!urls.length) return;
   const sig=urls.join(','); if(sig===currentSponsors.join(',')) return;
   currentSponsors=urls;
   const track=document.getElementById('sponsors-track');
-  track.innerHTML=[...urls,...urls].map(u=>`<img class="sponsor-img" src="${u}" alt="sponsor">`).join('');
   const msg=document.getElementById('no-sponsors-msg'); if(msg) msg.remove();
-  if (urls.length>1){track.classList.remove('no-anim');track.style.animationDuration=Math.max(15,track.scrollWidth/2/50)+'s';}
-  else{track.classList.add('no-anim');track.style.justifyContent='center';}
+
+  if(urls.length===1){
+    // Sponsor unique → centré, sans animation
+    track.innerHTML=`<img class="sponsor-img" src="${urls[0]}" alt="sponsor">`;
+    track.classList.add('no-anim');
+    return;
+  }
+
+  // Plusieurs sponsors → 4 copies pour garantir aucun vide à droite
+  track.innerHTML=Array(_SP_COPIES).fill(urls).flat()
+    .map(u=>`<img class="sponsor-img" src="${u}" alt="sponsor">`).join('');
+  track.classList.remove('no-anim');
+
+  // Double RAF : le navigateur a eu le temps de calculer le layout
+  requestAnimationFrame(()=>requestAnimationFrame(()=>_applyCarouselMetrics(track)));
+
+  // Fallback : recalcul quand toutes les images sont chargées
+  const imgs=[...track.querySelectorAll('img')];
+  let done=0;
+  const onLoad=()=>{ done++; if(done===imgs.length) _applyCarouselMetrics(track); };
+  imgs.forEach(img=>img.complete ? onLoad() : img.addEventListener('load',onLoad,{once:true}));
 }
 
 /* ── Sync ── */
