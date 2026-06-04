@@ -118,6 +118,11 @@ class Match(models.Model):
     shot_restant = models.IntegerField(default=30)   # secondes
     shot_top = models.DateTimeField(null=True, blank=True)
 
+    # ── Overlay (temps mort / pause inter-période) ────────────────────────────
+    overlay_type   = models.CharField(max_length=10, blank=True, default='')
+    overlay_equipe = models.CharField(max_length=3,  blank=True, default='')
+    overlay_fin    = models.DateTimeField(null=True, blank=True)
+
     # ── Personnalisation scoreboard ───────────────────────────────────────────
     scoreboard_score_scale = models.IntegerField(
         default=100, help_text="Taille du score en % (60-200)")

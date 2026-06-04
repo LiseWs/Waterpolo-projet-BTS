@@ -367,6 +367,18 @@ def _shot_payload(match):
     }
 
 
+def _overlay_payload(match):
+    """État overlay (temps mort / pause inter-période) renvoyé à chaque réponse API."""
+    now = timezone.now()
+    active = bool(match.overlay_fin and match.overlay_fin > now)
+    return {
+        'active':  active,
+        'type':    match.overlay_type,
+        'equipe':  match.overlay_equipe,
+        'end_ts':  match.overlay_fin.timestamp() if match.overlay_fin else 0,
+    }
+
+
 def _reset_shot(match, value=None):
     """Remet le shot clock (modifie l'objet, pas de save).
     value=None → temps_possession (28s standard)
@@ -433,10 +445,18 @@ def api_match_action(request, match_id):
             if not match.shot_en_cours or match.shot_top is None:
                 match.shot_en_cours = True
                 match.shot_top = now
+            # Fermer l'overlay TM ou PAUSE quand le jeu reprend
+            overlay_fields = []
+            if match.overlay_type in ('TM', 'PAUSE'):
+                match.overlay_type   = ''
+                match.overlay_equipe = ''
+                match.overlay_fin    = None
+                overlay_fields = ['overlay_type', 'overlay_equipe', 'overlay_fin']
             match.save(update_fields=['chrono_en_cours', 'dernier_top_chrono',
-                                       'shot_en_cours', 'shot_top'])
+                                       'shot_en_cours', 'shot_top'] + overlay_fields)
         return JsonResponse({'status': 'ok', 'chrono': _chrono_payload(match),
-                             'shot': _shot_payload(match)})
+                             'shot': _shot_payload(match),
+                             'overlay': _overlay_payload(match)})
 
     elif action == 'stop_timer':
         if match.chrono_en_cours:
@@ -518,16 +538,27 @@ def api_match_action(request, match_id):
         match.periode_actuelle += 1
         match.temps_restant = match.duree_periode * 60
         _reset_shot(match)
+        # Pause inter-période 2 min (seulement s'il reste des périodes)
+        if match.periode_actuelle <= match.nb_periodes:
+            match.overlay_type   = 'PAUSE'
+            match.overlay_equipe = ''
+            match.overlay_fin    = timezone.now() + timedelta(seconds=120)
+        else:
+            match.overlay_type   = ''
+            match.overlay_equipe = ''
+            match.overlay_fin    = None
         match.save(update_fields=[
             'chrono_en_cours', 'dernier_top_chrono',
             'periode_actuelle', 'temps_restant',
             'shot_en_cours', 'shot_restant', 'shot_top',
+            'overlay_type', 'overlay_equipe', 'overlay_fin',
         ])
         return JsonResponse({
-            'status': 'ok',
-            'period': match.periode_actuelle,
-            'chrono': _chrono_payload(match),
-            'shot':   _shot_payload(match),
+            'status':  'ok',
+            'period':  match.periode_actuelle,
+            'chrono':  _chrono_payload(match),
+            'shot':    _shot_payload(match),
+            'overlay': _overlay_payload(match),
         })
 
     # ── Retour en jeu ─────────────────────────────────────────────────────────
@@ -573,6 +604,11 @@ def api_match_action(request, match_id):
             score_dom_apres=match.score_domicile,
             score_ext_apres=match.score_exterieur,
         )
+        # Déclencher l'overlay temps mort (1 minute)
+        match.overlay_type   = 'TM'
+        match.overlay_equipe = equipe
+        match.overlay_fin    = timezone.now() + timedelta(seconds=60)
+        match.save(update_fields=['overlay_type', 'overlay_equipe', 'overlay_fin'])
 
     elif action in ('B', 'E', 'EDA', 'EDAP', 'P', 'A', 'R', 'CJ€', 'CR'):
         p_id = data.get('participation_id')
@@ -709,6 +745,7 @@ def api_match_action(request, match_id):
         'history':        _history_qs(match),
         'chrono':         _chrono_payload(match),
         'shot':           _shot_payload(match),
+        'overlay':        _overlay_payload(match),
         'tm_dom':         tm_qs.filter(equipe_attribuee='DOM').count(),
         'tm_ext':         tm_qs.filter(equipe_attribuee='EXT').count(),
         'nb_temps_morts': match.nb_temps_morts,
@@ -809,6 +846,7 @@ def api_match_state(request, match_id):
         'couleur_dom':    match.couleur_bonnet_dom,
         'couleur_ext':    match.couleur_bonnet_ext,
         'shot':           _shot_payload(match),
+        'overlay':        _overlay_payload(match),
     })
 
 
