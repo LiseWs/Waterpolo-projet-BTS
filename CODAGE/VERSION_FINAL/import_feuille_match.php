@@ -517,3 +517,8 @@ echo json_encode([
     'score_final' => $scoreFinal,
     'message'     => 'Feuille de match importée avec succès.',
 ], JSON_UNESCAPED_UNICODE);
+
+?>
+<div style="text-align:center; margin-top:20px;">
+    <a href="index1.php" style="padding:10px 20px; background:#2196F3; color:white; text-decoration:none; border-radius:5px;">Retour aux résultats</a>
+</div>
