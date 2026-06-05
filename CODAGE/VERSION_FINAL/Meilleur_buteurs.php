@@ -60,12 +60,12 @@
     <nav>
       <ul>
       <!-- Début de la barre de navigation -->
-       <li class="bouton"><a href="index1.php">Résultat</a></li> <!-- Lien vers la page des résultats -->
-        
+        <li class="bouton"><a href="index1.php">Résultats </a></li> <!-- Lien vers la page des meilleurs buteurs -->
         <li class="bouton"><a href="règle_water-polo.php">Réglement</a></li> <!-- Lien vers la page du règlement -->
         <li class="bouton"><a href="upload_match.php">Importer une feuille</a></li> <!-- Upload de la feuille de match sur la BDD -->
         <li class="bouton"><a href="gestion_championnats.php">Gestion Championnat</a></li> <!-- Upload de la feuille de match sur la BDD -->
-        <li class="bouton"><a href="classement.php">Classement Championnat</a></li> <!-- Upload de la feuille de match sur la BDD -->
+        <li class="bouton"><a href="classement.php">Classement Championnat</a></li> <!-- Upload de la feuille de match sur la BDD -->       
+        <li class="bouton"><a href="affichage_feuille_match_bdd.php">Afficher la feuille</a></li> <!-- Upload de la feuille de match sur la BDD -->
       </ul>
       </nav>
     
