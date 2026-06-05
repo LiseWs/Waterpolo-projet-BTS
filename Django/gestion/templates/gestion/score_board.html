@@ -28,7 +28,12 @@
   --f-sub:  'Barlow Condensed', 'Arial Narrow', sans-serif;
 
   --top-h:    clamp(30px,4vh,46px);
-  --score-sz: clamp(4rem,10vw,12rem);
+  /* Taille du score — configurable via match.scoreboard_score_scale */
+  --score-sz: clamp(
+    calc(4rem * {{ match.scoreboard_score_scale }} / 100),
+    calc(10vw * {{ match.scoreboard_score_scale }} / 100),
+    calc(12rem * {{ match.scoreboard_score_scale }} / 100)
+  );
   --name-sz:  clamp(.9rem,2.2vw,3rem);
   --ch-sz:    clamp(3rem,8vw,10rem);
   --shot-sz:  clamp(1.8rem,3.5vw,4.5rem);
@@ -36,6 +41,8 @@
   --cell-r:   clamp(4px,.5vw,10px);
   --cell-g:   clamp(2px,.35vw,7px);
   --tm-dot:   clamp(7px,1.1vw,18px);
+  /* Hauteur barre sponsors — configurable via match.scoreboard_sponsor_height */
+  --sponsors-bar-h: {{ match.scoreboard_sponsor_height }}vh;
 }
 
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
@@ -44,7 +51,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);}
 body{
   font-family:var(--f-sub);color:#fff;
   display:grid;
-  grid-template-rows:var(--top-h) 1fr auto auto;
+  grid-template-rows:var(--top-h) 1fr {% if match.scoreboard_players_visible %}auto {% endif %}auto;
   height:100vh;
 }
 
@@ -355,18 +362,285 @@ body::before{
 /* ── SPONSORS ─────────────────────────────────────────── */
 .sponsors-bar{
   position:relative;z-index:2;
-  height:clamp(56px,10vh,110px);
-  background:rgba(5,8,16,.98);border-top:1px solid var(--bord);
+  height:var(--sponsors-bar-h);
+  background:rgba(4,6,14,.98);
+  border-top:1px solid rgba(0,212,255,.12);
+  box-shadow:0 -1px 24px rgba(0,0,0,.5);
   display:flex;align-items:center;overflow:hidden;
 }
-.sponsors-bar::before,.sponsors-bar::after{content:'';position:absolute;top:0;bottom:0;width:clamp(28px,5vw,70px);z-index:2;pointer-events:none;}
-.sponsors-bar::before{left:0;background:linear-gradient(90deg,rgba(5,8,16,1),transparent);}
-.sponsors-bar::after{right:0;background:linear-gradient(270deg,rgba(5,8,16,1),transparent);}
-.sponsors-track{display:flex;align-items:center;gap:clamp(20px,4vw,70px);padding:0 clamp(12px,2vw,40px);white-space:nowrap;animation:sponsorSlide 30s linear infinite;will-change:transform;}
-.sponsors-track.no-anim{animation:none;}
-@keyframes sponsorSlide{from{transform:translateX(0)}to{transform:translateX(-50%)}}
-.sponsor-img{height:clamp(32px,6.5vh,84px);max-width:clamp(90px,15vw,220px);width:auto;object-fit:contain;filter:brightness(1.1) drop-shadow(0 0 8px rgba(255,255,255,.15));flex-shrink:0;}
-.no-sponsors-label{font-size:clamp(.55rem,.75vw,.9rem);color:rgba(255,255,255,.3);letter-spacing:3px;text-transform:uppercase;}
+/* Fondu gauche/droite plus large pour masquer les coupures */
+.sponsors-bar::before,.sponsors-bar::after{
+  content:'';position:absolute;top:0;bottom:0;
+  width:clamp(48px,8vw,120px);z-index:2;pointer-events:none;
+}
+.sponsors-bar::before{left:0;background:linear-gradient(90deg,rgba(4,6,14,1) 40%,transparent);}
+.sponsors-bar::after{right:0;background:linear-gradient(270deg,rgba(4,6,14,1) 40%,transparent);}
+
+/* Track : --slide-px est positionné par JS (pixel exact de 1 lot) */
+.sponsors-track{
+  display:flex;align-items:center;
+  gap:clamp(30px,5vw,90px);
+  padding:0 clamp(20px,4vw,80px);
+  white-space:nowrap;
+  animation:sponsorSlide 30s linear infinite;
+  will-change:transform;
+  --slide-px:-50%;
+}
+/* Mode centré (1 sponsor ou no-anim forcé) */
+.sponsors-track.no-anim{
+  animation:none;
+  justify-content:center;
+  width:100%;
+  padding:0;
+}
+@keyframes sponsorSlide{
+  from{transform:translateX(0)}
+  to  {transform:translateX(var(--slide-px))}
+}
+.sponsor-img{
+  height:clamp(34px,7vh,88px);
+  max-width:clamp(100px,18vw,240px);
+  width:auto;object-fit:contain;flex-shrink:0;
+  filter:brightness(1.15) drop-shadow(0 0 10px rgba(255,255,255,.18));
+  transition:filter .3s;
+}
+.sponsor-img:hover{filter:brightness(1.4) drop-shadow(0 0 16px rgba(0,212,255,.5));}
+.no-sponsors-label{
+  font-size:clamp(.55rem,.75vw,.9rem);
+  color:rgba(255,255,255,.25);letter-spacing:4px;text-transform:uppercase;
+}
+
+/* ══════════════════════════════════════════════════════════
+   OVERLAY TEMPS MORT / PAUSE — v2 IMMERSIVE
+   ══════════════════════════════════════════════════════════ */
+.ov-tm {
+  display:none;
+  position:fixed;inset:0;z-index:9100;
+  overflow:hidden;
+  align-items:center;justify-content:center;
+}
+.ov-tm.active { display:flex; }
+
+/* ── 0. Fond océan profond ── */
+.ov-ocean {
+  position:absolute;inset:0;
+  background:
+    radial-gradient(ellipse 140% 80% at 50% 110%, #00204e 0%, transparent 52%),
+    radial-gradient(ellipse 90%  60% at 15%   5%, #00102a 0%, transparent 55%),
+    radial-gradient(ellipse 90%  60% at 85%   5%, #00102a 0%, transparent 55%),
+    linear-gradient(180deg, #00060e 0%, #000c1e 35%, #001530 65%, #000b1a 100%);
+}
+
+/* ── 1. Courants profonds (rotation lente, formes organiques) ── */
+.ov-curr {
+  position:absolute;will-change:transform;
+}
+.ov-curr.c1 {
+  width:290%;height:290%;top:-95%;left:-95%;
+  background:radial-gradient(ellipse 54% 50% at 50% 50%, rgba(0,45,140,.52) 0%, transparent 62%);
+  border-radius:44% 56% 53% 47% / 47% 53% 47% 53%;
+  animation:ovCurr 24s ease-in-out infinite;
+}
+.ov-curr.c2 {
+  width:260%;height:260%;top:-80%;left:-80%;
+  background:radial-gradient(ellipse 51% 55% at 47% 53%, rgba(0,65,175,.44) 0%, transparent 58%);
+  border-radius:57% 43% 47% 53% / 53% 47% 57% 43%;
+  animation:ovCurr 18s ease-in-out infinite reverse;
+  animation-delay:-10s;
+}
+.ov-curr.c3 {
+  width:230%;height:230%;top:-65%;left:-65%;
+  background:radial-gradient(ellipse 50% 52% at 53% 47%, rgba(0,95,215,.37) 0%, transparent 53%);
+  border-radius:48% 52% 44% 56% / 56% 44% 52% 48%;
+  animation:ovCurr 13s ease-in-out infinite;
+  animation-delay:-6s;
+}
+.ov-curr.c4 {
+  width:195%;height:195%;top:-47%;left:-47%;
+  background:radial-gradient(ellipse 47% 50% at 50% 50%, rgba(0,135,248,.28) 0%, transparent 48%);
+  border-radius:53% 47% 57% 43% / 43% 57% 43% 57%;
+  animation:ovCurr 9s ease-in-out infinite reverse;
+  animation-delay:-4s;
+}
+@keyframes ovCurr {
+  0%   { transform:rotate(0deg)   scale(1)    translate(0,0); }
+  25%  { transform:rotate(90deg)  scale(1.02) translate(.4%,.4%); }
+  50%  { transform:rotate(180deg) scale(1.04) translate(0,.8%); }
+  75%  { transform:rotate(270deg) scale(1.02) translate(-.4%,.4%); }
+  100% { transform:rotate(360deg) scale(1)    translate(0,0); }
+}
+
+/* ── 2. Vagues de surface (filaments horizontaux ondulants) ── */
+.ov-swave {
+  position:absolute;left:-12%;width:124%;
+  background:linear-gradient(90deg,
+    transparent 0%,
+    rgba(50,150,255,.06) 10%,
+    rgba(90,190,255,.16) 30%,
+    rgba(130,220,255,.22) 50%,
+    rgba(90,190,255,.16) 70%,
+    rgba(50,150,255,.06) 90%,
+    transparent 100%
+  );
+  filter:blur(1px);
+}
+.ov-swave.s1{ height:2px;  top:22%; animation:ovSWave 10s ease-in-out infinite; }
+.ov-swave.s2{ height:1.5px;top:38%; animation:ovSWave 14s ease-in-out infinite reverse; animation-delay:-5s; opacity:.75; }
+.ov-swave.s3{ height:2.5px;top:56%; animation:ovSWave  8s ease-in-out infinite; animation-delay:-2s; opacity:.55; }
+.ov-swave.s4{ height:1px;  top:70%; animation:ovSWave 12s ease-in-out infinite reverse; animation-delay:-7s; opacity:.40; }
+.ov-swave.s5{ height:1.5px;top:82%; animation:ovSWave  9s ease-in-out infinite; animation-delay:-3s; opacity:.30; }
+@keyframes ovSWave {
+  0%   { transform:translateX(-10%) translateY(-4px) scaleX(.93); opacity:.45; }
+  20%  { transform:translateX(-3%)  translateY( 3px) scaleX(1.02); opacity:.85; }
+  45%  { transform:translateX( 5%)  translateY(-1px) scaleX(.97); opacity:.70; }
+  70%  { transform:translateX( 2%)  translateY( 4px) scaleX(1.03); opacity:.90; }
+  100% { transform:translateX(-10%) translateY(-4px) scaleX(.93); opacity:.45; }
+}
+
+/* ── 3. Caustiques (lumière réfractée — taches lumineuses mobiles) ── */
+.ov-caust {
+  position:absolute;border-radius:50%;
+  filter:blur(18px);mix-blend-mode:screen;pointer-events:none;
+}
+.ov-caust.k1 {
+  width:clamp(160px,22vw,280px);height:clamp(160px,22vw,280px);
+  top:8%;left:6%;
+  background:radial-gradient(circle,rgba(70,170,255,.20) 0%,transparent 68%);
+  animation:ovCaust 8s ease-in-out infinite alternate;
+}
+.ov-caust.k2 {
+  width:clamp(120px,16vw,210px);height:clamp(120px,16vw,210px);
+  top:22%;right:8%;
+  background:radial-gradient(circle,rgba(50,150,255,.16) 0%,transparent 65%);
+  animation:ovCaust 11s ease-in-out infinite alternate-reverse;
+  animation-delay:-4s;
+}
+.ov-caust.k3 {
+  width:clamp(100px,14vw,180px);height:clamp(100px,14vw,180px);
+  bottom:15%;left:18%;
+  background:radial-gradient(circle,rgba(90,200,255,.13) 0%,transparent 62%);
+  animation:ovCaust 9s ease-in-out infinite alternate;
+  animation-delay:-6s;
+}
+.ov-caust.k4 {
+  width:clamp(80px,11vw,140px);height:clamp(80px,11vw,140px);
+  bottom:25%;right:14%;
+  background:radial-gradient(circle,rgba(110,210,255,.10) 0%,transparent 60%);
+  animation:ovCaust 13s ease-in-out infinite alternate-reverse;
+  animation-delay:-2s;
+}
+@keyframes ovCaust {
+  0%   { transform:translate(-12px,-18px) scale(.88); opacity:.55; }
+  35%  { transform:translate(  8px, 12px) scale(1.08); opacity:.90; }
+  65%  { transform:translate(-5px,  18px) scale(.95); opacity:.75; }
+  100% { transform:translate( 14px, -8px) scale(1.05); opacity:.85; }
+}
+
+/* ── 4. Lueur de fond (plancher lumineux) ── */
+.ov-floor {
+  position:absolute;bottom:-10%;left:50%;
+  transform:translateX(-50%);
+  width:110%;height:50%;
+  background:radial-gradient(ellipse 80% 50% at 50% 100%, rgba(0,80,200,.18) 0%, transparent 65%);
+  pointer-events:none;
+}
+
+/* ── 5. Vignette + profondeur ── */
+.ov-vign {
+  position:absolute;inset:0;
+  background:
+    radial-gradient(ellipse 90% 85% at 50% 50%, transparent 28%, rgba(0,3,10,.72) 100%),
+    linear-gradient(180deg, rgba(0,3,10,.4) 0%, transparent 18%, transparent 78%, rgba(0,3,10,.5) 100%);
+}
+
+/* ── Contenu central ── */
+.ov-content {
+  position:relative;z-index:2;
+  display:flex;flex-direction:column;align-items:center;
+  gap:clamp(8px,2vh,26px);
+  text-align:center;padding:0 24px;
+}
+.ov-label {
+  font-family:var(--f-sub);font-weight:900;
+  font-size:clamp(1.1rem,3.2vw,2.8rem);
+  letter-spacing:clamp(7px,1.4vw,16px);text-transform:uppercase;
+  color:rgba(255,255,255,.92);
+  text-shadow:
+    0 0 20px rgba(80,190,255,.65),
+    0 0 55px rgba(40,150,255,.35),
+    0 2px 12px rgba(0,0,0,.65);
+}
+.ov-equipe {
+  font-family:var(--f-sub);font-weight:700;
+  font-size:clamp(.9rem,2.2vw,2rem);
+  letter-spacing:clamp(4px,.8vw,10px);text-transform:uppercase;
+  color:rgba(130,225,255,.95);
+  text-shadow:
+    0 0 22px rgba(80,200,255,.65),
+    0 0 55px rgba(0,160,255,.28);
+}
+
+/* Anneau SVG + chiffres — GRAND */
+.ov-ring-wrap {
+  position:relative;
+  width:clamp(250px,50vmin,500px);   /* GRAND */
+  height:clamp(250px,50vmin,500px);
+  display:flex;align-items:center;justify-content:center;
+}
+.ov-svg {
+  position:absolute;inset:0;width:100%;height:100%;
+  transform:rotate(-90deg);
+}
+.ov-ring-bg {
+  fill:none;stroke:rgba(255,255,255,.06);stroke-width:5;
+}
+.ov-ring-track {
+  fill:none;stroke:rgba(0,70,180,.3);stroke-width:5;
+}
+.ov-ring-aura {
+  fill:none;stroke-width:22;stroke-linecap:round;
+  stroke-dasharray:628.3;stroke-dashoffset:0;
+  transition:stroke-dashoffset .3s linear;
+  stroke:rgba(30,120,255,.07);
+  filter:blur(10px);
+}
+.ov-ring-prog {
+  fill:none;stroke-width:5;stroke-linecap:round;
+  stroke-dasharray:628.3;stroke-dashoffset:0;
+  transition:stroke-dashoffset .3s linear;
+  stroke:url(#ovGrad);
+  filter:drop-shadow(0 0 8px rgba(80,195,255,.95)) drop-shadow(0 0 20px rgba(40,155,255,.55));
+}
+
+/* Chiffres — TRÈS GRAND */
+.ov-digits {
+  position:relative;z-index:2;
+  font-family:var(--f-main);
+  font-size:clamp(7rem,19vmin,15rem);   /* BEAUCOUP PLUS GRAND */
+  line-height:1;letter-spacing:8px;color:#fff;
+  text-shadow:
+    0 0 18px rgba(120,220,255,1),
+    0 0 45px rgba(70,180,255,.75),
+    0 0 90px rgba(30,130,255,.45),
+    0 0 150px rgba(0,90,220,.22);
+}
+.ov-digits.urgent {
+  color:#ff7070;
+  text-shadow:
+    0 0 18px rgba(255,110,110,1),
+    0 0 45px rgba(255,60,60,.7),
+    0 0 90px rgba(255,20,20,.4);
+  animation:ovUrgent .45s ease-in-out infinite alternate;
+}
+@keyframes ovUrgent {
+  from { transform:scale(1);     filter:brightness(1); }
+  to   { transform:scale(1.05);  filter:brightness(1.18); }
+}
+.ov-hint {
+  font-family:var(--f-sub);font-weight:600;
+  font-size:clamp(.62rem,1.4vw,1.05rem);
+  color:rgba(255,255,255,.3);letter-spacing:4px;text-transform:uppercase;
+}
 
 /* ── RESPONSIVE ───────────────────────────────────────── */
 @media(max-height:650px){:root{--score-sz:clamp(3rem,8vw,8rem);--ch-sz:clamp(2.2rem,6vw,6.5rem);--shot-sz:clamp(1.4rem,2.8vw,3rem);--name-sz:clamp(.8rem,1.7vw,2rem);}}
@@ -457,6 +731,7 @@ body::before{
 </div>
 
 <!-- PLAYERS -->
+{% if match.scoreboard_players_visible %}
 <div class="players-zone">
   <div class="team-row">
     <div class="team-label dom-label" id="lbl-dom">{{ match.couleur_bonnet_dom }}</div>
@@ -479,11 +754,70 @@ body::before{
     </div>
   </div>
 </div>
+{% endif %}
 
 <!-- SPONSORS -->
 <div class="sponsors-bar" id="sponsors-bar">
   <div class="sponsors-track" id="sponsors-track">
     <span class="no-sponsors-label" id="no-sponsors-msg">Aucun sponsor</span>
+  </div>
+</div>
+
+<!-- ══ OVERLAY TEMPS MORT / PAUSE ══ -->
+<div id="ov-tm" class="ov-tm">
+
+  <!-- 0. Fond océan -->
+  <div class="ov-ocean"></div>
+
+  <!-- 1. Courants profonds -->
+  <div class="ov-curr c1"></div>
+  <div class="ov-curr c2"></div>
+  <div class="ov-curr c3"></div>
+  <div class="ov-curr c4"></div>
+
+  <!-- 2. Vagues de surface -->
+  <div class="ov-swave s1"></div>
+  <div class="ov-swave s2"></div>
+  <div class="ov-swave s3"></div>
+  <div class="ov-swave s4"></div>
+  <div class="ov-swave s5"></div>
+
+  <!-- 3. Caustiques -->
+  <div class="ov-caust k1"></div>
+  <div class="ov-caust k2"></div>
+  <div class="ov-caust k3"></div>
+  <div class="ov-caust k4"></div>
+
+  <!-- 4. Lueur de fond -->
+  <div class="ov-floor"></div>
+
+  <!-- 5. Vignette -->
+  <div class="ov-vign"></div>
+
+  <!-- Contenu central -->
+  <div class="ov-content">
+    <div class="ov-label"  id="ov-label">TEMPS MORT</div>
+    <div class="ov-equipe" id="ov-equipe" style="display:none"></div>
+
+    <div class="ov-ring-wrap">
+      <svg class="ov-svg" viewBox="0 0 220 220" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="ovGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%"   stop-color="#18a8ff"/>
+            <stop offset="35%"  stop-color="#55ccff"/>
+            <stop offset="65%"  stop-color="#80e4ff"/>
+            <stop offset="100%" stop-color="#18a8ff"/>
+          </linearGradient>
+        </defs>
+        <circle class="ov-ring-bg"    cx="110" cy="110" r="100"/>
+        <circle class="ov-ring-aura"  cx="110" cy="110" r="100" id="ov-ring-aura"/>
+        <circle class="ov-ring-track" cx="110" cy="110" r="100"/>
+        <circle class="ov-ring-prog"  cx="110" cy="110" r="100" id="ov-ring-prog"/>
+      </svg>
+      <div class="ov-digits" id="ov-digits">1:00</div>
+    </div>
+
+    <div class="ov-hint" id="ov-hint">le jeu reprend dans…</div>
   </div>
 </div>
 
@@ -591,6 +925,69 @@ function rafClock() {
   requestAnimationFrame(rafClock);
 }
 
+/* ── Overlay Temps Mort / Pause ── */
+const OV_RING_CIRC = 628.3; // 2×π×r (r=100)
+let ovRafId = null;
+let ovEndTs  = 0;
+let ovMaxSec = 60;
+
+function handleOverlay(ov) {
+  const el = document.getElementById('ov-tm');
+  if (!ov || !ov.active) {
+    el.classList.remove('active');
+    if (ovRafId) { cancelAnimationFrame(ovRafId); ovRafId = null; }
+    return;
+  }
+  ovMaxSec = (ov.type === 'PAUSE') ? 120 : 60;
+  ovEndTs  = Number(ov.end_ts);
+
+  // Labels
+  document.getElementById('ov-label').textContent =
+    ov.type === 'PAUSE' ? 'INTER-PÉRIODE' : 'TEMPS MORT';
+  document.getElementById('ov-hint').textContent =
+    ov.type === 'PAUSE' ? 'prochaine période dans…' : 'le jeu reprend dans…';
+
+  // Nom équipe pour TM
+  const eqEl = document.getElementById('ov-equipe');
+  if (ov.type === 'TM' && ov.equipe) {
+    const nomEl = document.getElementById('name-' + ov.equipe.toLowerCase());
+    eqEl.textContent = nomEl ? nomEl.textContent : ov.equipe;
+    eqEl.style.display = '';
+  } else {
+    eqEl.textContent = '';
+    eqEl.style.display = 'none';
+  }
+
+  el.classList.add('active');
+
+  if (ovRafId) cancelAnimationFrame(ovRafId);
+  (function rafOv() {
+    const rem = Math.max(0, ovEndTs - Date.now() / 1000);
+    const mins = Math.floor(rem / 60);
+    const secs = Math.floor(rem % 60);
+    const digEl = document.getElementById('ov-digits');
+    const ringEl = document.getElementById('ov-ring-prog');
+
+    digEl.textContent = mins + ':' + String(secs).padStart(2, '0');
+    digEl.classList.toggle('urgent', rem <= 10 && rem > 0);
+
+    if (ringEl) {
+      const pct    = ovMaxSec > 0 ? rem / ovMaxSec : 0;
+      const offset = OV_RING_CIRC * (1 - Math.max(0, Math.min(1, pct)));
+      ringEl.style.strokeDashoffset = offset;
+      const auraEl = document.getElementById('ov-ring-aura');
+      if (auraEl) auraEl.style.strokeDashoffset = offset;
+    }
+
+    if (rem > 0) {
+      ovRafId = requestAnimationFrame(rafOv);
+    } else {
+      el.classList.remove('active');
+      ovRafId = null;
+    }
+  })();
+}
+
 /* ── TM dots ── */
 function setTMDots(side,total) {
   const c=document.getElementById('tm-'+side); if(!c) return;
@@ -670,15 +1067,43 @@ function setLogo(side,url) {
 
 /* ── Sponsors ── */
 let currentSponsors=[];
+const _SP_COPIES=4; // assure qu'on remplit toujours l'écran, quel que soit le nombre de logos
+
+function _applyCarouselMetrics(track){
+  const singleW=track.scrollWidth/_SP_COPIES;
+  if(singleW<20) return; // images pas encore rendues
+  track.style.setProperty('--slide-px',`-${singleW}px`);
+  // Vitesse : 90 px/s → durée proportionnelle à la longueur d'un lot
+  track.style.animationDuration=Math.max(8,singleW/90)+'s';
+}
+
 function updateSponsors(urls) {
   if(!urls||!urls.length) return;
   const sig=urls.join(','); if(sig===currentSponsors.join(',')) return;
   currentSponsors=urls;
   const track=document.getElementById('sponsors-track');
-  track.innerHTML=[...urls,...urls].map(u=>`<img class="sponsor-img" src="${u}" alt="sponsor">`).join('');
   const msg=document.getElementById('no-sponsors-msg'); if(msg) msg.remove();
-  if (urls.length>1){track.classList.remove('no-anim');track.style.animationDuration=Math.max(15,track.scrollWidth/2/50)+'s';}
-  else{track.classList.add('no-anim');track.style.justifyContent='center';}
+
+  if(urls.length===1){
+    // Sponsor unique → centré, sans animation
+    track.innerHTML=`<img class="sponsor-img" src="${urls[0]}" alt="sponsor">`;
+    track.classList.add('no-anim');
+    return;
+  }
+
+  // Plusieurs sponsors → 4 copies pour garantir aucun vide à droite
+  track.innerHTML=Array(_SP_COPIES).fill(urls).flat()
+    .map(u=>`<img class="sponsor-img" src="${u}" alt="sponsor">`).join('');
+  track.classList.remove('no-anim');
+
+  // Double RAF : le navigateur a eu le temps de calculer le layout
+  requestAnimationFrame(()=>requestAnimationFrame(()=>_applyCarouselMetrics(track)));
+
+  // Fallback : recalcul quand toutes les images sont chargées
+  const imgs=[...track.querySelectorAll('img')];
+  let done=0;
+  const onLoad=()=>{ done++; if(done===imgs.length) _applyCarouselMetrics(track); };
+  imgs.forEach(img=>img.complete ? onLoad() : img.addEventListener('load',onLoad,{once:true}));
 }
 
 /* ── Sync ── */
@@ -703,6 +1128,7 @@ async function sync() {
     if (d.logo_ext) setLogo('ext',d.logo_ext);
     if (d.players)  updatePlayers(d.players);
     if (d.sponsors) updateSponsors(d.sponsors);
+    if (d.overlay !== undefined) handleOverlay(d.overlay);
   } catch(e){ console.warn('[sync]',e); }
 }
 
