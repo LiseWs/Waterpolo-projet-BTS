@@ -806,9 +806,9 @@
             <button class="ctrl-btn btn-tool" id="btnArduino" onclick="connecterAfficheur()">
                 <i class="fas fa-usb"></i> Connecter Afficheur
             </button>
-            <a href="{% url 'score_board' match.id %}" target="_blank" class="ctrl-btn btn-tool">
+            <button class="ctrl-btn btn-tool" id="btnEcran" onclick="ouvrirEcran()">
                 <i class="fas fa-tv"></i> Écran
-            </a>
+            </button>
             <div class="sep"></div>
             <button class="ctrl-btn btn-feuille" onclick="openFeuilleModal()">
                 <i class="fas fa-file-alt"></i> Feuille de match
@@ -922,7 +922,7 @@
                     </div>
                     <div class="pcard-actions">
                         <button class="abt abt-but"  data-action="B"   data-pid="{{ p.id }}">B</button>
-                        <button class="abt abt-excl" data-action="E"   data-pid="{{ p.id }}">{{ match.duree_exclusion }}s</button>
+                        <button class="abt abt-excl" data-action="E"   data-pid="{{ p.id }}">E</button>
                         <button class="abt abt-pen"  data-action="P"   data-pid="{{ p.id }}">P</button>
                         <button class="abt abt-eda"  data-action="EDA" data-pid="{{ p.id }}">EDA</button>
                     </div>
@@ -1002,7 +1002,7 @@
                     </div>
                     <div class="pcard-actions">
                         <button class="abt abt-but"  data-action="B"   data-pid="{{ p.id }}">B</button>
-                        <button class="abt abt-excl" data-action="E"   data-pid="{{ p.id }}">{{ match.duree_exclusion }}s</button>
+                        <button class="abt abt-excl" data-action="E"   data-pid="{{ p.id }}">E</button>
                         <button class="abt abt-pen"  data-action="P"   data-pid="{{ p.id }}">P</button>
                         <button class="abt abt-eda"  data-action="EDA" data-pid="{{ p.id }}">EDA</button>
                     </div>
@@ -1102,19 +1102,6 @@
         };
 
         const chronoEl = document.getElementById('chrono');
-        (function chronoRaf() {
-            const t = timeLeft();
-            chronoEl.textContent = fmt(Math.ceil(t));
-            chronoEl.classList.toggle('running', C.running);
-            if (C.running && t <= 0 && !C.alertedEnd) {
-                C.alertedEnd = true;
-                C.running    = false;
-                C.frozenTime = 0;
-                C.startedAt  = null;
-                playKlaxon();
-            }
-            requestAnimationFrame(chronoRaf);
-        })();
 
         chronoEl.addEventListener('click', () => {
             if (!isProcessing) C.running ? stopTimer() : startTimer();
@@ -1155,19 +1142,37 @@
         }
 
         let shotAutoResetting = false;
-        (function shotRaf() {
+
+        // RAF unique pour chrono + shot clock (évite 2 boucles à 60fps)
+        let _dPrevChronoSec = -1, _dPrevShotSec = -1, _dPrevRunning = null;
+        (function dashRaf() {
+            // ── Chrono match ───────────────────────────────────────────────
+            const t  = timeLeft();
+            const tC = Math.ceil(t);
+            if (tC !== _dPrevChronoSec || C.running !== _dPrevRunning) {
+                _dPrevChronoSec = tC; _dPrevRunning = C.running;
+                chronoEl.textContent = fmt(tC);
+                chronoEl.classList.toggle('running', C.running);
+            }
+            if (C.running && t <= 0 && !C.alertedEnd) {
+                C.alertedEnd = true; C.running = false;
+                C.frozenTime = 0;   C.startedAt = null;
+                playKlaxon();
+            }
+
+            // ── Shot clock ─────────────────────────────────────────────────
             const raw = shotLeft();
             const v   = Math.ceil(raw);
-            scEl.textContent = v;
-            scEl.classList.toggle('running', SC.running && v > 5);
-            scEl.classList.toggle('urgent',  SC.running && v <= 5 && v > 0);
-
+            if (v !== _dPrevShotSec) {
+                _dPrevShotSec = v;
+                scEl.textContent = v;
+                scEl.classList.toggle('running', SC.running && v > 5);
+                scEl.classList.toggle('urgent',  SC.running && v <= 5 && v > 0);
+            }
             if (SC.running && raw <= 0 && !SC.alertedEnd && !shotAutoResetting) {
                 SC.alertedEnd = true;
-                // KLAXON : fin du shot clock (priorité maximale)
                 playKlaxon();
                 shotAutoResetting = true;
-                // Arrêt du match clock + remise shot à 28s (possession adverse)
                 api({ action: 'shot_expired' }).then(r => {
                     if (r.chrono) applyServerChrono(r.chrono);
                     if (r.shot)   applyServerShot(r.shot);
@@ -1175,7 +1180,8 @@
                     shotAutoResetting = false;
                 }).catch(() => { shotAutoResetting = false; });
             }
-            requestAnimationFrame(shotRaf);
+
+            requestAnimationFrame(dashRaf);
         })();
 
         scEl.addEventListener('click', () => scReset(28));
@@ -1207,14 +1213,9 @@
 
         async function envoyerValeursAfficheurs() {
             if (!writer) return;
-            const shotVal  = Math.ceil(shotLeft());
-            const timerVal = Math.ceil(timeLeft());
+            const shotVal = Math.ceil(shotLeft()) & 0xFF;
             try {
-                await writer.write(new Uint8Array([
-                    shotVal         & 0xFF,
-                    (timerVal >> 8) & 0xFF,
-                    timerVal        & 0xFF,
-                ]));
+                await writer.write(new Uint8Array([shotVal]));
             } catch (e) {
                 writer = null;
                 clearInterval(_syncInterval);
@@ -1229,9 +1230,12 @@
                 await portSerie.open({ baudRate: 115200 });
                 writer = portSerie.writable.getWriter();
                 updateArduinoBtn();
-                // Envoi immédiat puis toutes les 500 ms
+                showToast('Connexion afficheur… (2s)');
+                // L'ouverture du port reboot l'Arduino via DTR.
+                // On attend 2.5s qu'il finisse de redémarrer avant d'envoyer.
+                await new Promise(r => setTimeout(r, 2500));
                 await envoyerValeursAfficheurs();
-                _syncInterval = setInterval(envoyerValeursAfficheurs, 500);
+                _syncInterval = setInterval(envoyerValeursAfficheurs, 200);
             } catch (e) {
                 console.error('Connexion série :', e);
                 alert('❌ Échec connexion afficheurs.');
@@ -1561,7 +1565,7 @@
                     const rem = end - now;
                     if (rem > 0) {
                         ov.className    = 'p-overlay excl';
-                        txt.textContent = Math.ceil(rem) + 's';
+                        txt.textContent = 'E';
                         prevExclState[id] = 'excl';
                     } else {
                         // Fin d'exclusion → overlay vert "✓ OK" (pas de klaxon selon spec)
@@ -1636,6 +1640,62 @@
         document.addEventListener('keydown', e => {
             if (e.code === 'Escape') {
                 document.getElementById('feuilleModal').classList.remove('open');
+            }
+        });
+
+        /* ── Écran score (second moniteur, plein écran verrouillé) ─────────── */
+        let scoreWindow = null;
+
+        async function ouvrirEcran() {
+            const url = '{% url "score_board" match.id %}?kiosk=1';
+            const btn = document.getElementById('btnEcran');
+
+            // Si déjà ouvert, le ramener au premier plan
+            if (scoreWindow && !scoreWindow.closed) {
+                scoreWindow.focus();
+                return;
+            }
+
+            // Window Management API → détecte le second écran (Chrome 100+)
+            if ('getScreenDetails' in window) {
+                try {
+                    const details = await window.getScreenDetails();
+                    const target  = details.screens.find(s => !s.isPrimary)
+                                 || details.screens[details.screens.length - 1];
+                    scoreWindow = window.open(url, 'waterpolo_score',
+                        `popup=1,left=${target.availLeft},top=${target.availTop},` +
+                        `width=${target.availWidth},height=${target.availHeight}`);
+                } catch(e) {
+                    _ouvrirFallback(url);
+                }
+            } else {
+                _ouvrirFallback(url);
+            }
+
+            if (btn) btn.style.background = '#166534';
+
+            // Surveiller la fermeture du scoreboard
+            const _check = setInterval(() => {
+                if (!scoreWindow || scoreWindow.closed) {
+                    clearInterval(_check);
+                    scoreWindow = null;
+                    if (btn) btn.style.background = '#374151';
+                }
+            }, 1500);
+        }
+
+        function _ouvrirFallback(url) {
+            // Second écran supposé à droite du principal
+            const x = window.screen.width;
+            scoreWindow = window.open(url, 'waterpolo_score',
+                `popup=1,left=${x},top=0,width=${window.screen.width},height=${window.screen.height}`);
+        }
+
+        // Fermer le scoreboard quand on ferme le dashboard
+        window.addEventListener('beforeunload', () => {
+            if (scoreWindow && !scoreWindow.closed) {
+                scoreWindow.postMessage('dashboard_closed', '*');
+                scoreWindow.close();
             }
         });
 

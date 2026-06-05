@@ -1,84 +1,60 @@
 // ============================================================
-//  WATERPOLO – Contrôleur RS485 double afficheur
-//
-//  PROTOCOLE USB (115200 bauds) – 3 octets par trame :
-//    Octet 0 : valeur shot clock   (0‑30 s)    → afficheur 6 chiffres
-//    Octet 1 : temps match high byte            → afficheur 4 chiffres
-//    Octet 2 : temps match low byte             (valeur 0‑480 reconstruite)
-//
-//  Câblage RS485 :
-//    Serial1 TX → DI du module MAX485
-//    Serial1 RX → RO du module MAX485
-//    Broche 3   → DE + RE du module MAX485 (pont les deux)
+//  WATERPOLO – Passerelle PC → Afficheur 6 chiffres
+//  Protocole : 1 octet depuis le PC (valeur shot clock 0-30)
+//  Brochage  : Serial=USB(PC) | Serial1 TX → afficheur 9600 bauds
 // ============================================================
 
-#define MAX485_RE_DE 3
+int valeurAffichee = -1;
 
 void setup() {
-    pinMode(MAX485_RE_DE, OUTPUT);
-    digitalWrite(MAX485_RE_DE, LOW);   // Mode réception par défaut
-
-    Serial.begin(115200);              // Liaison USB ↔ navigateur web
-    Serial1.begin(19200);              // RS485 (baud changé dynamiquement dans loop)
+  Serial.begin(115200);
+  Serial1.begin(9600);
+  // Affiche 0 au démarrage pour vérifier que l'écran répond
+  afficherNombre6Chiffres(0, 0);
 }
 
 void loop() {
-    // Attendre les 3 octets du protocole (envoyés en une seule écriture USB)
-    if (Serial.available() >= 3) {
+  if (Serial.available() >= 1) {
+    int shotClock = Serial.read();
 
-        byte octets[3];
-        for (int i = 0; i < 3; i++) {
-            octets[i] = Serial.read();
-        }
+    // Vider le buffer si plusieurs octets en attente
+    while (Serial.available()) Serial.read();
 
-        int valeurShotClock = octets[0];                          // 0‑30 s
-        int valeurTimer     = ((int)octets[1] << 8) | octets[2]; // 0‑480 s
-
-        // ── 1. Afficheur 6 chiffres (Shot Clock) ──────────────────
-        //    19 200 bauds | adresse 0x01 | registre 0x0007
-        Serial1.begin(19200);
-        delayMicroseconds(100);
-        envoyerTrameModbus(0x01, 0x00, 0x07, valeurShotClock);
-        delay(15);
-
-        // ── 2. Afficheur 4 chiffres (Temps match 8 min) ───────────
-        //    9 600 bauds | adresse 0x01 | registre 0x0000
-        Serial1.begin(9600);
-        delayMicroseconds(100);
-        envoyerTrameModbus(0x01, 0x00, 0x00, valeurTimer);
-        delay(15);
+    // N'envoyer à l'afficheur que si la valeur a changé
+    if (shotClock != valeurAffichee) {
+      valeurAffichee = shotClock;
+      afficherNombre6Chiffres((unsigned long)shotClock, 0);
     }
+  }
 }
 
-// Construit et envoie une trame Modbus RTU (fonction 06 – écriture registre)
-void envoyerTrameModbus(byte adresse, byte regHigh, byte regLow, int valeur) {
-    byte trame[8] = {
-        adresse,
-        0x06,
-        regHigh,
-        regLow,
-        highByte(valeur),
-        lowByte(valeur),
-        0, 0            // CRC calculé ci-dessous
-    };
+void afficherNombre6Chiffres(unsigned long valeur, byte decimales) {
+  byte trame[13];
 
-    // Calcul CRC16 Modbus
-    unsigned int crc = 0xFFFF;
-    for (int pos = 0; pos < 6; pos++) {
-        crc ^= (unsigned int)trame[pos];
-        for (int i = 8; i != 0; i--) {
-            if (crc & 0x0001) { crc >>= 1; crc ^= 0xA001; }
-            else               { crc >>= 1; }
-        }
+  trame[0] = 0x01;
+  trame[1] = 0x10;
+  trame[2] = 0x00;
+  trame[3] = 0x06;
+  trame[4] = 0x00;
+  trame[5] = 0x02;
+  trame[6] = 0x04;
+
+  trame[7]  = decimales & 0x0F;
+  trame[8]  = (byte)((valeur >> 16) & 0xFF);
+  trame[9]  = (byte)((valeur >> 8)  & 0xFF);
+  trame[10] = (byte)(valeur         & 0xFF);
+
+  unsigned int crc = 0xFFFF;
+  for (int pos = 0; pos < 11; pos++) {
+    crc ^= (unsigned int)trame[pos];
+    for (int i = 8; i != 0; i--) {
+      if ((crc & 0x0001) != 0) { crc >>= 1; crc ^= 0xA001; }
+      else                      { crc >>= 1; }
     }
-    trame[6] = lowByte(crc);
-    trame[7] = highByte(crc);
+  }
+  trame[11] = lowByte(crc);
+  trame[12] = highByte(crc);
 
-    // Transmission physique
-    digitalWrite(MAX485_RE_DE, HIGH);   // Bascule en émission
-    delayMicroseconds(100);
-    Serial1.write(trame, 8);
-    Serial1.flush();                    // Attend la fin de l'envoi
-    delayMicroseconds(100);
-    digitalWrite(MAX485_RE_DE, LOW);    // Repasse en réception
+  Serial1.write(trame, 13);
+  Serial1.flush();
 }

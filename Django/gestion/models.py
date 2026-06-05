@@ -128,6 +128,8 @@ class Match(models.Model):
         default=100, help_text="Taille du score en % (60-200)")
     scoreboard_sponsor_height = models.IntegerField(
         default=10, help_text="Hauteur barre sponsors en vh (5-30)")
+    scoreboard_sponsor_scale = models.IntegerField(
+        default=100, help_text="Taille des images sponsors en % (40-200)")
     scoreboard_players_visible = models.BooleanField(
         default=True, help_text="Afficher la zone joueurs sur le scoreboard")
 

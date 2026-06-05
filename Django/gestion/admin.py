@@ -9,6 +9,18 @@ class MatchAdmin(admin.ModelAdmin):
     list_filter  = ('chrono_en_cours', 'compo_validee')
     search_fields = ('nom_equipe_domicile', 'nom_equipe_exterieur', 'lieu', 'competition')
     readonly_fields = ('date_match',)
+    fieldsets = (
+        (None, {'fields': (
+            'nom_equipe_domicile', 'nom_equipe_exterieur',
+            'competition', 'lieu', 'heure_debut', 'date_match',
+        )}),
+        ('Scoreboard — Personnalisation', {'fields': (
+            'scoreboard_score_scale',
+            'scoreboard_sponsor_height',
+            'scoreboard_sponsor_scale',
+            'scoreboard_players_visible',
+        )}),
+    )
 
 
 @admin.register(Equipe)

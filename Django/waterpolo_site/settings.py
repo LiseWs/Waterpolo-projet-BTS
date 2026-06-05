@@ -77,6 +77,19 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': BASE_DIR / 'db.sqlite3',
+        'CONN_MAX_AGE': 60,          # Réutiliser la connexion DB (moins d'overhead)
+        'OPTIONS': {
+            'timeout': 10,
+            'check_same_thread': False,
+        },
+    }
+}
+
+# Cache mémoire pour réduire les lectures DB répétées
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'TIMEOUT': 1,                # 1 seconde (données live)
     }
 }
 
