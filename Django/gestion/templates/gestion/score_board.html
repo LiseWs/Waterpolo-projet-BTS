@@ -227,11 +227,13 @@ body::before{
 .chrono{
   font-family:var(--f-main);font-size:var(--ch-sz);
   line-height:1;letter-spacing:clamp(2px,.6vw,10px);white-space:nowrap;
-  color:var(--stop);text-shadow:0 0 28px rgba(255,107,43,.45);
+  color:#ffffff;
+  text-shadow:0 2px 6px rgba(0,0,40,.85),0 0 24px rgba(0,0,0,.6);
   transition:color .4s,text-shadow .4s;
 }
 .chrono.running{
-  color:var(--run);text-shadow:0 0 28px rgba(0,212,255,.5),0 0 70px rgba(0,212,255,.15);
+  color:#ffffff;
+  text-shadow:0 2px 6px rgba(0,0,40,.85),0 0 32px rgba(255,255,255,.7),0 0 70px rgba(0,180,255,.4);
   animation:chronoPulse 2.5s ease-in-out infinite;
 }
 @keyframes chronoPulse{0%,100%{opacity:1}50%{opacity:.88}}
@@ -431,61 +433,69 @@ body::before{
 }
 #fluid-bg.active { opacity:1; }
 
-/* Vignette légère par-dessus */
+/* Vignette – assombrit le centre pour porter le texte */
 .ov-vign {
   position:absolute;inset:0;z-index:1;pointer-events:none;
   background:
-    radial-gradient(ellipse 80% 80% at 50% 50%, transparent 15%, rgba(0,0,0,.5) 100%),
-    linear-gradient(180deg, rgba(0,0,0,.25) 0%, transparent 12%, transparent 82%, rgba(0,0,0,.3) 100%);
+    radial-gradient(ellipse 65% 65% at 50% 50%, rgba(0,10,35,.55) 0%, transparent 70%),
+    linear-gradient(180deg, rgba(0,5,20,.35) 0%, transparent 15%, transparent 80%, rgba(0,5,20,.35) 100%);
 }
 
-/* Contenu central */
+/* Contenu central — carte verre dépoli */
 .ov-content {
   position:relative;z-index:2;
   display:flex;flex-direction:column;align-items:center;
   gap:clamp(6px,1.8vh,22px);
-  text-align:center;padding:0 24px;
+  text-align:center;
+  padding:clamp(20px,3vh,40px) clamp(32px,5vw,72px);
+  background:rgba(0,12,40,.40);
+  backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  border-radius:28px;
+  border:1px solid rgba(255,255,255,.12);
+  box-shadow:0 8px 48px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.08);
 }
 .ov-label {
   font-family:var(--f-sub);font-weight:900;
   font-size:clamp(1rem,2.8vw,2.4rem);
   letter-spacing:clamp(6px,1.2vw,14px);text-transform:uppercase;
-  color:rgba(255,255,255,.9);
-  text-shadow:0 0 24px rgba(255,255,255,.3), 0 2px 10px rgba(0,0,0,.7);
+  color:#fff;
+  text-shadow:0 2px 10px rgba(0,0,40,.8), 0 0 22px rgba(0,200,255,.35);
 }
 .ov-equipe {
   font-family:var(--f-sub);font-weight:700;
   font-size:clamp(.85rem,2vw,1.8rem);
   letter-spacing:clamp(4px,.7vw,9px);text-transform:uppercase;
-  color:rgba(255,255,255,.78);
-  text-shadow:0 0 20px rgba(255,255,255,.25);
+  color:rgba(200,235,255,.9);
+  text-shadow:0 0 18px rgba(0,180,255,.3), 0 2px 6px rgba(0,0,40,.6);
 }
 
-/* Chrono — grand, simple, blanc */
+/* Chrono — halo aqua sur fond sombre */
 .ov-digits {
   font-family:var(--f-main);
   font-size:clamp(14rem,42vmin,32rem);
-  line-height:1;letter-spacing:4px;color:#fff;
+  line-height:1;letter-spacing:4px;
+  color:#e8f8ff;
   text-shadow:
-    0 0 60px rgba(255,255,255,.65),
-    0 0 140px rgba(255,255,255,.2),
-    0 6px 40px rgba(0,0,0,.65);
+    0 0 50px rgba(0,210,255,.75),
+    0 0 120px rgba(0,150,255,.35),
+    0 4px 16px rgba(0,0,40,.9);
 }
 .ov-digits.urgent {
-  color:#ffaaaa;
+  color:#ffe8e8;
   text-shadow:
-    0 0 40px rgba(255,80,80,.85),
-    0 0 100px rgba(255,30,30,.35);
+    0 0 40px rgba(255,90,90,.9),
+    0 0 100px rgba(255,40,40,.4),
+    0 4px 16px rgba(40,0,0,.9);
   animation:ovUrgent .45s ease-in-out infinite alternate;
 }
 @keyframes ovUrgent {
   from { transform:scale(1);    filter:brightness(1); }
-  to   { transform:scale(1.04); filter:brightness(1.15); }
+  to   { transform:scale(1.04); filter:brightness(1.18); }
 }
 .ov-hint {
   font-family:var(--f-sub);font-weight:600;
   font-size:clamp(.6rem,1.3vw,1rem);
-  color:rgba(255,255,255,.4);letter-spacing:4px;text-transform:uppercase;
+  color:rgba(180,225,255,.6);letter-spacing:4px;text-transform:uppercase;
 }
 
 /* ── RESPONSIVE ───────────────────────────────────────── */
@@ -735,6 +745,7 @@ const _els = {
   clock:   document.getElementById('top-clock'),
 };
 let _prev = { chronoSec:-1, shotSec:-1, clockMin:-1, barPct:-1, running:null };
+const _exclCells = new Set();  // cellules actuellement en exclusion (évite querySelectorAll à 60fps)
 
 (function mainRaf() {
   // 1. Chrono match
@@ -775,9 +786,9 @@ let _prev = { chronoSec:-1, shotSec:-1, clockMin:-1, barPct:-1, running:null };
     }
   }
 
-  // 3. Exclusion timers (seulement les cartes exclues)
+  // 3. Exclusion timers — O(k) avec k = nb joueurs exclus actifs (pas de querySelectorAll)
   const now = Date.now() / 1000;
-  document.querySelectorAll('.player-cell.excl').forEach(c => {
+  _exclCells.forEach(c => {
     const end = parseFloat(c.dataset.end) || 0;
     const sp  = c.querySelector('.excl-timer');
     if (sp && end > 0) sp.textContent = Math.max(0, Math.ceil(end - now));
@@ -793,94 +804,107 @@ let _prev = { chronoSec:-1, shotSec:-1, clockMin:-1, barPct:-1, running:null };
   requestAnimationFrame(mainRaf);
 })();
 
-/* ── WebGL Fluid Gradient (fond overlay TM / Pause) ── */
+/* ── WebGL Warp – algorithme exact @paper-design/shaders/warp.js (WebGL2→WebGL1) ── */
+/* Colors: hsl(203,100%,62%) hsl(255,100%,72%) hsl(158,99%,59%) hsl(264,100%,61%)   */
+let startGlLoop = () => {};
+let stopGlLoop  = () => {};
 (function initFluidBg() {
   const canvas = document.getElementById('fluid-bg');
   if (!canvas) return;
-  const gl = canvas.getContext('webgl', { antialias: true, premultipliedAlpha: false });
+  const gl = canvas.getContext('webgl', { antialias:false, premultipliedAlpha:false });
   if (!gl) return;
 
-  // Palette : bleu profond sombre → touches de bleu ciel clair
-  const PALETTE = [[0.01,0.02,0.10],[0.02,0.10,0.32],[0.05,0.30,0.58],[0.40,0.72,0.88]];
+  /* Vertex: calcule v_uv en coordonnées CSS (≡ patternUV du lib) */
+  const vert = `attribute vec2 a_pos;uniform vec2 u_res;varying vec2 v_uv;
+void main(){gl_Position=vec4(a_pos,0.0,1.0);v_uv=a_pos*0.5*u_res*0.01;}`;
 
-  const vert = `attribute vec2 p;void main(){gl_Position=vec4(p,0.0,1.0);}`;
-  const frag = `
-precision highp float;
-uniform vec2 u_res;uniform float u_time;uniform vec3 u_c0,u_c1,u_c2,u_c3;
-vec3 permute(vec3 x){return mod(((x*34.0)+1.0)*x,289.0);}
-float snoise(vec2 v){
-  const vec4 C=vec4(0.211324865405187,0.366025403784439,-0.577350269189626,0.024390243902439);
-  vec2 i=floor(v+dot(v,C.yy));vec2 x0=v-i+dot(i,C.xx);
-  vec2 i1=(x0.x>x0.y)?vec2(1.0,0.0):vec2(0.0,1.0);
-  vec4 x12=x0.xyxy+C.xxzz;x12.xy-=i1;i=mod(i,289.0);
-  vec3 perm=permute(permute(i.y+vec3(0.0,i1.y,1.0))+i.x+vec3(0.0,i1.x,1.0));
-  vec3 m=max(0.5-vec3(dot(x0,x0),dot(x12.xy,x12.xy),dot(x12.zw,x12.zw)),0.0);
-  m=m*m;m=m*m;
-  vec3 x=2.0*fract(perm*C.www)-1.0;vec3 h=abs(x)-0.5;vec3 ox=floor(x+0.5);vec3 a0=x-ox;
-  m*=1.79284291400159-0.85373472095314*(a0*a0+h*h);
-  vec3 g;g.x=a0.x*x0.x+h.x*x0.y;g.yz=a0.yz*x12.xz+h.yz*x12.yw;
-  return 130.0*dot(m,g);}
-float fbm(vec2 p){float v=0.0,a=0.5;for(int i=0;i<5;i++){v+=a*snoise(p);p*=2.0;a*=0.5;}return v;}
+  /* Fragment: warp.js converti WebGL1, valueNoise procédural (hash21 du lib) */
+  const frag = `precision mediump float;
+uniform float u_time;varying vec2 v_uv;
+#define TWO_PI 6.28318530718
+const vec3 C0=vec3(0.240,0.710,1.000);
+const vec3 C1=vec3(0.870,0.950,1.000);
+const vec3 C2=vec3(0.200,0.867,1.000);
+const vec3 C3=vec3(0.020,0.300,0.750);
+float rG(vec2 p){
+  vec2 q=fract(floor(p)*vec2(0.3183099,0.3678794))+0.1;
+  q+=dot(q,q+19.19);return fract(q.x*q.y);
+}
+float vNoise(vec2 s){
+  vec2 i=floor(s),f=fract(s),u=f*f*(3.0-2.0*f);
+  return mix(mix(rG(i),rG(i+vec2(1,0)),u.x),mix(rG(i+vec2(0,1)),rG(i+vec2(1,1)),u.x),u.y);
+}
+vec3 grad4(float t){
+  float m=t*3.0;
+  vec3 c=mix(C0,C1,clamp(m,0.0,1.0));
+  c=mix(c,C2,clamp(m-1.0,0.0,1.0));
+  c=mix(c,C3,clamp(m-2.0,0.0,1.0));
+  return c;
+}
 void main(){
-  vec2 uv=gl_FragCoord.xy/u_res.xy;vec2 p=uv;p.x*=u_res.x/u_res.y;p*=0.55;
-  float t=u_time*0.014;
-  vec2 q=vec2(fbm(p+t),fbm(p+vec2(5.2,1.3)-t));
-  vec2 r=vec2(fbm(p+1.8*q+vec2(8.3,2.8)+t*0.6),fbm(p+1.8*q+vec2(1.2,9.1)-t*0.4));
-  float n=fbm(p+2.0*r)*0.5+0.5;
-  vec3 col=mix(u_c0,u_c1,smoothstep(0.0,0.4,n));
-  col=mix(col,u_c2,smoothstep(0.35,0.7,n));
-  col=mix(col,u_c3,smoothstep(0.65,1.0,n));
-  float grain=fract(sin(dot(gl_FragCoord.xy,vec2(12.99,78.23)))*43758.5)-0.5;
-  col+=grain*0.015;
-  gl_FragColor=vec4(col,1.0);}`;
-
-  function mkShader(type, src) {
-    const s = gl.createShader(type);
-    gl.shaderSource(s, src); gl.compileShader(s); return s;
+  /* Reproduit exactement warp.js main() */
+  vec2 uv=v_uv*0.5;
+  float t=0.0625*(u_time+118.0);
+  /* Distortion (4*u_distortion = 4*0.25 = 1.0) */
+  float n1=vNoise(uv+t),n2=vNoise(uv*2.0-t);
+  float ang=n1*TWO_PI;
+  uv.x+=n2*cos(ang); uv.y+=n2*sin(ang);
+  /* Swirl: i=1..9 (break quand i>=swirlIterations=10) */
+  for(int i=1;i<=9;i++){
+    float fi=float(i);
+    uv.x+=0.8/fi*cos(t+fi*1.5*uv.y);
+    uv.y+=0.8/fi*cos(t+fi*1.0*uv.x);
   }
-  const prog = gl.createProgram();
-  gl.attachShader(prog, mkShader(gl.VERTEX_SHADER, vert));
-  gl.attachShader(prog, mkShader(gl.FRAGMENT_SHADER, frag));
-  gl.linkProgram(prog); gl.useProgram(prog);
+  /* Checks shape: u_shape=0 → sin*cos, shapeScale=0.1, proportion=0.45 */
+  vec2 su=uv*(0.5+3.5*0.1);
+  float shape=0.5+0.5*sin(su.x)*cos(su.y);
+  shape+=0.48*sign(0.45-0.5)*pow(abs(0.45-0.5),0.5);
+  shape=clamp(shape,0.0,1.0);
+  /* Color mix softness=1 → linéaire pur */
+  vec3 col=grad4(shape);
+  /* Dithering anti-banding (colorBandingFix du lib) */
+  col+=1.0/256.0*(fract(sin(dot(0.014*gl_FragCoord.xy,vec2(12.9898,78.233)))*43758.5453)-0.5);
+  gl_FragColor=vec4(col,1.0);
+}`;
 
-  const buf = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, buf);
-  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1,1,-1,-1,1,1,1]), gl.STATIC_DRAW);
-  const loc = gl.getAttribLocation(prog, 'p');
+  function mkShader(type,src){const s=gl.createShader(type);gl.shaderSource(s,src);gl.compileShader(s);return s;}
+  const prog=gl.createProgram();
+  gl.attachShader(prog,mkShader(gl.VERTEX_SHADER,vert));
+  gl.attachShader(prog,mkShader(gl.FRAGMENT_SHADER,frag));
+  gl.linkProgram(prog);gl.useProgram(prog);
+
+  const buf=gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER,buf);
+  gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,1,1]),gl.STATIC_DRAW);
+  const loc=gl.getAttribLocation(prog,'a_pos');
   gl.enableVertexAttribArray(loc);
-  gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+  gl.vertexAttribPointer(loc,2,gl.FLOAT,false,0,0);
 
-  const U = {
-    res:  gl.getUniformLocation(prog,'u_res'),
-    time: gl.getUniformLocation(prog,'u_time'),
-    c0:   gl.getUniformLocation(prog,'u_c0'),
-    c1:   gl.getUniformLocation(prog,'u_c1'),
-    c2:   gl.getUniformLocation(prog,'u_c2'),
-    c3:   gl.getUniformLocation(prog,'u_c3'),
-  };
-  PALETTE.forEach((c, i) => gl.uniform3fv(U['c'+i], c));
+  const U={res:gl.getUniformLocation(prog,'u_res'),time:gl.getUniformLocation(prog,'u_time')};
 
-  function resize() {
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    canvas.width  = innerWidth  * dpr;
-    canvas.height = innerHeight * dpr;
-    canvas.style.width  = innerWidth  + 'px';
-    canvas.style.height = innerHeight + 'px';
-    gl.viewport(0, 0, canvas.width, canvas.height);
-    gl.uniform2f(U.res, canvas.width, canvas.height);
+  function resize(){
+    const dpr=Math.min(window.devicePixelRatio||1,1.5);
+    canvas.width=innerWidth*dpr; canvas.height=innerHeight*dpr;
+    canvas.style.width=innerWidth+'px'; canvas.style.height=innerHeight+'px';
+    gl.viewport(0,0,canvas.width,canvas.height);
+    gl.uniform2f(U.res,innerWidth,innerHeight); // CSS pixels comme le lib
   }
-  window.addEventListener('resize', resize); resize();
+  window.addEventListener('resize',resize); resize();
 
-  // Throttle à 24 fps max — animation fluide sans saturer le GPU
-  let _glLast = 0;
-  const GL_MS = 1000 / 24;
-  (function loop(ts) {
-    requestAnimationFrame(loop);
-    if (ts - _glLast < GL_MS) return;
-    _glLast = ts;
-    gl.uniform1f(U.time, ts * 0.001);
-    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-  })(0);
+  let _glLast=0,_glRun=false;
+  const GL_MS=1000/24;
+  startGlLoop=function(){
+    if(_glRun)return; _glRun=true;
+    (function loop(ts){
+      if(!_glRun)return;
+      requestAnimationFrame(loop);
+      if(ts-_glLast<GL_MS)return;
+      _glLast=ts;
+      gl.uniform1f(U.time,ts*0.001);
+      gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
+    })(0);
+  };
+  stopGlLoop=function(){_glRun=false;};
 })();
 
 /* ── Overlay Temps Mort / Pause ── */
@@ -890,12 +914,13 @@ let ovEndTs    = 0;
 let ovKlaxonFired = false;
 
 const fluidCanvas = document.getElementById('fluid-bg');
+const _ovDigEl    = document.getElementById('ov-digits');
 
 function handleOverlay(ov) {
   const el = document.getElementById('ov-tm');
   if (!ov || !ov.active) {
     el.classList.remove('active');
-    if (fluidCanvas) fluidCanvas.classList.remove('active');
+    if (fluidCanvas) { fluidCanvas.classList.remove('active'); stopGlLoop(); }
     if (ovRafId) { cancelAnimationFrame(ovRafId); ovRafId = null; }
     return;
   }
@@ -918,16 +943,15 @@ function handleOverlay(ov) {
   }
 
   el.classList.add('active');
-  if (fluidCanvas) fluidCanvas.classList.add('active');  // montre le canvas WebGL
+  if (fluidCanvas) { fluidCanvas.classList.add('active'); startGlLoop(); }
 
   if (ovRafId) cancelAnimationFrame(ovRafId);
   (function rafOv() {
     const rem   = Math.max(0, ovEndTs - Date.now() / 1000);
     const mins  = Math.floor(rem / 60);
     const secs  = Math.floor(rem % 60);
-    const digEl = document.getElementById('ov-digits');
-    digEl.textContent = mins + ':' + String(secs).padStart(2, '0');
-    digEl.classList.toggle('urgent', rem <= 10 && rem > 0);
+    _ovDigEl.textContent = mins + ':' + String(secs).padStart(2, '0');
+    _ovDigEl.classList.toggle('urgent', rem <= 10 && rem > 0);
     if (rem > 0) {
       ovRafId = requestAnimationFrame(rafOv);
     } else {
@@ -937,7 +961,7 @@ function handleOverlay(ov) {
         try { sbKlaxon.currentTime = 0; sbKlaxon.play(); } catch(e) {}
       }
       el.classList.remove('active');
-      if (fluidCanvas) fluidCanvas.classList.remove('active');
+      if (fluidCanvas) { fluidCanvas.classList.remove('active'); stopGlLoop(); }
       ovRafId = null;
     }
   })();
@@ -986,12 +1010,14 @@ function goalFX() {
 /* ── Player cells ── */
 function renderCell(cell,info) {
   cell.classList.remove('excl','eda','fouls'); cell.dataset.end='0';
+  _exclCells.delete(cell);
   cell.querySelectorAll('.foul-dots,.excl-timer,.eda-label').forEach(e=>e.remove());
   if (info.state==='EDA') {
     cell.classList.add('eda');
     const s=document.createElement('span'); s.className='eda-label'; s.textContent='EDA'; cell.appendChild(s);
   } else if (info.state==='EXCL') {
     cell.classList.add('excl'); cell.dataset.end=String(info.end_time||0);
+    _exclCells.add(cell);
     const s=document.createElement('span'); s.className='excl-timer';
     s.textContent=Math.max(0,Math.ceil((info.end_time||0)-Date.now()/1000)); cell.appendChild(s);
   } else if (info.fautes>0) {
@@ -1002,6 +1028,7 @@ function renderCell(cell,info) {
   }
 }
 function updatePlayers(players) {
+  _exclCells.clear();
   document.querySelectorAll('.player-cell').forEach(c=>{
     c.classList.remove('excl','eda','fouls'); c.dataset.end='0';
     c.querySelectorAll('.foul-dots,.excl-timer,.eda-label').forEach(e=>e.remove());
