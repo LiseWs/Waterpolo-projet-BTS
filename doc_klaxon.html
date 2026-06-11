@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Documentation Klaxon – WaterPolo BTS</title>
+<style>
+  @page { margin: 20mm 18mm; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    font-size: 12px;
+    color: #1a1a2e;
+    line-height: 1.6;
+    background: #fff;
+    padding: 10px 0;
+  }
+
+  /* ── En-tête ── */
+  .cover {
+    background: linear-gradient(135deg, #0f0f1a 0%, #1a1a3e 100%);
+    color: #fff;
+    padding: 32px 36px 28px;
+    border-radius: 8px;
+    margin-bottom: 28px;
+  }
+  .cover h1 {
+    font-size: 22px;
+    font-weight: 900;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: #60a5fa;
+    margin-bottom: 4px;
+  }
+  .cover .subtitle {
+    font-size: 13px;
+    color: #94a3b8;
+    margin-bottom: 16px;
+  }
+  .cover .meta {
+    display: flex;
+    gap: 20px;
+    font-size: 11px;
+    color: #64748b;
+  }
+  .cover .meta span { background: rgba(255,255,255,.07); padding: 3px 10px; border-radius: 4px; }
+
+  /* ── Sections ── */
+  h2 {
+    font-size: 14px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: .8px;
+    color: #1e3a5f;
+    border-left: 4px solid #3b82f6;
+    padding-left: 10px;
+    margin: 24px 0 12px;
+  }
+  h3 {
+    font-size: 12px;
+    font-weight: 700;
+    color: #1e3a5f;
+    margin: 16px 0 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+  }
+  .badge-dashboard { background: #1e3a5f; color: #93c5fd; }
+  .badge-scoreboard { background: #14532d; color: #86efac; }
+  .badge-cond { background: #431407; color: #fde68a; }
+
+  /* ── Code ── */
+  pre {
+    background: #0f172a;
+    color: #e2e8f0;
+    border-radius: 6px;
+    padding: 14px 16px;
+    font-family: 'Courier New', monospace;
+    font-size: 10.5px;
+    line-height: 1.65;
+    overflow: hidden;
+    margin: 8px 0;
+    border-left: 3px solid #3b82f6;
+    page-break-inside: avoid;
+  }
+  .cm  { color: #64748b; font-style: italic; }  /* commentaire */
+  .kw  { color: #93c5fd; }                       /* mot-clé */
+  .fn  { color: #34d399; }                       /* fonction */
+  .str { color: #fbbf24; }                       /* string */
+  .num { color: #f472b6; }                       /* nombre */
+  .var { color: #e2e8f0; }                       /* variable */
+
+  /* ── Explication ── */
+  .expl {
+    background: #f0f9ff;
+    border: 1px solid #bae6fd;
+    border-radius: 6px;
+    padding: 10px 14px;
+    font-size: 11px;
+    color: #0c4a6e;
+    margin: 8px 0 16px;
+    page-break-inside: avoid;
+  }
+  .expl strong { color: #0369a1; }
+
+  /* ── Tableau récap ── */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 11px;
+    margin: 12px 0;
+    page-break-inside: avoid;
+  }
+  th {
+    background: #1e3a5f;
+    color: #e0f2fe;
+    padding: 7px 12px;
+    text-align: left;
+    font-weight: 700;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+  }
+  td {
+    padding: 7px 12px;
+    border-bottom: 1px solid #e2e8f0;
+    vertical-align: top;
+  }
+  tr:nth-child(even) td { background: #f8fafc; }
+  tr:last-child td { border-bottom: none; }
+  td code {
+    background: #1e293b;
+    color: #93c5fd;
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-family: 'Courier New', monospace;
+    font-size: 10px;
+  }
+
+  /* ── Flag explanation boxes ── */
+  .flag-box {
+    display: flex;
+    gap: 12px;
+    background: #fefce8;
+    border: 1px solid #fde68a;
+    border-radius: 6px;
+    padding: 10px 14px;
+    margin: 8px 0;
+    font-size: 11px;
+    color: #713f12;
+    page-break-inside: avoid;
+  }
+  .flag-box .icon { font-size: 16px; flex-shrink: 0; }
+
+  /* ── Séparateur ── */
+  hr { border: none; border-top: 1px solid #e2e8f0; margin: 20px 0; }
+
+  /* ── Print ── */
+  @media print {
+    body { padding: 0; }
+    .cover { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    pre    { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    th     { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════ COUVERTURE ═══════════════════ -->
+<div class="cover">
+  <h1>🔔 Documentation — Klaxon</h1>
+  <div class="subtitle">WaterPolo BTS · Extraction et explication complète du système de klaxon</div>
+  <div class="meta">
+    <span>Projet : WaterPolo-BTS</span>
+    <span>Date : 08/06/2026</span>
+    <span>Fichiers : dashboard_arbitre.html · score_board.html</span>
+  </div>
+</div>
+
+<!-- ═══════════════════ FICHIER 1 : DASHBOARD ═══════════════════ -->
+<h2>Fichier 1 — dashboard_arbitre.html</h2>
+
+<!-- ── Déclaration ── -->
+<h3><span class="badge badge-dashboard">Dashboard</span> Déclaration — chargement du son</h3>
+
+<pre><span class="cm">/* ── Klaxon ─────────────────────────────────────────────── */</span>
+<span class="kw">const</span> <span class="var">klaxon</span> = <span class="kw">new</span> <span class="fn">Audio</span>(<span class="var">CFG</span>.klaxonUrl);
+<span class="var">klaxon</span>.preload = <span class="str">'auto'</span>;
+
+<span class="kw">function</span> <span class="fn">playKlaxon</span>() {
+    <span class="kw">try</span> {
+        <span class="var">klaxon</span>.currentTime = <span class="num">0</span>;
+        <span class="var">klaxon</span>.<span class="fn">play</span>();
+    } <span class="kw">catch</span> (e) {}
+}</pre>
+
+<div class="expl">
+  <strong>new Audio(CFG.klaxonUrl)</strong> — crée un objet audio en mémoire pointant vers <code>klaxon.mp3</code> (chemin injecté par Django via la balise <code>{% static %}</code>).<br><br>
+  <strong>preload = 'auto'</strong> — demande au navigateur de télécharger le fichier MP3 immédiatement au chargement de la page, et non au moment où on en a besoin. Évite un délai audible lors du premier déclenchement.<br><br>
+  <strong>currentTime = 0</strong> — remet la tête de lecture à zéro avant chaque lecture. Sans ça, si le son joue encore (ex : deux événements simultanés), <code>play()</code> pourrait être ignoré ou le son ne repartirait pas du début.<br><br>
+  <strong>try / catch (e) {}</strong> — les navigateurs modernes bloquent <code>audio.play()</code> si l'utilisateur n'a pas encore interagi avec la page (politique anti-autoplay). Le <code>catch</code> vide empêche une exception non gérée de planter le reste du script.
+</div>
+
+<hr>
+
+<!-- ── Condition 1 ── -->
+<h3><span class="badge badge-cond">Condition 1</span> Fin du chrono de période (8 min = 0)</h3>
+
+<pre><span class="cm">// Dans dashRaf() — boucle requestAnimationFrame (60×/s)</span>
+<span class="kw">const</span> <span class="var">t</span>  = <span class="fn">timeLeft</span>();   <span class="cm">// secondes restantes (décimales)</span>
+<span class="kw">const</span> <span class="var">tC</span> = Math.<span class="fn">ceil</span>(t); <span class="cm">// arrondi supérieur → valeur affichée</span>
+
+<span class="kw">if</span> (<span class="var">C</span>.running &amp;&amp; <span class="var">t</span> &lt;= <span class="num">0</span> &amp;&amp; !<span class="var">C</span>.alertedEnd) {
+    <span class="var">C</span>.alertedEnd = <span class="kw">true</span>;  <span class="cm">// verrou : ne sonne qu'une seule fois</span>
+    <span class="var">C</span>.running    = <span class="kw">false</span>; <span class="cm">// arrête le chrono côté client</span>
+    <span class="var">C</span>.frozenTime = <span class="num">0</span>;
+    <span class="var">C</span>.startedAt  = <span class="kw">null</span>;
+    <span class="fn">playKlaxon</span>();          <span class="cm">// ← KLAXON SONNE</span>
+}</pre>
+
+<div class="expl">
+  <strong>C.running</strong> — booléen, vrai si le chrono de période est en cours. Empêche le déclenchement si le chrono est déjà arrêté manuellement.<br><br>
+  <strong>t &lt;= 0</strong> — le temps calculé localement (interpolation client) est épuisé. <code>timeLeft()</code> retourne une valeur décimale en secondes basée sur <code>C.frozenTime</code> et <code>C.startedAt</code>.<br><br>
+  <strong>!C.alertedEnd</strong> — sans ce flag, la boucle RAF tournerait 60 fois par seconde et appellerait <code>playKlaxon()</code> 60 fois en une seconde. Ce flag garantit un seul déclenchement par fin de période. Il est remis à <code>false</code> au prochain démarrage du chrono (<code>applyServerChrono</code>).
+</div>
+
+<div class="flag-box">
+  <span class="icon">⚠️</span>
+  <span>Le chrono s'arrête <em>côté client</em> immédiatement (<code>C.running = false</code>). Le serveur est informé séparément. Si la connexion est lente, l'affichage reste figé à 00:00 jusqu'à la prochaine action.</span>
+</div>
+
+<hr>
+
+<!-- ── Condition 2 ── -->
+<h3><span class="badge badge-cond">Condition 2</span> Shot clock expiré (30 s = 0)</h3>
+
+<pre><span class="cm">// Dans dashRaf() — juste après la condition du chrono</span>
+<span class="kw">const</span> <span class="var">raw</span> = <span class="fn">shotLeft</span>();     <span class="cm">// secondes restantes shot clock (décimales)</span>
+<span class="kw">const</span> <span class="var">v</span>   = Math.<span class="fn">ceil</span>(raw); <span class="cm">// arrondi supérieur → valeur affichée</span>
+
+<span class="kw">if</span> (<span class="var">SC</span>.running &amp;&amp; <span class="var">raw</span> &lt;= <span class="num">0</span> &amp;&amp; !<span class="var">SC</span>.alertedEnd &amp;&amp; !<span class="var">shotAutoResetting</span>) {
+    <span class="var">SC</span>.alertedEnd     = <span class="kw">true</span>;  <span class="cm">// verrou anti-doublon (RAF)</span>
+    <span class="fn">playKlaxon</span>();              <span class="cm">// ← KLAXON SONNE</span>
+
+    <span class="var">shotAutoResetting</span> = <span class="kw">true</span>;  <span class="cm">// empêche un 2e appel serveur simultané</span>
+    <span class="fn">api</span>({ action: <span class="str">'shot_expired'</span> }).<span class="fn">then</span>(r =&gt; {
+        <span class="kw">if</span> (r.chrono) <span class="fn">applyServerChrono</span>(r.chrono);
+        <span class="kw">if</span> (r.shot)   <span class="fn">applyServerShot</span>(r.shot);
+        <span class="var">SC</span>.alertedEnd     = <span class="kw">false</span>; <span class="cm">// libère le verrou une fois serveur répondu</span>
+        <span class="var">shotAutoResetting</span> = <span class="kw">false</span>;
+    }).<span class="fn">catch</span>(() =&gt; { <span class="var">shotAutoResetting</span> = <span class="kw">false</span>; });
+}</pre>
+
+<div class="expl">
+  <strong>SC.running</strong> — vrai uniquement si le shot clock tourne. Si le joueur a déjà tiré ou si le clock est en pause, cette condition est fausse → pas de klaxon intempestif.<br><br>
+  <strong>!SC.alertedEnd</strong> — même principe que <code>C.alertedEnd</code> : empêche la boucle RAF d'appeler <code>playKlaxon()</code> 60×/s quand le temps est à 0.<br><br>
+  <strong>!shotAutoResetting</strong> — deuxième verrou distinct. <code>SC.alertedEnd</code> est remis à <code>false</code> dès que le serveur répond (<code>applyServerShot</code>). S'il y a un léger délai réseau et que le RAF tourne encore avec <code>raw &lt;= 0</code>, sans <code>shotAutoResetting</code> une deuxième requête <code>shot_expired</code> serait envoyée au serveur.<br><br>
+  <strong>api({ action: 'shot_expired' })</strong> — notifie le serveur Django pour qu'il réinitialise le shot clock côté base de données. La réponse resynchronise le client (<code>applyServerShot</code>).
+</div>
+
+<!-- ═══════════════════ FICHIER 2 : SCOREBOARD ═══════════════════ -->
+<h2>Fichier 2 — score_board.html</h2>
+
+<!-- ── Déclaration ── -->
+<h3><span class="badge badge-scoreboard">Scoreboard</span> Déclaration — objet audio + flag</h3>
+
+<pre><span class="kw">const</span> <span class="var">sbKlaxon</span>      = <span class="kw">new</span> <span class="fn">Audio</span>(<span class="var">MD</span>.klaxon || <span class="str">''</span>);
+<span class="cm">// MD.klaxon = URL du MP3 injectée par Django</span>
+<span class="cm">// || ''     = si la clé est absente, crée un Audio vide sans crash</span>
+
+<span class="kw">let</span> <span class="var">ovKlaxonFired</span> = <span class="kw">false</span>;
+<span class="cm">// flag : a-t-on déjà sonné pour le temps mort / pause en cours ?</span></pre>
+
+<div class="expl">
+  <strong>sbKlaxon</strong> — objet audio séparé de celui du dashboard. Le scoreboard est une page distincte (second écran) donc chaque page gère son propre son indépendamment.<br><br>
+  <strong>|| ''</strong> — si <code>MD.klaxon</code> est <code>null</code> ou <code>undefined</code>, <code>new Audio('')</code> crée un objet audio vide. Appeler <code>play()</code> dessus lancera une exception attrapée par le <code>try/catch</code> sans planter la page.<br><br>
+  <strong>ovKlaxonFired</strong> — flag global réinitialisé à <code>false</code> au début de chaque nouveau temps mort (dans <code>handleOverlay()</code>).
+</div>
+
+<hr>
+
+<!-- ── Condition 3 ── -->
+<h3><span class="badge badge-cond">Condition 3</span> Fin du temps mort ou pause inter-période</h3>
+
+<pre><span class="cm">// Dans rafOv() — boucle RAF du compte à rebours de l'overlay</span>
+<span class="kw">function</span> <span class="fn">rafOv</span>() {
+    <span class="kw">const</span> <span class="var">rem</span> = Math.<span class="fn">max</span>(<span class="num">0</span>, <span class="var">ovEndTs</span> - Date.<span class="fn">now</span>() / <span class="num">1000</span>); <span class="cm">// sec restantes</span>
+
+    <span class="cm">// ... mise à jour affichage des chiffres (1:00 → 0:00) ...</span>
+
+    <span class="kw">if</span> (<span class="var">rem</span> &gt; <span class="num">0</span>) {
+        <span class="var">ovRafId</span> = <span class="fn">requestAnimationFrame</span>(rafOv); <span class="cm">// continue le countdown</span>
+    } <span class="kw">else</span> {
+        <span class="cm">// rem == 0 → temps mort / pause terminé(e)</span>
+
+        <span class="kw">if</span> (!<span class="var">ovKlaxonFired</span>) {      <span class="cm">// verrou : sonner UNE seule fois</span>
+            <span class="var">ovKlaxonFired</span> = <span class="kw">true</span>;
+            <span class="kw">try</span> {
+                <span class="var">sbKlaxon</span>.currentTime = <span class="num">0</span>;
+                <span class="var">sbKlaxon</span>.<span class="fn">play</span>();    <span class="cm">// ← KLAXON SONNE</span>
+            } <span class="kw">catch</span>(e) {}
+        }
+
+        <span class="var">el</span>.classList.<span class="fn">remove</span>(<span class="str">'active'</span>);           <span class="cm">// cache l'overlay TM/Pause</span>
+        <span class="kw">if</span> (<span class="var">fluidCanvas</span>) <span class="var">fluidCanvas</span>.classList.<span class="fn">remove</span>(<span class="str">'active'</span>); <span class="cm">// éteint le fond WebGL</span>
+        <span class="var">ovRafId</span> = <span class="kw">null</span>;                          <span class="cm">// arrête la boucle RAF</span>
+    }
+}</pre>
+
+<div class="expl">
+  <strong>ovEndTs</strong> — timestamp Unix (en secondes) de la fin du temps mort, envoyé par le serveur dans la réponse API. La soustraction <code>ovEndTs - Date.now()/1000</code> donne le temps restant en temps réel, sans dérive.<br><br>
+  <strong>rafOv() récursive</strong> — tant que <code>rem &gt; 0</code>, la fonction se réappelle via <code>requestAnimationFrame</code> (~60×/s). Quand <code>rem = 0</code>, elle ne se réappelle plus → la boucle s'arrête naturellement.<br><br>
+  <strong>!ovKlaxonFired</strong> — même logique que les autres verrous : au moment précis où <code>rem</code> passe à 0, RAF peut encore appeler <code>rafOv</code> une ou deux fois. Ce flag empêche plusieurs sons simultanés.<br><br>
+  <strong>Réinitialisation de ovKlaxonFired</strong> — dans <code>handleOverlay()</code>, dès qu'un nouveau temps mort commence : <code>ovKlaxonFired = false</code>. Sans ça, le flag resterait <code>true</code> et les temps morts suivants ne sonneraient jamais.
+</div>
+
+<!-- ═══════════════════ TABLEAU RÉCAPITULATIF ═══════════════════ -->
+<h2>Tableau récapitulatif</h2>
+
+<table>
+  <thead>
+    <tr>
+      <th>#</th>
+      <th>Fichier</th>
+      <th>Événement déclencheur</th>
+      <th>Fonction appelée</th>
+      <th>Flag anti-doublon</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>1</td>
+      <td>dashboard_arbitre.html</td>
+      <td>Chrono de période atteint 0</td>
+      <td><code>playKlaxon()</code></td>
+      <td><code>C.alertedEnd</code></td>
+    </tr>
+    <tr>
+      <td>2</td>
+      <td>dashboard_arbitre.html</td>
+      <td>Shot clock 30 s atteint 0</td>
+      <td><code>playKlaxon()</code></td>
+      <td><code>SC.alertedEnd</code> + <code>shotAutoResetting</code></td>
+    </tr>
+    <tr>
+      <td>3</td>
+      <td>score_board.html</td>
+      <td>Temps mort ou pause inter-période terminé</td>
+      <td><code>sbKlaxon.play()</code></td>
+      <td><code>ovKlaxonFired</code></td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- ═══════════════════ FICHIER SON ═══════════════════ -->
+<h2>Fichier son</h2>
+
+<div class="expl">
+  <strong>Emplacement :</strong> <code>Django/gestion/static/gestion/klaxon.mp3</code><br><br>
+  <strong>Remplacement :</strong> tu peux substituer n'importe quel fichier <code>.mp3</code> en conservant ce nom exact. Le chemin est résolu par Django au démarrage du serveur via <code>{% static 'gestion/klaxon.mp3' %}</code> et transmis au JavaScript dans un objet JSON embarqué dans la page HTML.
+</div>
+
+<hr>
+<p style="font-size:10px;color:#94a3b8;text-align:center;margin-top:16px;">
+  WaterPolo BTS — Documentation générée le 08/06/2026
+</p>
+
+</body>
+</html>

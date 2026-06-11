@@ -10,6 +10,9 @@ __pycache__/
 venv/
 env/
 
+# Node
+node_modules/
+
 # Outils Claude (doivent rester en local uniquement)
 .claude/
 CLAUDE.md
