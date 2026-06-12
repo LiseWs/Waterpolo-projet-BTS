@@ -188,9 +188,11 @@ def accueil(request):
 
             return redirect('compo_equipe', match_id=match.id)
 
+    matches_existants = Match.objects.order_by('-date_match', '-id')[:30]
     return render(request, 'gestion/accueil.html', {
         'equipes': equipes_existantes,
         'sponsors_globaux': sponsors_globaux,
+        'matches_existants': matches_existants,
         'equipes_logos_json': json.dumps(equipes_logos),
     })
 
@@ -644,7 +646,7 @@ def api_match_action(request, match_id):
             match.save(update_fields=_CLOCK_FIELDS)
 
         elif action == 'E':
-            # Exclusion → arrêt + timer exclusion + shot clock gelé (reset manuel 18/28)
+            # Exclusion → arrêt + timer exclusion + shot clock reset à duree_exclusion
             joueur.nb_fautes_personnelles += 1
             joueur.est_exclu = True
             joueur.fin_exclusion = timezone.now() + timedelta(seconds=match.duree_exclusion)
@@ -656,17 +658,32 @@ def api_match_action(request, match_id):
                 'fin_exclusion', 'est_exclu_definitif',
             ])
             _stop_clocks(match)
+            _reset_shot(match, match.duree_exclusion)
             match.save(update_fields=_CLOCK_FIELDS)
 
-        elif action in ('EDA', 'EDAP'):
-            # Exclusion définitive → arrêt + joueur hors jeu définitivement
+        elif action == 'EDA':
+            # Exclusion définitive immédiate
             joueur.est_exclu_definitif = True
             joueur.est_exclu = False
+            joueur.fin_exclusion = None
             joueur.nb_fautes_personnelles += 1
             joueur.save(update_fields=[
-                'est_exclu_definitif', 'est_exclu', 'nb_fautes_personnelles',
+                'est_exclu_definitif', 'est_exclu', 'fin_exclusion', 'nb_fautes_personnelles',
             ])
             _stop_clocks(match)
+            match.save(update_fields=_CLOCK_FIELDS)
+
+        elif action == 'EDAP':
+            # Exclusion définitive après 4 minutes — timer visible, puis croix
+            joueur.est_exclu_definitif = True
+            joueur.est_exclu = True
+            joueur.fin_exclusion = timezone.now() + timedelta(seconds=240)
+            joueur.nb_fautes_personnelles += 1
+            joueur.save(update_fields=[
+                'est_exclu_definitif', 'est_exclu', 'fin_exclusion', 'nb_fautes_personnelles',
+            ])
+            _stop_clocks(match)
+            _reset_shot(match, 240)
             match.save(update_fields=_CLOCK_FIELDS)
 
         elif action == 'CR':
@@ -683,7 +700,17 @@ def api_match_action(request, match_id):
             _stop_clocks(match)
             match.save(update_fields=_CLOCK_FIELDS)
 
-        # CJ€ : avertissement équipe — pas d'arrêt ni exclusion (purement administratif)
+        # CJ€ : carton jaune individuel — 2ème = exclusion définitive
+        elif action == 'CJ€':
+            if joueur:
+                joueur.nb_cartons_jaunes += 1
+                if joueur.nb_cartons_jaunes >= 2:
+                    joueur.est_exclu_definitif = True
+                    joueur.est_exclu = False
+                    joueur.fin_exclusion = None
+                    _stop_clocks(match)
+                    match.save(update_fields=_CLOCK_FIELDS)
+                joueur.save(update_fields=['nb_cartons_jaunes', 'est_exclu_definitif', 'est_exclu', 'fin_exclusion'])
 
         Evenement.objects.create(
             match=match, type_action=action,
@@ -717,6 +744,14 @@ def api_match_action(request, match_id):
                     j.est_exclu_definitif = False
             elif evt.type_action in ('EDA', 'EDAP'):
                 j.est_exclu_definitif = False
+                j.est_exclu = False
+                j.fin_exclusion = None
+            j.save()
+        elif evt.type_action == 'CJ€' and evt.joueur:
+            j = evt.joueur
+            j.nb_cartons_jaunes = max(0, j.nb_cartons_jaunes - 1)
+            if j.nb_cartons_jaunes < 2:
+                j.est_exclu_definitif = False
             j.save()
 
         evt.delete()
@@ -735,6 +770,7 @@ def api_match_action(request, match_id):
             'est_exclu':       _joueur.est_exclu,
             'fin_exclusion_ts': (_joueur.fin_exclusion.timestamp()
                                  if _joueur.fin_exclusion else 0),
+            'nb_cartons_jaunes': _joueur.nb_cartons_jaunes,
         }
 
     resp = {
@@ -798,18 +834,24 @@ def api_match_state(request, match_id):
     match = get_object_or_404(Match, id=match_id)
 
     players_state = {}
+    now_ts = timezone.now().timestamp()
     for p in Participation.objects.filter(match=match):
-        if p.est_exclu_definitif:
+        fin_ts = p.fin_exclusion.timestamp() if p.fin_exclusion else 0
+        if p.est_exclu_definitif and p.est_exclu and fin_ts > now_ts:
+            # EDAP : exclu définitif mais timer 4 min encore actif
+            state, end_time = 'EDAP', fin_ts
+        elif p.est_exclu_definitif:
             state, end_time = 'EDA', 0
         elif p.est_exclu and p.fin_exclusion:
             state = 'EXCL'
-            end_time = p.fin_exclusion.timestamp()
+            end_time = fin_ts
         else:
             state, end_time = 'OK', 0
         players_state[p.id] = {
             'state':   state,
             'end_time': end_time,
             'fautes':  p.nb_fautes_personnelles,
+            'cartons_jaunes': p.nb_cartons_jaunes,
             'side':    p.equipe_concernee,
             'bonnet':  p.numero_bonnet,
         }

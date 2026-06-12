@@ -157,6 +157,7 @@ class Participation(models.Model):
 
     # État (fautes & exclusions)
     nb_fautes_personnelles = models.IntegerField(default=0)
+    nb_cartons_jaunes = models.IntegerField(default=0)
     est_exclu = models.BooleanField(default=False)
     fin_exclusion = models.DateTimeField(null=True, blank=True)
     est_exclu_definitif = models.BooleanField(default=False)

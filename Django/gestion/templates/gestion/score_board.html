@@ -38,8 +38,8 @@
   --ch-sz:    clamp(3rem,8vw,10rem);
   --shot-sz:  clamp(1.8rem,3.5vw,4.5rem);
   --per-sz:   clamp(.6rem,1vw,1.3rem);
-  --cell-r:   clamp(4px,.5vw,10px);
-  --cell-g:   clamp(2px,.35vw,7px);
+  --cell-r:   clamp(5px,.6vw,12px);
+  --cell-g:   clamp(3px,.4vw,8px);
   --tm-dot:   clamp(7px,1.1vw,18px);
   /* Hauteur barre sponsors — configurable via match.scoreboard_sponsor_height */
   --sponsors-bar-h: {{ match.scoreboard_sponsor_height }}vh;
@@ -280,8 +280,8 @@ body::before{
 .players-zone{
   position:relative;z-index:2;
   display:flex;flex-direction:column;
-  gap:clamp(4px,.6vh,10px);
-  padding:clamp(6px,.8vh,14px) clamp(12px,2vw,48px);
+  gap:clamp(6px,1vh,16px);
+  padding:clamp(8px,1.2vh,20px) clamp(12px,2vw,48px);
   background:var(--bg2);
   border-top:1px solid var(--bord);
   border-bottom:1px solid var(--bord);
@@ -331,7 +331,23 @@ body::before{
   background:#060810;border:2px solid var(--red)!important;
   box-shadow:0 0 clamp(8px,1.2vw,20px) rgba(255,23,68,.6),inset 0 0 8px rgba(255,23,68,.1);
 }
-.eda-label{font-family:var(--f-main);font-size:clamp(.55rem,.8vw,1.2rem);color:var(--red);text-shadow:0 0 8px rgba(255,23,68,.8);}
+.eda-label{font-family:var(--f-main);font-size:clamp(1rem,1.6vw,2.2rem);color:var(--red);text-shadow:0 0 8px rgba(255,23,68,.8);font-weight:900;}
+.player-cell.edap{
+  background:rgba(60,0,0,.9);border:2px solid #7f1d1d!important;
+  box-shadow:0 0 clamp(6px,1vw,16px) rgba(180,28,28,.5);
+  animation:exclPulse 1.2s ease-in-out infinite;
+}
+.edap-timer{font-family:var(--f-main);font-size:clamp(.55rem,.8vw,1.2rem);color:#fca5a5;text-shadow:0 0 6px rgba(252,165,165,.7);}
+.edap-lbl{font-size:clamp(.4rem,.55vw,.85rem);color:#7f1d1d;opacity:.8;}
+/* Carton jaune */
+.cj-indicator{
+  position:absolute;bottom:clamp(2px,.3vh,4px);right:clamp(2px,.3vw,4px);
+  width:clamp(5px,.65vw,10px);height:clamp(6px,.85vh,14px);
+  background:#facc15;border-radius:1px;display:none;
+  box-shadow:0 0 4px rgba(250,204,21,.7);
+}
+.cj-indicator.cj2{background:#f97316;}
+.cj-indicator.show{display:block;}
 
 /* ── GOAL FX ──────────────────────────────────────────── */
 #goal-flash{position:fixed;inset:0;z-index:8888;pointer-events:none;opacity:0;background:radial-gradient(circle at 50% 40%,rgba(0,212,255,.25) 0%,transparent 60%);}
@@ -790,8 +806,14 @@ const _exclCells = new Set();  // cellules actuellement en exclusion (évite que
   const now = Date.now() / 1000;
   _exclCells.forEach(c => {
     const end = parseFloat(c.dataset.end) || 0;
+    const rem = Math.max(0, Math.ceil(end - now));
     const sp  = c.querySelector('.excl-timer');
-    if (sp && end > 0) sp.textContent = Math.max(0, Math.ceil(end - now));
+    if (sp && end > 0) sp.textContent = rem;
+    const et  = c.querySelector('.edap-timer');
+    if (et && end > 0) {
+      const mm = Math.floor(rem / 60), ss = rem % 60;
+      et.textContent = String(mm).padStart(2,'0') + ':' + String(ss).padStart(2,'0');
+    }
   });
 
   // 4. Horloge (mise à jour seulement au changement de minute)
@@ -1009,17 +1031,33 @@ function goalFX() {
 
 /* ── Player cells ── */
 function renderCell(cell,info) {
-  cell.classList.remove('excl','eda','fouls'); cell.dataset.end='0';
+  cell.classList.remove('excl','eda','edap','fouls'); cell.dataset.end='0';
   _exclCells.delete(cell);
-  cell.querySelectorAll('.foul-dots,.excl-timer,.eda-label').forEach(e=>e.remove());
+  cell.querySelectorAll('.foul-dots,.excl-timer,.eda-label,.edap-timer,.edap-lbl,.cj-indicator').forEach(e=>e.remove());
+  // Carton(s) jaune(s)
+  const nbCj = info.cartons_jaunes || 0;
+  if (nbCj > 0) {
+    const cj=document.createElement('span');
+    cj.className='cj-indicator show' + (nbCj>=2?' cj2':'');
+    cell.appendChild(cj);
+  }
   if (info.state==='EDA') {
     cell.classList.add('eda');
-    const s=document.createElement('span'); s.className='eda-label'; s.textContent='EDA'; cell.appendChild(s);
+    const s=document.createElement('span'); s.className='eda-label'; s.textContent='✕'; cell.appendChild(s);
+  } else if (info.state==='EDAP') {
+    cell.classList.add('edap'); cell.dataset.end=String(info.end_time||0);
+    _exclCells.add(cell);
+    const rem=Math.max(0,Math.ceil((info.end_time||0)-Date.now()/1000));
+    const mm=Math.floor(rem/60), ss=rem%60;
+    const t=document.createElement('span'); t.className='edap-timer';
+    t.textContent=String(mm).padStart(2,'0')+':'+String(ss).padStart(2,'0'); cell.appendChild(t);
+    const l=document.createElement('span'); l.className='edap-lbl'; l.textContent='EDAP'; cell.appendChild(l);
   } else if (info.state==='EXCL') {
     cell.classList.add('excl'); cell.dataset.end=String(info.end_time||0);
     _exclCells.add(cell);
+    const rem=Math.max(0,Math.ceil((info.end_time||0)-Date.now()/1000));
     const s=document.createElement('span'); s.className='excl-timer';
-    s.textContent=Math.max(0,Math.ceil((info.end_time||0)-Date.now()/1000)); cell.appendChild(s);
+    s.textContent=rem; cell.appendChild(s);
   } else if (info.fautes>0) {
     cell.classList.add('fouls');
     const w=document.createElement('div'); w.className='foul-dots';
@@ -1030,8 +1068,8 @@ function renderCell(cell,info) {
 function updatePlayers(players) {
   _exclCells.clear();
   document.querySelectorAll('.player-cell').forEach(c=>{
-    c.classList.remove('excl','eda','fouls'); c.dataset.end='0';
-    c.querySelectorAll('.foul-dots,.excl-timer,.eda-label').forEach(e=>e.remove());
+    c.classList.remove('excl','eda','edap','fouls'); c.dataset.end='0';
+    c.querySelectorAll('.foul-dots,.excl-timer,.eda-label,.edap-timer,.edap-lbl,.cj-indicator').forEach(e=>e.remove());
   });
   for (const [,info] of Object.entries(players)) {
     const side=(info.side||'').toLowerCase()==='dom'?'dom':'ext';

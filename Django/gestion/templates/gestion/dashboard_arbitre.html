@@ -469,7 +469,7 @@
             position: absolute; inset: 0; display: none;
             align-items: center; justify-content: center;
             font-size: 0.95rem; font-weight: 900; z-index: 5;
-            border-radius: var(--r-sm);
+            border-radius: var(--r-sm); flex-direction: column; gap: 2px;
         }
         .p-overlay.excl {
             display: flex; background: rgba(185,28,28,.93); cursor: not-allowed;
@@ -481,8 +481,25 @@
         .p-overlay.eda {
             display: flex; background: rgba(0,0,0,.88);
             color: var(--excl); border: 2px solid var(--excl);
-            cursor: not-allowed; font-size: 0.85rem;
+            cursor: not-allowed;
         }
+        .p-overlay.edap {
+            display: flex; background: rgba(60,0,0,.93);
+            color: #fca5a5; border: 2px solid #7f1d1d;
+            cursor: not-allowed;
+        }
+        .ov-cross { font-size: 1.6rem; line-height: 1; }
+        .ov-timer { font-size: 0.75rem; opacity: .85; }
+        .ov-excl-timer { font-size: 1rem; font-variant-numeric: tabular-nums; }
+        /* Indicateur carton jaune sur la carte joueur */
+        .cj-badge {
+            position: absolute; top: 2px; right: 2px;
+            width: 10px; height: 13px; border-radius: 2px;
+            background: #facc15; display: none; z-index: 4;
+            box-shadow: 0 0 4px rgba(250,204,21,.7);
+        }
+        .cj-badge.cj2 { background: #f97316; }
+        .cj-badge.visible { display: block; }
         @keyframes pulse-ready {
             0%,100% { transform: scale(1); }
             50%      { transform: scale(1.02); }
@@ -899,10 +916,21 @@
                 {% for p in joueurs_dom %}
                 <article class="pcard" id="card-{{ p.id }}"
                          data-excl-end="{{ p.fin_exclusion|date:'U'|default:'0' }}"
-                         data-eda="{{ p.est_exclu_definitif|yesno:'true,false' }}">
-                    <div class="p-overlay {% if p.est_exclu_definitif %}eda{% endif %}"
+                         data-eda="{{ p.est_exclu_definitif|yesno:'true,false' }}"
+                         data-edap="{% if p.est_exclu_definitif and p.est_exclu %}true{% else %}false{% endif %}"
+                         data-cj="{{ p.nb_cartons_jaunes }}">
+                    <div class="cj-badge {% if p.nb_cartons_jaunes == 2 %}cj2{% endif %} {% if p.nb_cartons_jaunes > 0 %}visible{% endif %}"
+                         id="cj-{{ p.id }}"></div>
+                    <div class="p-overlay {% if p.est_exclu_definitif %}{% if p.est_exclu %}edap{% else %}eda{% endif %}{% endif %}"
                          id="ov-{{ p.id }}" data-pid="{{ p.id }}">
-                        <span id="ovtxt-{{ p.id }}">{% if p.est_exclu_definitif %}EDA{% endif %}</span>
+                        {% if p.est_exclu_definitif and not p.est_exclu %}
+                        <span class="ov-cross">✕</span>
+                        {% elif p.est_exclu_definitif and p.est_exclu %}
+                        <span class="ov-excl-timer" id="ovtxt-{{ p.id }}">4:00</span>
+                        <span class="ov-timer">EDAP</span>
+                        {% else %}
+                        <span class="ov-excl-timer" id="ovtxt-{{ p.id }}"></span>
+                        {% endif %}
                     </div>
                     <div class="pcard-top">
                         <div class="p-num">{{ p.numero_bonnet }}</div>
@@ -930,9 +958,8 @@
                         <button class="abt2 abt2-edap" data-action="EDAP" data-pid="{{ p.id }}" title="Exclusion déf. après 4 min">EDAP</button>
                         <button class="abt2 abt2-a"    data-action="A"    data-pid="{{ p.id }}" title="Accident">A</button>
                         <button class="abt2 abt2-r"    data-action="R"    data-pid="{{ p.id }}" title="Réclamation">R</button>
-                        <button class="abt2 abt2-cje"  data-action="CJ€"  data-pid="{{ p.id }}" title="Carton Jaune Équipe">CJ€</button>
+                        <button class="abt2 abt2-cje"  data-action="CJ€"  data-pid="{{ p.id }}" title="Carton Jaune">CJ</button>
                         <button class="abt2 abt2-cr"   data-action="CR"   data-pid="{{ p.id }}" title="Carton Rouge">CR</button>
-                        <button class="abt2 abt2-tm"   data-action="TM"   data-pid="{{ p.id }}" title="Temps mort">TM</button>
                     </div>
                 </article>
                 {% endfor %}
@@ -979,10 +1006,21 @@
                 {% for p in joueurs_ext %}
                 <article class="pcard" id="card-{{ p.id }}"
                          data-excl-end="{{ p.fin_exclusion|date:'U'|default:'0' }}"
-                         data-eda="{{ p.est_exclu_definitif|yesno:'true,false' }}">
-                    <div class="p-overlay {% if p.est_exclu_definitif %}eda{% endif %}"
+                         data-eda="{{ p.est_exclu_definitif|yesno:'true,false' }}"
+                         data-edap="{% if p.est_exclu_definitif and p.est_exclu %}true{% else %}false{% endif %}"
+                         data-cj="{{ p.nb_cartons_jaunes }}">
+                    <div class="cj-badge {% if p.nb_cartons_jaunes == 2 %}cj2{% endif %} {% if p.nb_cartons_jaunes > 0 %}visible{% endif %}"
+                         id="cj-{{ p.id }}"></div>
+                    <div class="p-overlay {% if p.est_exclu_definitif %}{% if p.est_exclu %}edap{% else %}eda{% endif %}{% endif %}"
                          id="ov-{{ p.id }}" data-pid="{{ p.id }}">
-                        <span id="ovtxt-{{ p.id }}">{% if p.est_exclu_definitif %}EDA{% endif %}</span>
+                        {% if p.est_exclu_definitif and not p.est_exclu %}
+                        <span class="ov-cross">✕</span>
+                        {% elif p.est_exclu_definitif and p.est_exclu %}
+                        <span class="ov-excl-timer" id="ovtxt-{{ p.id }}">4:00</span>
+                        <span class="ov-timer">EDAP</span>
+                        {% else %}
+                        <span class="ov-excl-timer" id="ovtxt-{{ p.id }}"></span>
+                        {% endif %}
                     </div>
                     <div class="pcard-top">
                         <div class="p-num">{{ p.numero_bonnet }}</div>
@@ -1010,9 +1048,8 @@
                         <button class="abt2 abt2-edap" data-action="EDAP" data-pid="{{ p.id }}" title="Exclusion déf. après 4 min">EDAP</button>
                         <button class="abt2 abt2-a"    data-action="A"    data-pid="{{ p.id }}" title="Accident">A</button>
                         <button class="abt2 abt2-r"    data-action="R"    data-pid="{{ p.id }}" title="Réclamation">R</button>
-                        <button class="abt2 abt2-cje"  data-action="CJ€"  data-pid="{{ p.id }}" title="Carton Jaune Équipe">CJ€</button>
+                        <button class="abt2 abt2-cje"  data-action="CJ€"  data-pid="{{ p.id }}" title="Carton Jaune">CJ</button>
                         <button class="abt2 abt2-cr"   data-action="CR"   data-pid="{{ p.id }}" title="Carton Rouge">CR</button>
-                        <button class="abt2 abt2-tm"   data-action="TM"   data-pid="{{ p.id }}" title="Temps mort">TM</button>
                     </div>
                 </article>
                 {% endfor %}
@@ -1036,6 +1073,7 @@
         /* ── Klaxon ───────────────────────────────────────────────────────── */
         const klaxon = new Audio(CFG.klaxonUrl);
         klaxon.preload = 'auto';
+        klaxon.volume = Math.min(1, Math.max(0, parseInt(localStorage.getItem('klaxon_volume') ?? '80', 10) / 100));
         function playKlaxon() {
             try { klaxon.currentTime = 0; klaxon.play(); } catch (e) {}
         }
@@ -1402,14 +1440,25 @@
                     const js = res.joueur_state;
                     const card = document.getElementById('card-' + js.id);
                     if (card) {
-                        if (js.est_exclu_definitif) {
+                        if (js.nb_cartons_jaunes !== undefined) {
+                            card.dataset.cj = String(js.nb_cartons_jaunes);
+                        }
+                        const isEdap = js.est_exclu_definitif && js.est_exclu && js.fin_exclusion_ts > 0;
+                        if (isEdap) {
                             card.dataset.eda     = 'true';
+                            card.dataset.edap    = 'true';
+                            card.dataset.exclEnd = String(js.fin_exclusion_ts);
+                        } else if (js.est_exclu_definitif) {
+                            card.dataset.eda     = 'true';
+                            card.dataset.edap    = 'false';
                             card.dataset.exclEnd = '0';
                         } else if (js.est_exclu && js.fin_exclusion_ts > 0) {
                             card.dataset.eda     = 'false';
+                            card.dataset.edap    = 'false';
                             card.dataset.exclEnd = String(js.fin_exclusion_ts);
                         } else {
                             card.dataset.eda     = 'false';
+                            card.dataset.edap    = 'false';
                             card.dataset.exclEnd = '0';
                         }
                         checkExcl();
@@ -1421,8 +1470,15 @@
                             Math.floor(Date.now() / 1000) + dureeExcl;
                         checkExcl();
                     }
-                    if ((type === 'EDA' || type === 'EDAP') && pId) {
-                        document.getElementById('card-' + pId).dataset.eda = 'true';
+                    if (type === 'EDA' && pId) {
+                        const c = document.getElementById('card-' + pId);
+                        c.dataset.eda = 'true'; c.dataset.edap = 'false'; c.dataset.exclEnd = '0';
+                        checkExcl();
+                    }
+                    if (type === 'EDAP' && pId) {
+                        const c = document.getElementById('card-' + pId);
+                        c.dataset.eda = 'true'; c.dataset.edap = 'true';
+                        c.dataset.exclEnd = String(Math.floor(Date.now() / 1000) + 240);
                         checkExcl();
                     }
                 }
@@ -1546,40 +1602,68 @@
 
         /* ── Overlays exclusions ─────────────────────────────────────────── */
         const prevExclState = {};
+        function fmtSec(s) {
+            s = Math.max(0, Math.ceil(s));
+            return String(Math.floor(s / 60)).padStart(2,'0') + ':' + String(s % 60).padStart(2,'0');
+        }
         function checkExcl() {
             const now = Date.now() / 1000;
             document.querySelectorAll('.pcard').forEach(card => {
-                const id  = card.id.split('-')[1];
-                const ov  = document.getElementById('ov-' + id);
-                const txt = document.getElementById('ovtxt-' + id);
-                if (!ov || !txt) return;
+                const id    = card.id.split('-')[1];
+                const ov    = document.getElementById('ov-' + id);
+                const txt   = document.getElementById('ovtxt-' + id);
+                const cjBdg = document.getElementById('cj-' + id);
+                if (!ov) return;
 
-                if (card.dataset.eda === 'true') {
-                    ov.className    = 'p-overlay eda';
-                    txt.textContent = 'EDA';
+                // Carton(s) jaune(s)
+                const nbCj = parseInt(card.dataset.cj || '0');
+                if (cjBdg) {
+                    cjBdg.classList.toggle('visible', nbCj > 0);
+                    cjBdg.classList.toggle('cj2', nbCj >= 2);
+                }
+
+                // EDA définitif sans timer
+                if (card.dataset.eda === 'true' && card.dataset.edap !== 'true') {
+                    ov.className = 'p-overlay eda';
+                    ov.innerHTML = '<span class="ov-cross">✕</span>';
                     prevExclState[id] = 'eda';
                     return;
                 }
+
                 const end = parseFloat(card.dataset.exclEnd || 0);
                 if (end > 0) {
                     const rem = end - now;
                     if (rem > 0) {
-                        ov.className    = 'p-overlay excl';
-                        txt.textContent = 'E';
+                        const isEdap = card.dataset.edap === 'true';
+                        if (isEdap) {
+                            ov.className = 'p-overlay edap';
+                            ov.innerHTML = '<span class="ov-excl-timer">' + fmtSec(rem) + '</span><span class="ov-timer">EDAP</span>';
+                        } else {
+                            ov.className = 'p-overlay excl';
+                            ov.innerHTML = '<span class="ov-excl-timer">' + fmtSec(rem) + '</span>';
+                        }
                         prevExclState[id] = 'excl';
                     } else {
-                        // Fin d'exclusion → overlay vert "✓ OK" (pas de klaxon selon spec)
-                        ov.className    = 'p-overlay ready';
-                        txt.textContent = '✓ OK';
-                        prevExclState[id] = 'ready';
+                        // Timer expiré
+                        if (card.dataset.edap === 'true') {
+                            // EDAP expiré → croix définitive
+                            ov.className = 'p-overlay eda';
+                            ov.innerHTML = '<span class="ov-cross">✕</span>';
+                            prevExclState[id] = 'eda';
+                        } else {
+                            ov.className    = 'p-overlay ready';
+                            ov.innerHTML    = '✓ OK';
+                            prevExclState[id] = 'ready';
+                        }
                     }
                 } else {
                     ov.className = 'p-overlay';
+                    ov.innerHTML = '';
                     prevExclState[id] = 'none';
                 }
             });
         }
-        setInterval(checkExcl, 400);
+        setInterval(checkExcl, 250);
 
         /* ── API ─────────────────────────────────────────────────────────── */
         const api = payload => {

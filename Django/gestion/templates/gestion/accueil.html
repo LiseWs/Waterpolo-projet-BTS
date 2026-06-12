@@ -13,7 +13,8 @@
         .main-header {
             background: linear-gradient(135deg, #1976d2 0%, #2196f3 100%);
             color: white; padding: 25px 0;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            box-shadow: 0 4px 20px #00000026;
+            
             margin-bottom: 30px;
         }
         .card { border: none; box-shadow: 0 4px 20px rgba(0,0,0,0.08); border-radius: 12px; }
@@ -317,18 +318,6 @@
                             </div>
                         </div>
 
-                        <!-- Composition -->
-                        <div class="param-group">
-                            <h6><i class="bi bi-people-fill"></i> Composition</h6>
-                            <div class="row g-3">
-                                <div class="col-md-6">
-                                    <label class="small fw-bold mb-1">Remplaçants autorisés</label>
-                                    <input type="number" name="nb_remplacants" value="6"
-                                           min="3" max="13" class="form-control" required>
-                                </div>
-                            </div>
-                        </div>
-
                         <!-- ══════════════════════════════════════════════ -->
                         <!-- OFFICIELS                                      -->
                         <!-- ══════════════════════════════════════════════ -->
@@ -522,6 +511,34 @@
                                 </div>
                                 <div class="sb-preview-hint">Désactiver pour un affichage minimaliste</div>
                             </div>
+
+                            <!-- Taille images sponsors -->
+                            <div class="col-md-4">
+                                <label class="small fw-bold mb-2">
+                                    <i class="bi bi-card-image"></i> Taille images sponsors
+                                </label>
+                                <div class="range-wrap">
+                                    <input type="range" name="scoreboard_sponsor_scale"
+                                           id="sb_sponsor_scale" min="40" max="200" value="100"
+                                           oninput="document.getElementById('sb_sponsor_scale_val').textContent = this.value + '%'">
+                                    <span class="range-val" id="sb_sponsor_scale_val">100%</span>
+                                </div>
+                                <div class="sb-preview-hint">40% = petits logos · 200% = grands logos</div>
+                            </div>
+
+                            <!-- Volume klaxon -->
+                            <div class="col-md-4">
+                                <label class="small fw-bold mb-2">
+                                    <i class="bi bi-volume-up-fill"></i> Volume klaxon
+                                </label>
+                                <div class="range-wrap">
+                                    <input type="range" name="klaxon_volume"
+                                           id="klaxon_vol" min="0" max="100" value="80"
+                                           oninput="document.getElementById('klaxon_vol_val').textContent = this.value + '%'">
+                                    <span class="range-val" id="klaxon_vol_val">80%</span>
+                                </div>
+                                <div class="sb-preview-hint">0% = muet · 100% = volume max</div>
+                            </div>
                         </div>
                     </div>
 
@@ -596,6 +613,51 @@
                         pour cette équipe. Pas besoin de le ré-importer au prochain match.
                     </p>
                 </div>
+            </div>
+
+            <!-- HISTORIQUE MATCHS -->
+            <div class="card mt-3">
+                <div class="card-header bg-secondary text-white d-flex align-items-center justify-content-between">
+                    <span><i class="bi bi-clock-history"></i> Matchs précédents</span>
+                    <small class="opacity-75">{{ matches_existants|length }} match{{ matches_existants|length|pluralize }}</small>
+                </div>
+                {% if matches_existants %}
+                <div class="list-group list-group-flush" style="max-height:400px;overflow-y:auto;">
+                    {% for m in matches_existants %}
+                    <div class="list-group-item px-2 py-2">
+                        <div class="d-flex justify-content-between align-items-start mb-1">
+                            <strong class="small text-truncate" style="max-width:150px;"
+                                    title="{{ m.nom_equipe_domicile }} vs {{ m.nom_equipe_exterieur }}">
+                                {{ m.nom_equipe_domicile|truncatechars:12 }}
+                                <span class="text-primary fw-bold">{{ m.score_domicile }}&ndash;{{ m.score_exterieur }}</span>
+                                {{ m.nom_equipe_exterieur|truncatechars:12 }}
+                            </strong>
+                            <span class="badge bg-light text-dark ms-1 flex-shrink-0">P{{ m.periode_actuelle }}</span>
+                        </div>
+                        <div class="small text-muted mb-2">{{ m.date_match|date:"d/m/Y" }}{% if m.competition %} · {{ m.competition|truncatechars:20 }}{% endif %}</div>
+                        <div class="d-flex gap-1 flex-wrap">
+                            <a href="{% url 'dashboard_arbitre' m.id %}"
+                               class="btn btn-xs btn-outline-primary py-0 px-1" style="font-size:.7rem;">
+                               <i class="bi bi-speedometer2"></i> Dashboard
+                            </a>
+                            <a href="{% url 'score_board' m.id %}"
+                               class="btn btn-xs btn-outline-success py-0 px-1" style="font-size:.7rem;">
+                               <i class="bi bi-display"></i> Scoreboard
+                            </a>
+                            <a href="{% url 'export_excel' m.id %}"
+                               class="btn btn-xs btn-outline-secondary py-0 px-1" style="font-size:.7rem;">
+                               <i class="bi bi-file-earmark-excel"></i> FFN
+                            </a>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="card-body text-center text-muted small py-3">
+                    <i class="bi bi-inbox" style="font-size:1.5rem;opacity:.3;"></i>
+                    <p class="mt-1 mb-0">Aucun match enregistré</p>
+                </div>
+                {% endif %}
             </div>
         </div>
     </div>
@@ -739,7 +801,11 @@
         if (dom && ext && dom === ext) {
             e.preventDefault();
             alert('⚠️ Les deux équipes doivent avoir des noms différents !');
+            return;
         }
+        // Sauvegarde volume klaxon en localStorage (pas de champ DB)
+        const vol = document.getElementById('klaxon_vol');
+        if (vol) localStorage.setItem('klaxon_volume', vol.value);
     });
 </script>
 </body>
