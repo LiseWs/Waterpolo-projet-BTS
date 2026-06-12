@@ -6,9 +6,16 @@ from io import BytesIO
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import JsonResponse, HttpResponse
 from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.clickjacking import xframe_options_exempt
 from django.utils import timezone
 
-from .models import Match, Equipe, Joueur, Participation, Evenement, ScorePeriode, Sponsor, SponsorGlobal
+from .models import Match, Equipe, Joueur, Participation, Evenement, ScorePeriode, Sponsor, SponsorGlobal, ReglagesEcran
+
+
+def get_reglages():
+    """Retourne le singleton ReglagesEcran (id=1), le crée si inexistant."""
+    r, _ = ReglagesEcran.objects.get_or_create(id=1)
+    return r
 
 
 # ==========================================
@@ -126,6 +133,7 @@ def accueil(request):
                 # Personnalisation scoreboard
                 scoreboard_score_scale=_post_int('scoreboard_score_scale', 100),
                 scoreboard_sponsor_height=_post_int('scoreboard_sponsor_height', 10),
+                scoreboard_sponsor_scale=_post_int('scoreboard_sponsor_scale', 100),
                 scoreboard_players_visible=(
                     request.POST.get('scoreboard_players_visible') == 'true'),
             )
@@ -646,7 +654,7 @@ def api_match_action(request, match_id):
             match.save(update_fields=_CLOCK_FIELDS)
 
         elif action == 'E':
-            # Exclusion → arrêt + timer exclusion + shot clock reset à duree_exclusion
+            # Exclusion → arrêt + timer exclusion
             joueur.nb_fautes_personnelles += 1
             joueur.est_exclu = True
             joueur.fin_exclusion = timezone.now() + timedelta(seconds=match.duree_exclusion)
@@ -658,7 +666,10 @@ def api_match_action(request, match_id):
                 'fin_exclusion', 'est_exclu_definitif',
             ])
             _stop_clocks(match)
-            _reset_shot(match, match.duree_exclusion)
+            # Règle shot clock : si < 18s au moment de la faute → remettre à 18s, sinon garder
+            SHOT_EXCL_MIN = 18
+            if match.shot_restant < SHOT_EXCL_MIN:
+                _reset_shot(match, SHOT_EXCL_MIN)
             match.save(update_fields=_CLOCK_FIELDS)
 
         elif action == 'EDA':
@@ -683,7 +694,7 @@ def api_match_action(request, match_id):
                 'est_exclu_definitif', 'est_exclu', 'fin_exclusion', 'nb_fautes_personnelles',
             ])
             _stop_clocks(match)
-            _reset_shot(match, 240)
+            _reset_shot(match)   # remet au temps d'attaque du match (temps_possession)
             match.save(update_fields=_CLOCK_FIELDS)
 
         elif action == 'CR':
@@ -795,12 +806,104 @@ def api_match_action(request, match_id):
 # 5. SCOREBOARD PUBLIC
 # ==========================================
 
+@xframe_options_exempt
 def score_board(request, match_id):
     match = get_object_or_404(Match, id=match_id)
+    r = get_reglages()
     return render(request, 'gestion/score_board.html', {
         'match': match,
+        'r': r,
         'range_15': range(1, 16),
+        'team_col': round(r.scoreboard_team_scale / 100, 2),
+        'logo_dom_scale_f': round(r.scoreboard_logo_dom_scale / 100, 2),
+        'logo_ext_scale_f': round(r.scoreboard_logo_ext_scale / 100, 2),
     })
+
+
+def scoreboard_config(request, match_id):
+    match = get_object_or_404(Match, id=match_id)
+    r = get_reglages()
+    offset_blocs = [
+        ('dom', 'Bloc Domicile',  r.scoreboard_offset_dom_x, r.scoreboard_offset_dom_y),
+        ('mid', 'Bloc Centre',    r.scoreboard_offset_mid_x, r.scoreboard_offset_mid_y),
+        ('ext', 'Bloc Extérieur', r.scoreboard_offset_ext_x, r.scoreboard_offset_ext_y),
+    ]
+    score_offsets = [
+        ('dom', 'Score Domicile',   r.scoreboard_offset_score_dom_x, r.scoreboard_offset_score_dom_y),
+        ('ext', 'Score Extérieur',  r.scoreboard_offset_score_ext_x, r.scoreboard_offset_score_ext_y),
+    ]
+    logo_controls = [
+        ('dom', 'Logo Domicile',  r.scoreboard_logo_dom_scale, r.scoreboard_offset_logo_dom_x, r.scoreboard_offset_logo_dom_y),
+        ('ext', 'Logo Extérieur', r.scoreboard_logo_ext_scale, r.scoreboard_offset_logo_ext_x, r.scoreboard_offset_logo_ext_y),
+    ]
+    name_offsets = [
+        ('dom', 'Nom Domicile',   r.scoreboard_offset_name_dom_x, r.scoreboard_offset_name_dom_y),
+        ('ext', 'Nom Extérieur',  r.scoreboard_offset_name_ext_x, r.scoreboard_offset_name_ext_y),
+    ]
+    return render(request, 'gestion/scoreboard_config.html', {
+        'match': match,
+        'r': r,
+        'offset_blocs': offset_blocs,
+        'score_offsets': score_offsets,
+        'logo_controls': logo_controls,
+        'name_offsets': name_offsets,
+    })
+
+
+@csrf_exempt
+def api_scoreboard_settings(request, match_id):
+    """Sauvegarde les réglages visuels globaux (ReglagesEcran — partagés par tous les matchs)."""
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST only'}, status=405)
+    # match_id sert uniquement à vérifier que le match existe
+    get_object_or_404(Match, id=match_id)
+    try:
+        data = json.loads(request.body)
+    except Exception:
+        return JsonResponse({'error': 'invalid json'}, status=400)
+
+    r = get_reglages()
+    fields = []
+
+    def _set(attr, key, lo, hi):
+        v = data.get(key)
+        if v is not None:
+            setattr(r, attr, max(lo, min(hi, int(v))))
+            fields.append(attr)
+
+    _set('scoreboard_score_scale',        'scoreScale',           60,  200)
+    _set('scoreboard_team_scale',         'teamScale',            10,  100)
+    _set('scoreboard_sponsor_height',     'sponsorHeight',         3,   30)
+    _set('scoreboard_sponsor_scale',      'sponsorScale',         20,  250)
+    _set('scoreboard_offset_dom_x',       'offset_dom_x',       -500, 500)
+    _set('scoreboard_offset_dom_y',       'offset_dom_y',       -500, 500)
+    _set('scoreboard_offset_mid_x',       'offset_mid_x',       -500, 500)
+    _set('scoreboard_offset_mid_y',       'offset_mid_y',       -500, 500)
+    _set('scoreboard_offset_ext_x',       'offset_ext_x',       -500, 500)
+    _set('scoreboard_offset_ext_y',       'offset_ext_y',       -500, 500)
+    _set('scoreboard_offset_score_dom_x', 'offset_score_dom_x', -500, 500)
+    _set('scoreboard_offset_score_dom_y', 'offset_score_dom_y', -500, 500)
+    _set('scoreboard_offset_score_ext_x', 'offset_score_ext_x', -500, 500)
+    _set('scoreboard_offset_score_ext_y', 'offset_score_ext_y', -500, 500)
+    _set('scoreboard_logo_dom_scale',     'logo_dom_scale',       20, 300)
+    _set('scoreboard_logo_ext_scale',     'logo_ext_scale',       20, 300)
+    _set('scoreboard_offset_logo_dom_x',  'offset_logo_dom_x',  -500, 500)
+    _set('scoreboard_offset_logo_dom_y',  'offset_logo_dom_y',  -500, 500)
+    _set('scoreboard_offset_logo_ext_x',  'offset_logo_ext_x',  -500, 500)
+    _set('scoreboard_offset_logo_ext_y',  'offset_logo_ext_y',  -500, 500)
+    _set('scoreboard_offset_name_dom_x',  'offset_name_dom_x',  -500, 500)
+    _set('scoreboard_offset_name_dom_y',  'offset_name_dom_y',  -500, 500)
+    _set('scoreboard_offset_name_ext_x',  'offset_name_ext_x',  -500, 500)
+    _set('scoreboard_offset_name_ext_y',  'offset_name_ext_y',  -500, 500)
+
+    pv = data.get('playersVisible')
+    if pv is not None:
+        r.scoreboard_players_visible = bool(pv)
+        fields.append('scoreboard_players_visible')
+
+    if fields:
+        r.save(update_fields=fields)
+    return JsonResponse({'ok': True})
 
 
 @csrf_exempt
@@ -815,6 +918,47 @@ def upload_sponsor(request, match_id):
         s = Sponsor.objects.create(match=match, image=f, ordre=count + idx)
         created.append({'id': s.id, 'url': request.build_absolute_uri(s.image.url)})
     return JsonResponse({'created': created})
+
+
+@csrf_exempt
+def api_sponsor_scale(request, sponsor_id):
+    """Met à jour la taille individuelle d'un sponsor."""
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST only'}, status=405)
+    s = get_object_or_404(Sponsor, id=sponsor_id)
+    try:
+        data = json.loads(request.body)
+        s.scale = max(20, min(300, int(data.get('scale', 100))))
+        s.save(update_fields=['scale'])
+    except Exception:
+        return JsonResponse({'error': 'invalid'}, status=400)
+    return JsonResponse({'ok': True, 'scale': s.scale})
+
+
+@csrf_exempt
+def api_global_sponsors(request):
+    """Retourne tous les sponsors globaux avec leur taille."""
+    host = request.build_absolute_uri('/')[:-1]
+    data = [
+        {'id': sg.id, 'url': host + sg.image.url, 'scale': sg.scale, 'nom': sg.nom or f'Sponsor #{sg.id}'}
+        for sg in SponsorGlobal.objects.order_by('ordre', 'id')
+    ]
+    return JsonResponse({'sponsors': data})
+
+
+@csrf_exempt
+def api_global_sponsor_scale(request, sg_id):
+    """Met à jour la taille globale d'un sponsor (SponsorGlobal)."""
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST only'}, status=405)
+    sg = get_object_or_404(SponsorGlobal, id=sg_id)
+    try:
+        data = json.loads(request.body)
+        sg.scale = max(20, min(300, int(data.get('scale', 100))))
+        sg.save(update_fields=['scale'])
+    except Exception:
+        return JsonResponse({'error': 'invalid'}, status=400)
+    return JsonResponse({'ok': True, 'scale': sg.scale})
 
 
 @csrf_exempt
@@ -865,10 +1009,19 @@ def api_match_state(request, match_id):
     request_host = request.build_absolute_uri('/')[:-1]
     logo_dom_url = (request_host + match.logo_dom.url) if match.logo_dom else None
     logo_ext_url = (request_host + match.logo_ext.url) if match.logo_ext else None
-    sponsor_urls = [
-        request_host + s.image.url
-        for s in Sponsor.objects.filter(match=match)
-    ]
+
+    # Construire un index image.name → SponsorGlobal pour récupérer la taille globale
+    sg_by_name = {sg.image.name: sg for sg in SponsorGlobal.objects.all()}
+
+    sponsor_urls = []
+    for s in Sponsor.objects.filter(match=match).order_by('ordre', 'id'):
+        sg = sg_by_name.get(s.image.name)
+        sponsor_urls.append({
+            'url':   request_host + s.image.url,
+            'id':    sg.id if sg else s.id,      # ID global en priorité (pour postMessage)
+            'scale': sg.scale if sg else s.scale,
+            'is_global': sg is not None,
+        })
 
     return JsonResponse({
         'score_dom':      match.score_domicile,
@@ -1111,7 +1264,8 @@ def export_excel(request, match_id):
             w(row, sc,     evt.chrono_match)
             w(row, sc + 1, dom_b)
             w(row, sc + 2, ext_b)
-            w(row, sc + 3, evt.type_action)
+            action_str = ('       E' if evt.type_action == 'E' else evt.type_action)
+            w(row, sc + 3, action_str)
             w(row, sc + 4, f"{evt.score_dom_apres}-{evt.score_ext_apres}")
             row_cursor += 1
 

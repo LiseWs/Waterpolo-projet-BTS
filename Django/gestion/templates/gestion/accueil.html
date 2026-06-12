@@ -1,3 +1,4 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -459,87 +460,24 @@
                     </div>
 
                     <!-- ══════════════════════════════════════════════════ -->
-                    <!-- PERSONNALISATION SCOREBOARD                        -->
+                    <!-- SON DU KLAXON                                      -->
                     <!-- ══════════════════════════════════════════════════ -->
                     <div class="scoreboard-group mt-3">
-                        <h6><i class="bi bi-display-fill"></i> Personnalisation de l'écran scoreboard</h6>
-                        <p class="small text-muted mb-3">
-                            Ajustez la taille de chaque section de l'affichage public en temps réel.
-                        </p>
-
-                        <div class="row g-3">
-                            <!-- Taille du score -->
-                            <div class="col-md-4">
-                                <label class="small fw-bold mb-2">
-                                    <i class="bi bi-123"></i> Taille du score
-                                </label>
-                                <div class="range-wrap">
-                                    <input type="range" name="scoreboard_score_scale"
-                                           id="sb_score_scale" min="60" max="200" value="100"
-                                           oninput="document.getElementById('sb_score_val').textContent = this.value + '%'">
-                                    <span class="range-val" id="sb_score_val">100%</span>
-                                </div>
-                                <div class="sb-preview-hint">60% = compact · 100% = défaut · 200% = géant</div>
+                        <h6><i class="bi bi-volume-up-fill"></i> Son du klaxon</h6>
+                        <label class="small fw-bold mb-2">Volume</label>
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="range-wrap flex-grow-1">
+                                <input type="range" name="klaxon_volume"
+                                       id="klaxon_vol" min="0" max="100" value="80"
+                                       oninput="document.getElementById('klaxon_vol_val').textContent = this.value + '%'">
+                                <span class="range-val" id="klaxon_vol_val">80%</span>
                             </div>
-
-                            <!-- Hauteur barre sponsors -->
-                            <div class="col-md-4">
-                                <label class="small fw-bold mb-2">
-                                    <i class="bi bi-image"></i> Hauteur sponsors
-                                </label>
-                                <div class="range-wrap">
-                                    <input type="range" name="scoreboard_sponsor_height"
-                                           id="sb_sponsor_h" min="5" max="30" value="10"
-                                           oninput="document.getElementById('sb_sponsor_val').textContent = this.value + 'vh'">
-                                    <span class="range-val" id="sb_sponsor_val">10vh</span>
-                                </div>
-                                <div class="sb-preview-hint">5vh = petite barre · 30vh = grande barre</div>
-                            </div>
-
-                            <!-- Zone joueurs -->
-                            <div class="col-md-4">
-                                <label class="small fw-bold mb-2">
-                                    <i class="bi bi-people-fill"></i> Zone joueurs
-                                </label>
-                                <div class="form-check form-switch mt-2">
-                                    <input class="form-check-input" type="checkbox"
-                                           name="scoreboard_players_visible"
-                                           id="sb_players_vis" value="true" checked>
-                                    <label class="form-check-label" for="sb_players_vis">
-                                        Afficher les joueurs sur le scoreboard
-                                    </label>
-                                </div>
-                                <div class="sb-preview-hint">Désactiver pour un affichage minimaliste</div>
-                            </div>
-
-                            <!-- Taille images sponsors -->
-                            <div class="col-md-4">
-                                <label class="small fw-bold mb-2">
-                                    <i class="bi bi-card-image"></i> Taille images sponsors
-                                </label>
-                                <div class="range-wrap">
-                                    <input type="range" name="scoreboard_sponsor_scale"
-                                           id="sb_sponsor_scale" min="40" max="200" value="100"
-                                           oninput="document.getElementById('sb_sponsor_scale_val').textContent = this.value + '%'">
-                                    <span class="range-val" id="sb_sponsor_scale_val">100%</span>
-                                </div>
-                                <div class="sb-preview-hint">40% = petits logos · 200% = grands logos</div>
-                            </div>
-
-                            <!-- Volume klaxon -->
-                            <div class="col-md-4">
-                                <label class="small fw-bold mb-2">
-                                    <i class="bi bi-volume-up-fill"></i> Volume klaxon
-                                </label>
-                                <div class="range-wrap">
-                                    <input type="range" name="klaxon_volume"
-                                           id="klaxon_vol" min="0" max="100" value="80"
-                                           oninput="document.getElementById('klaxon_vol_val').textContent = this.value + '%'">
-                                    <span class="range-val" id="klaxon_vol_val">80%</span>
-                                </div>
-                                <div class="sb-preview-hint">0% = muet · 100% = volume max</div>
-                            </div>
+                            <button type="button" class="btn btn-outline-secondary btn-sm flex-shrink-0"
+                                    onclick="testKlaxon()" title="Tester le klaxon">
+                                <i class="bi bi-play-fill"></i> Tester
+                            </button>
                         </div>
+                        <div class="sb-preview-hint mt-1">0% = muet · 100% = volume max</div>
                     </div>
 
                     <button type="submit" class="btn btn-primary w-100 btn-lg mt-3">
@@ -647,6 +585,10 @@
                             <a href="{% url 'export_excel' m.id %}"
                                class="btn btn-xs btn-outline-secondary py-0 px-1" style="font-size:.7rem;">
                                <i class="bi bi-file-earmark-excel"></i> FFN
+                            </a>
+                            <a href="{% url 'scoreboard_config' m.id %}"
+                               class="btn btn-xs btn-outline-warning py-0 px-1" style="font-size:.7rem;">
+                               <i class="bi bi-sliders"></i> Config
                             </a>
                         </div>
                     </div>
@@ -792,6 +734,25 @@
                 }
             })
             .catch(() => alert('Erreur réseau'));
+    }
+
+    /* ── Restaurer le volume klaxon depuis localStorage ─────────────────── */
+    (function(){
+        const saved = localStorage.getItem('klaxon_volume');
+        if (saved !== null) {
+            const el = document.getElementById('klaxon_vol');
+            const valEl = document.getElementById('klaxon_vol_val');
+            if (el) { el.value = saved; if (valEl) valEl.textContent = saved + '%'; }
+        }
+    })();
+
+    /* ── Test klaxon (bouton uniquement) ────────────────────────────────── */
+    const _klaxonPreview = new Audio("{% static 'gestion/klaxon.mp3' %}");
+    _klaxonPreview.preload = 'auto';
+    function testKlaxon() {
+        const val = parseInt(document.getElementById('klaxon_vol').value, 10);
+        _klaxonPreview.volume = Math.min(1, Math.max(0, val / 100));
+        try { _klaxonPreview.currentTime = 0; _klaxonPreview.play(); } catch(e) {}
     }
 
     /* ── Validation formulaire ────────────────────────────────────────────── */

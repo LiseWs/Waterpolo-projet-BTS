@@ -132,6 +132,27 @@ class Match(models.Model):
         default=100, help_text="Taille des images sponsors en % (40-200)")
     scoreboard_players_visible = models.BooleanField(
         default=True, help_text="Afficher la zone joueurs sur le scoreboard")
+    scoreboard_team_scale = models.IntegerField(
+        default=50, help_text="Largeur blocs équipes (15=étroit … 100=large, en fr/100)")
+    # Offsets de position des blocs (px, positif = droite/bas)
+    scoreboard_offset_dom_x  = models.IntegerField(default=0)
+    scoreboard_offset_dom_y  = models.IntegerField(default=0)
+    scoreboard_offset_mid_x  = models.IntegerField(default=0)
+    scoreboard_offset_mid_y  = models.IntegerField(default=0)
+    scoreboard_offset_ext_x  = models.IntegerField(default=0)
+    scoreboard_offset_ext_y  = models.IntegerField(default=0)
+    # Offsets du score seul (px, indépendant du bloc)
+    scoreboard_offset_score_dom_x = models.IntegerField(default=0)
+    scoreboard_offset_score_dom_y = models.IntegerField(default=0)
+    scoreboard_offset_score_ext_x = models.IntegerField(default=0)
+    scoreboard_offset_score_ext_y = models.IntegerField(default=0)
+    # Logos des équipes : taille (%) + offset (px)
+    scoreboard_logo_dom_scale     = models.IntegerField(default=100)
+    scoreboard_logo_ext_scale     = models.IntegerField(default=100)
+    scoreboard_offset_logo_dom_x  = models.IntegerField(default=0)
+    scoreboard_offset_logo_dom_y  = models.IntegerField(default=0)
+    scoreboard_offset_logo_ext_x  = models.IntegerField(default=0)
+    scoreboard_offset_logo_ext_y  = models.IntegerField(default=0)
 
     def __str__(self):
         return f"{self.nom_equipe_domicile} vs {self.nom_equipe_exterieur}"
@@ -247,6 +268,7 @@ class Sponsor(models.Model):
                                related_name='sponsors')
     image = models.FileField(upload_to='sponsors/')
     ordre = models.IntegerField(default=0)
+    scale = models.IntegerField(default=100, help_text="Taille individuelle en % (20-300)")
 
     class Meta:
         ordering = ['ordre', 'id']
@@ -256,7 +278,50 @@ class Sponsor(models.Model):
 
 
 # ==========================================
-# 7. SPONSORS GLOBAUX (bibliothèque réutilisable)
+# 7. RÉGLAGES ÉCRAN GLOBAUX (singleton — id=1)
+# ==========================================
+
+class ReglagesEcran(models.Model):
+    """Réglages visuels du scoreboard, partagés par tous les matchs."""
+    scoreboard_score_scale        = models.IntegerField(default=100)
+    scoreboard_sponsor_height     = models.IntegerField(default=10)
+    scoreboard_sponsor_scale      = models.IntegerField(default=100)
+    scoreboard_players_visible    = models.BooleanField(default=True)
+    scoreboard_team_scale         = models.IntegerField(default=50)
+    # Position des blocs
+    scoreboard_offset_dom_x       = models.IntegerField(default=0)
+    scoreboard_offset_dom_y       = models.IntegerField(default=0)
+    scoreboard_offset_mid_x       = models.IntegerField(default=0)
+    scoreboard_offset_mid_y       = models.IntegerField(default=0)
+    scoreboard_offset_ext_x       = models.IntegerField(default=0)
+    scoreboard_offset_ext_y       = models.IntegerField(default=0)
+    # Position du score seul
+    scoreboard_offset_score_dom_x = models.IntegerField(default=0)
+    scoreboard_offset_score_dom_y = models.IntegerField(default=0)
+    scoreboard_offset_score_ext_x = models.IntegerField(default=0)
+    scoreboard_offset_score_ext_y = models.IntegerField(default=0)
+    # Logos équipes
+    scoreboard_logo_dom_scale     = models.IntegerField(default=100)
+    scoreboard_logo_ext_scale     = models.IntegerField(default=100)
+    scoreboard_offset_logo_dom_x  = models.IntegerField(default=0)
+    scoreboard_offset_logo_dom_y  = models.IntegerField(default=0)
+    scoreboard_offset_logo_ext_x  = models.IntegerField(default=0)
+    scoreboard_offset_logo_ext_y  = models.IntegerField(default=0)
+    # Noms des équipes
+    scoreboard_offset_name_dom_x  = models.IntegerField(default=0)
+    scoreboard_offset_name_dom_y  = models.IntegerField(default=0)
+    scoreboard_offset_name_ext_x  = models.IntegerField(default=0)
+    scoreboard_offset_name_ext_y  = models.IntegerField(default=0)
+
+    class Meta:
+        verbose_name = 'Réglages écran'
+
+    def __str__(self):
+        return 'Réglages écran global'
+
+
+# ==========================================
+# 8. SPONSORS GLOBAUX (bibliothèque réutilisable)
 # ==========================================
 
 class SponsorGlobal(models.Model):
@@ -264,6 +329,7 @@ class SponsorGlobal(models.Model):
     image = models.FileField(upload_to='sponsors/')
     nom = models.CharField(max_length=100, blank=True)
     ordre = models.IntegerField(default=0)
+    scale = models.IntegerField(default=100, help_text="Taille individuelle en % (20-300), partagée entre tous les matchs")
 
     class Meta:
         ordering = ['ordre', 'id']

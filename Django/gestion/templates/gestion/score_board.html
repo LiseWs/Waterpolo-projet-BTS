@@ -28,23 +28,23 @@
   --f-sub:  'Barlow Condensed', 'Arial Narrow', sans-serif;
 
   --top-h:    clamp(30px,4vh,46px);
-  /* Taille du score — configurable via match.scoreboard_score_scale */
+  /* Taille du score — configurable via ReglagesEcran */
   --score-sz: clamp(
-    calc(4rem * {{ match.scoreboard_score_scale }} / 100),
-    calc(10vw * {{ match.scoreboard_score_scale }} / 100),
-    calc(12rem * {{ match.scoreboard_score_scale }} / 100)
+    calc(4rem * {{ r.scoreboard_score_scale }} / 100),
+    calc(10vw * {{ r.scoreboard_score_scale }} / 100),
+    calc(12rem * {{ r.scoreboard_score_scale }} / 100)
   );
-  --name-sz:  clamp(.9rem,2.2vw,3rem);
+  --name-sz:  clamp(.75rem,1.7vw,2.2rem);
   --ch-sz:    clamp(3rem,8vw,10rem);
   --shot-sz:  clamp(1.8rem,3.5vw,4.5rem);
   --per-sz:   clamp(.6rem,1vw,1.3rem);
-  --cell-r:   clamp(5px,.6vw,12px);
-  --cell-g:   clamp(3px,.4vw,8px);
+  --cell-r:   clamp(6px,.8vw,14px);
+  --cell-g:   clamp(4px,.55vw,10px);
   --tm-dot:   clamp(7px,1.1vw,18px);
-  /* Hauteur barre sponsors — configurable via match.scoreboard_sponsor_height */
-  --sponsors-bar-h: {{ match.scoreboard_sponsor_height }}vh;
-  /* Taille images sponsors — configurable via match.scoreboard_sponsor_scale */
-  --sponsor-img-h: calc(clamp(34px,7vh,88px) * {{ match.scoreboard_sponsor_scale }} / 100);
+  /* Hauteur barre sponsors — configurable via ReglagesEcran */
+  --sponsors-bar-h: {{ r.scoreboard_sponsor_height }}vh;
+  /* Taille images sponsors — configurable via ReglagesEcran */
+  --sponsor-img-h: calc(clamp(34px,7vh,88px) * {{ r.scoreboard_sponsor_scale }} / 100);
 }
 
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
@@ -53,7 +53,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);}
 body{
   font-family:var(--f-sub);color:#fff;
   display:grid;
-  grid-template-rows:var(--top-h) 1fr {% if match.scoreboard_players_visible %}auto {% endif %}auto;
+  grid-template-rows:var(--top-h) 1fr {% if r.scoreboard_players_visible %}auto {% endif %}auto;
   height:100vh;
 }
 
@@ -103,10 +103,10 @@ body::before{
 /* ── MAIN ZONE ───────────────────────────────────────── */
 .main-zone{
   position:relative;z-index:2;
-  display:grid;grid-template-columns:1fr auto 1fr;
+  display:grid;
   align-items:stretch;
-  padding:clamp(8px,1.5vh,22px) clamp(12px,2vw,48px);
-  gap:clamp(8px,1.5vw,30px);
+  padding:clamp(6px,1vh,16px) clamp(10px,1.5vw,36px);
+  gap:clamp(6px,1vw,22px);
   min-height:0;overflow:hidden;
 }
 .main-zone::after{
@@ -117,7 +117,7 @@ body::before{
 /* ── Team panel ── */
 .team-panel{
   display:flex;flex-direction:column;justify-content:space-between;
-  padding:clamp(10px,1.5vh,22px) clamp(12px,1.8vw,26px);
+  padding:clamp(6px,1vh,14px) clamp(8px,1.2vw,18px);
   border-radius:clamp(10px,1.2vw,18px);
   border:1px solid var(--bord);
   min-width:0;overflow:hidden;position:relative;
@@ -144,7 +144,7 @@ body::before{
 .team-panel.ext .team-header{flex-direction:row-reverse;}
 
 .team-logo-wrap{
-  width:clamp(40px,5.5vw,84px);height:clamp(40px,5.5vw,84px);
+  width:clamp(48px,6.5vw,100px);height:clamp(48px,6.5vw,100px);
   flex-shrink:0;border-radius:50%;overflow:hidden;
   display:flex;align-items:center;justify-content:center;
   background:rgba(255,255,255,.07);border:2px solid rgba(255,255,255,.14);
@@ -187,7 +187,7 @@ body::before{
 .team-panel.dom .score-num{color:#fff;text-shadow:0 0 40px rgba(255,255,255,.5),0 0 100px rgba(255,255,255,.1);}
 .team-panel.ext .score-num{color:var(--ext);text-shadow:0 0 40px rgba(0,212,255,.6),0 0 100px rgba(0,212,255,.15);}
 .score-num.flash{animation:scoreFlash .5s cubic-bezier(.34,1.56,.64,1);}
-@keyframes scoreFlash{0%{transform:scale(1);filter:brightness(1)}45%{transform:scale(1.22);filter:brightness(2.5)}100%{transform:scale(1);filter:brightness(1)}}
+@keyframes scoreFlash{0%{scale:1;filter:brightness(1)}45%{scale:1.22;filter:brightness(2.5)}100%{scale:1;filter:brightness(1)}}
 
 .score-ripple{
   position:absolute;inset:0;border-radius:inherit;pointer-events:none;
@@ -280,8 +280,8 @@ body::before{
 .players-zone{
   position:relative;z-index:2;
   display:flex;flex-direction:column;
-  gap:clamp(6px,1vh,16px);
-  padding:clamp(8px,1.2vh,20px) clamp(12px,2vw,48px);
+  gap:clamp(8px,1.5vh,20px);
+  padding:clamp(10px,2vh,28px) clamp(12px,2vw,48px);
   background:var(--bg2);
   border-top:1px solid var(--bord);
   border-bottom:1px solid var(--bord);
@@ -542,14 +542,17 @@ body::before{
 </div>
 
 <!-- MAIN ZONE -->
-<div class="main-zone">
+<div class="main-zone" style="grid-template-columns:{{ team_col }}fr auto {{ team_col }}fr">
 
   <!-- DOM -->
-  <div class="team-panel dom">
+  <div class="team-panel dom" id="block-dom"
+    style="transform:translate({{ r.scoreboard_offset_dom_x }}px,{{ r.scoreboard_offset_dom_y }}px)">
     <div class="team-header">
-      <div class="team-logo-wrap" id="logo-dom"><span class="logo-emoji">🤽</span></div>
+      <div class="team-logo-wrap" id="logo-dom"
+        style="transform:translate({{ r.scoreboard_offset_logo_dom_x }}px,{{ r.scoreboard_offset_logo_dom_y }}px) scale({{ logo_dom_scale_f }})"><span class="logo-emoji">🤽</span></div>
       <div class="team-name-wrap">
-        <div class="team-name" id="name-dom">{{ match.nom_equipe_domicile }}</div>
+        <div class="team-name" id="name-dom"
+          style="transform:translate({{ r.scoreboard_offset_name_dom_x }}px,{{ r.scoreboard_offset_name_dom_y }}px);display:inline-block">{{ match.nom_equipe_domicile }}</div>
         <div class="tm-row">
           <span class="tm-label">TM</span>
           <div class="tm-dots" id="tm-dom">{% for i in range_15 %}<div class="tm-dot"></div>{% endfor %}</div>
@@ -557,13 +560,15 @@ body::before{
       </div>
     </div>
     <div class="score-area">
-      <div class="score-num" id="score-dom">{{ match.score_domicile }}<div class="score-ripple" id="ripple-dom"></div></div>
+      <div class="score-num" id="score-dom"
+        style="transform:translate({{ r.scoreboard_offset_score_dom_x }}px,{{ r.scoreboard_offset_score_dom_y }}px)">{{ match.score_domicile }}<div class="score-ripple" id="ripple-dom"></div></div>
       <div class="lead-badge dom" id="lead-dom"></div>
     </div>
   </div>
 
   <!-- CENTER -->
-  <div class="center-block">
+  <div class="center-block" id="block-mid"
+    style="transform:translate({{ r.scoreboard_offset_mid_x }}px,{{ r.scoreboard_offset_mid_y }}px)">
     <div class="period-badge">PÉRIODE&nbsp;<span id="periode">{{ match.periode_actuelle }}</span></div>
     <div class="chrono" id="chrono">--:--</div>
     <div class="period-bar-wrap">
@@ -583,11 +588,14 @@ body::before{
   </div>
 
   <!-- EXT -->
-  <div class="team-panel ext">
+  <div class="team-panel ext" id="block-ext"
+    style="transform:translate({{ r.scoreboard_offset_ext_x }}px,{{ r.scoreboard_offset_ext_y }}px)">
     <div class="team-header">
-      <div class="team-logo-wrap" id="logo-ext"><span class="logo-emoji">🤽</span></div>
+      <div class="team-logo-wrap" id="logo-ext"
+        style="transform:translate({{ r.scoreboard_offset_logo_ext_x }}px,{{ r.scoreboard_offset_logo_ext_y }}px) scale({{ logo_ext_scale_f }})"><span class="logo-emoji">🤽</span></div>
       <div class="team-name-wrap">
-        <div class="team-name" id="name-ext">{{ match.nom_equipe_exterieur }}</div>
+        <div class="team-name" id="name-ext"
+          style="transform:translate({{ r.scoreboard_offset_name_ext_x }}px,{{ r.scoreboard_offset_name_ext_y }}px);display:inline-block">{{ match.nom_equipe_exterieur }}</div>
         <div class="tm-row" style="justify-content:flex-end">
           <div class="tm-dots" id="tm-ext">{% for i in range_15 %}<div class="tm-dot"></div>{% endfor %}</div>
           <span class="tm-label">TM</span>
@@ -596,14 +604,15 @@ body::before{
     </div>
     <div class="score-area">
       <div class="lead-badge ext" id="lead-ext"></div>
-      <div class="score-num" id="score-ext">{{ match.score_exterieur }}<div class="score-ripple" id="ripple-ext"></div></div>
+      <div class="score-num" id="score-ext"
+        style="transform:translate({{ r.scoreboard_offset_score_ext_x }}px,{{ r.scoreboard_offset_score_ext_y }}px)">{{ match.score_exterieur }}<div class="score-ripple" id="ripple-ext"></div></div>
     </div>
   </div>
 
 </div>
 
 <!-- PLAYERS -->
-{% if match.scoreboard_players_visible %}
+{% if r.scoreboard_players_visible %}
 <div class="players-zone">
   <div class="team-row">
     <div class="team-label dom-label" id="lbl-dom">{{ match.couleur_bonnet_dom }}</div>
@@ -1097,29 +1106,32 @@ function _applyCarouselMetrics(track){
   track.style.animationDuration=Math.max(8,singleW/90)+'s';
 }
 
-function updateSponsors(urls) {
-  if(!urls||!urls.length) return;
-  const sig=urls.join(','); if(sig===currentSponsors.join(',')) return;
-  currentSponsors=urls;
+function _sponsorImgTag(sp) {
+  // sp = {url, id, scale}  OU  string (rétrocompat)
+  const url   = (typeof sp==='string') ? sp : sp.url;
+  const sid   = (typeof sp==='string') ? '' : `data-sid="${sp.id}"`;
+  const scale = (typeof sp==='string') ? 100 : (sp.scale || 100);
+  const h     = (scale !== 100) ? `style="height:calc(var(--sponsor-img-h) * ${scale}/100)"` : '';
+  return `<img class="sponsor-img" ${sid} ${h} src="${url}" alt="sponsor">`;
+}
+
+function updateSponsors(sponsors) {
+  if(!sponsors||!sponsors.length) return;
+  const sig=sponsors.map(s=>typeof s==='string'?s:s.url+'@'+(s.scale||100)).join(',');
+  if(sig===currentSponsors.join(',')) return;
+  currentSponsors=sponsors.map(s=>typeof s==='string'?s:s.url+'@'+(s.scale||100));
   const track=document.getElementById('sponsors-track');
   const msg=document.getElementById('no-sponsors-msg'); if(msg) msg.remove();
 
-  if(urls.length===1){
-    // Sponsor unique → centré, sans animation
-    track.innerHTML=`<img class="sponsor-img" src="${urls[0]}" alt="sponsor">`;
+  if(sponsors.length===1){
+    track.innerHTML=_sponsorImgTag(sponsors[0]);
     track.classList.add('no-anim');
     return;
   }
-
-  // Plusieurs sponsors → 4 copies pour garantir aucun vide à droite
-  track.innerHTML=Array(_SP_COPIES).fill(urls).flat()
-    .map(u=>`<img class="sponsor-img" src="${u}" alt="sponsor">`).join('');
+  track.innerHTML=Array(_SP_COPIES).fill(sponsors).flat()
+    .map(sp=>_sponsorImgTag(sp)).join('');
   track.classList.remove('no-anim');
-
-  // Double RAF : le navigateur a eu le temps de calculer le layout
   requestAnimationFrame(()=>requestAnimationFrame(()=>_applyCarouselMetrics(track)));
-
-  // Fallback : recalcul quand toutes les images sont chargées
   const imgs=[...track.querySelectorAll('img')];
   let done=0;
   const onLoad=()=>{ done++; if(done===imgs.length) _applyCarouselMetrics(track); };
@@ -1162,6 +1174,95 @@ window.addEventListener('load',()=>{
     c.style.opacity='0'; c.style.transform='translateY(8px)';
     setTimeout(()=>{c.style.transition='opacity .3s ease,transform .3s cubic-bezier(.34,1.56,.64,1)';c.style.opacity='1';c.style.transform='translateY(0)';},i*10);
   });
+});
+
+/* ── Helpers transform parsing ── */
+function _parseTx(el){ const m=(el.style.transform||'').match(/translate\((-?[\d.]+)px/); return m?parseFloat(m[1]):0; }
+function _parseTy(el){ const m=(el.style.transform||'').match(/,\s*(-?[\d.]+)px\)/); return m?parseFloat(m[1]):0; }
+function _parseScale(tf){ const m=(tf||'').match(/scale\(([\d.]+)\)/); return m?parseFloat(m[1]):1; }
+
+/* ── Config live (postMessage depuis scoreboard_config.html) ── */
+window.addEventListener('message', e => {
+  if (!e.data || e.data.type !== 'sb-config') return;
+  const cfg = e.data;
+  const r = document.documentElement;
+  if (cfg.scoreScale !== undefined) {
+    const s = cfg.scoreScale;
+    r.style.setProperty('--score-sz',
+      `clamp(${(4*s/100).toFixed(3)}rem,${(10*s/100).toFixed(3)}vw,${(12*s/100).toFixed(3)}rem)`);
+  }
+  if (cfg.teamScale !== undefined) {
+    const tc = (cfg.teamScale / 100).toFixed(2);
+    const mz = document.querySelector('.main-zone');
+    if (mz) mz.style.gridTemplateColumns = `${tc}fr auto ${tc}fr`;
+  }
+  if (cfg.sponsorHeight !== undefined) {
+    r.style.setProperty('--sponsors-bar-h', `${cfg.sponsorHeight}vh`);
+  }
+  if (cfg.sponsorScale !== undefined) {
+    r.style.setProperty('--sponsor-img-h',
+      `calc(clamp(34px,7vh,88px) * ${cfg.sponsorScale} / 100)`);
+  }
+  if (cfg.playersVisible !== undefined) {
+    const pz = document.querySelector('.players-zone');
+    if (pz) pz.style.display = cfg.playersVisible ? '' : 'none';
+  }
+  // Offsets noms des équipes
+  ['dom','ext'].forEach(side => {
+    if (cfg['offset_name_'+side+'_x'] !== undefined || cfg['offset_name_'+side+'_y'] !== undefined) {
+      const el = document.getElementById('name-'+side);
+      if (el) {
+        const x = cfg['offset_name_'+side+'_x'] ?? _parseTx(el);
+        const y = cfg['offset_name_'+side+'_y'] ?? _parseTy(el);
+        el.style.transform = `translate(${x}px,${y}px)`;
+      }
+    }
+  });
+  // Offsets score seul
+  ['dom','ext'].forEach(side => {
+    if (cfg['offset_score_'+side+'_x'] !== undefined || cfg['offset_score_'+side+'_y'] !== undefined) {
+      const el = document.getElementById('score-'+side);
+      if (el) {
+        const x = cfg['offset_score_'+side+'_x'] ?? _parseTx(el);
+        const y = cfg['offset_score_'+side+'_y'] ?? _parseTy(el);
+        el.style.transform = `translate(${x}px,${y}px)`;
+      }
+    }
+  });
+  // Scale + offset logos
+  ['dom','ext'].forEach(side => {
+    const el = document.getElementById('logo-'+side);
+    if (!el) return;
+    const scKey = 'logo_'+side+'_scale';
+    const oxKey = 'offset_logo_'+side+'_x';
+    const oyKey = 'offset_logo_'+side+'_y';
+    if (cfg[scKey] !== undefined || cfg[oxKey] !== undefined || cfg[oyKey] !== undefined) {
+      const curTf = el.style.transform || '';
+      const curScale = _parseScale(curTf);
+      const curX = _parseTx(el), curY = _parseTy(el);
+      const sc  = cfg[scKey]  !== undefined ? (cfg[scKey] / 100) : curScale;
+      const x   = cfg[oxKey]  !== undefined ? cfg[oxKey]  : curX;
+      const y   = cfg[oyKey]  !== undefined ? cfg[oyKey]  : curY;
+      el.style.transform = `translate(${x}px,${y}px) scale(${sc.toFixed(2)})`;
+    }
+  });
+  // Offsets de position des blocs
+  ['dom','mid','ext'].forEach(b => {
+    if (cfg['offset_'+b+'_x'] !== undefined || cfg['offset_'+b+'_y'] !== undefined) {
+      const el = document.getElementById('block-'+b);
+      if (el) {
+        const x = cfg['offset_'+b+'_x'] ?? parseInt(el.style.transform.match(/translate\((-?\d+)/)?.[1]||'0');
+        const y = cfg['offset_'+b+'_y'] ?? parseInt(el.style.transform.match(/,\s*(-?\d+)/)?.[1]||'0');
+        el.style.transform = `translate(${x}px,${y}px)`;
+      }
+    }
+  });
+  if (cfg.sponsorId !== undefined && cfg.sponsorScale !== undefined) {
+    document.querySelectorAll(`img[data-sid="${cfg.sponsorId}"]`).forEach(img => {
+      img.style.height = cfg.sponsorScale === 100
+        ? '' : `calc(var(--sponsor-img-h) * ${cfg.sponsorScale}/100)`;
+    });
+  }
 });
 </script>
 </body>

@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Réglages écran — {{ match }}</title>
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Segoe UI',system-ui,sans-serif;}
+
+/* ── IFRAME PLEIN ÉCRAN ── */
+#sb-frame{position:fixed;inset:0;border:none;width:100%;height:100%;}
+
+/* ── BOUTON TOGGLE HUD ── */
+#hud-toggle{
+  position:fixed;top:14px;right:14px;z-index:1000;
+  width:46px;height:46px;border-radius:50%;border:none;cursor:pointer;
+  background:rgba(0,212,255,.18);backdrop-filter:blur(10px);
+  border:1.5px solid rgba(0,212,255,.4);color:#00d4ff;
+  font-size:1.3rem;display:flex;align-items:center;justify-content:center;
+  transition:background .2s,transform .2s;box-shadow:0 4px 20px rgba(0,0,0,.5);
+}
+#hud-toggle:hover{background:rgba(0,212,255,.35);transform:scale(1.08);}
+#hud-toggle.open{background:rgba(255,23,68,.18);border-color:rgba(255,23,68,.4);color:#ff4444;}
+
+/* ── HUD PANEL ── */
+#hud{
+  position:fixed;top:0;right:0;bottom:0;z-index:999;
+  width:320px;
+  background:rgba(6,10,20,.42);backdrop-filter:blur(28px) saturate(1.6);
+  -webkit-backdrop-filter:blur(28px) saturate(1.6);
+  border-left:1px solid rgba(0,212,255,.18);
+  display:flex;flex-direction:column;
+  transform:translateX(100%);
+  transition:transform .3s cubic-bezier(.4,0,.2,1);
+  box-shadow:-6px 0 32px rgba(0,0,0,.45);
+}
+#hud.open{transform:translateX(0);}
+
+/* ── HUD HEADER ── */
+#hud-header{
+  padding:14px 16px 12px;
+  border-bottom:1px solid rgba(255,255,255,.08);
+  background:rgba(0,0,0,.12);
+  display:flex;align-items:center;gap:10px;flex-shrink:0;
+}
+#hud-header h2{font-size:.88rem;font-weight:700;color:#fff;flex:1;letter-spacing:.5px;}
+#hud-header .match-name{font-size:.72rem;color:rgba(0,212,255,.8);font-weight:400;}
+.hud-close{
+  background:none;border:none;color:rgba(255,255,255,.4);cursor:pointer;
+  font-size:1.1rem;padding:2px 6px;border-radius:4px;transition:color .2s;
+}
+.hud-close:hover{color:#fff;}
+
+/* ── HUD BODY ── */
+#hud-body{flex:1;overflow-y:auto;padding:10px 14px 20px;}
+#hud-body::-webkit-scrollbar{width:3px;}
+#hud-body::-webkit-scrollbar-thumb{background:rgba(0,212,255,.2);border-radius:2px;}
+
+/* ── SAVE INDICATOR ── */
+#save-ind{
+  flex-shrink:0;padding:8px 14px;font-size:.75rem;font-weight:600;text-align:center;
+  border-top:1px solid rgba(255,255,255,.06);transition:all .3s;color:rgba(255,255,255,.3);
+}
+#save-ind.saving{color:#0ea5e9;background:rgba(14,165,233,.08);}
+#save-ind.saved {color:#22c55e;background:rgba(34,197,94,.08);}
+#save-ind.err   {color:#ff1744;background:rgba(255,23,68,.08);}
+
+/* ── SECTIONS ── */
+.hud-section{margin-bottom:6px;}
+.hud-section-title{
+  font-size:.65rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;
+  color:rgba(255,255,255,.3);padding:10px 0 5px 2px;
+}
+.hud-card{
+  background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.09);
+  border-radius:8px;padding:10px 12px;margin-bottom:5px;
+}
+
+/* ── CONTROL ROW ── */
+.ctrl-row{display:flex;flex-direction:column;gap:6px;margin-bottom:2px;}
+.ctrl-row + .ctrl-row{margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,.05);}
+.ctrl-label{
+  display:flex;justify-content:space-between;align-items:center;
+  font-size:.8rem;font-weight:600;color:rgba(255,255,255,.85);
+}
+.ctrl-val{
+  font-size:.78rem;font-weight:700;color:#00d4ff;
+  background:rgba(0,212,255,.1);padding:1px 8px;border-radius:5px;
+  min-width:46px;text-align:right;
+}
+
+/* ── SLIDER ── */
+input[type=range]{
+  -webkit-appearance:none;width:100%;height:3px;
+  background:rgba(255,255,255,.1);border-radius:2px;outline:none;cursor:pointer;
+}
+input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none;width:14px;height:14px;border-radius:50%;
+  background:#00d4ff;box-shadow:0 0 6px rgba(0,212,255,.6);
+  cursor:pointer;transition:transform .15s;
+}
+input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.3);}
+input[type=range].red::-webkit-slider-thumb{background:#ff1744;box-shadow:0 0 6px rgba(255,23,68,.6);}
+
+/* ── TOGGLE ── */
+.toggle-row{display:flex;align-items:center;justify-content:space-between;gap:8px;}
+.toggle-row span{font-size:.8rem;font-weight:600;color:rgba(255,255,255,.85);}
+.tgl{position:relative;width:36px;height:20px;cursor:pointer;flex-shrink:0;}
+.tgl input{opacity:0;width:0;height:0;position:absolute;}
+.tgl-track{position:absolute;inset:0;border-radius:10px;background:rgba(255,255,255,.1);transition:background .25s;}
+.tgl input:checked ~ .tgl-track{background:#00d4ff;}
+.tgl-thumb{position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#fff;transition:transform .25s;}
+.tgl input:checked ~ .tgl-thumb{transform:translateX(16px);}
+
+/* ── SPONSOR ROW ── */
+.sp-row{
+  display:flex;flex-direction:column;gap:5px;
+  padding:8px 0;border-bottom:1px solid rgba(255,255,255,.05);
+}
+.sp-row:last-child{border-bottom:none;padding-bottom:0;}
+.sp-head{display:flex;align-items:center;gap:8px;}
+.sp-thumb{
+  width:36px;height:24px;object-fit:contain;border-radius:3px;
+  background:rgba(255,255,255,.06);flex-shrink:0;
+}
+.sp-name{font-size:.75rem;color:rgba(255,255,255,.7);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.sp-val{font-size:.75rem;font-weight:700;color:#00d4ff;min-width:40px;text-align:right;}
+
+/* ── BACK BTN ── */
+.back-lnk{
+  display:block;text-align:center;padding:7px;margin-bottom:10px;
+  border-radius:7px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);
+  color:rgba(255,255,255,.5);text-decoration:none;font-size:.75rem;transition:background .2s;
+}
+.back-lnk:hover{background:rgba(255,255,255,.1);color:#fff;}
+</style>
+</head>
+<body>
+
+<!-- SCOREBOARD EN FOND PLEIN ÉCRAN -->
+<iframe id="sb-frame" src="/match/{{ match.id }}/scoreboard/"></iframe>
+
+<!-- BOUTON OUVRIR/FERMER HUD -->
+<button id="hud-toggle" title="Réglages">⚙</button>
+
+<!-- HUD FLOTTANT -->
+<div id="hud">
+  <div id="hud-header">
+    <div style="flex:1">
+      <h2>⚙ Réglages écran</h2>
+      <div class="match-name">{{ match.nom_equipe_domicile }} vs {{ match.nom_equipe_exterieur }}</div>
+    </div>
+    <button class="hud-close" id="hud-close-btn">✕</button>
+  </div>
+
+  <div id="hud-body">
+
+    <a class="back-lnk" href="/match/{{ match.id }}/compo/">← Retour composition équipes</a>
+
+    <!-- SCORE -->
+    <div class="hud-section">
+      <div class="hud-section-title">Score</div>
+      <div class="hud-card">
+        <div class="ctrl-row">
+          <div class="ctrl-label">Taille du score <span class="ctrl-val" id="v-ss">{{ r.scoreboard_score_scale }}%</span></div>
+          <input type="range" id="ss" min="60" max="200" step="5" value="{{ r.scoreboard_score_scale }}">
+        </div>
+      </div>
+    </div>
+
+    <!-- BLOCS ÉQUIPES -->
+    <div class="hud-section">
+      <div class="hud-section-title">Blocs équipes</div>
+      <div class="hud-card">
+        <div class="ctrl-row">
+          <div class="ctrl-label">Largeur des blocs <span class="ctrl-val" id="v-ts">{{ r.scoreboard_team_scale }}</span></div>
+          <input type="range" id="ts" min="10" max="100" step="5" value="{{ r.scoreboard_team_scale }}">
+        </div>
+      </div>
+    </div>
+
+    <!-- JOUEURS -->
+    <div class="hud-section">
+      <div class="hud-section-title">Joueurs</div>
+      <div class="hud-card">
+        <div class="toggle-row">
+          <span>Afficher le tableau</span>
+          <label class="tgl">
+            <input type="checkbox" id="pv" {% if r.scoreboard_players_visible %}checked{% endif %}>
+            <div class="tgl-track"></div><div class="tgl-thumb"></div>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- POSITION DU SCORE -->
+    <div class="hud-section">
+      <div class="hud-section-title">Position du score</div>
+      {% for score_id, score_lbl, sox, soy in score_offsets %}
+      <div class="hud-card" style="margin-bottom:6px;">
+        <div style="font-size:.75rem;font-weight:700;color:rgba(255,255,255,.6);margin-bottom:6px;">{{ score_lbl }}</div>
+        <div class="ctrl-row">
+          <div class="ctrl-label">← Gauche / Droite → <span class="ctrl-val" id="v-sox-{{ score_id }}">{{ sox }}px</span></div>
+          <input type="range" id="sox-{{ score_id }}" min="-400" max="400" step="5" value="{{ sox }}" data-score="{{ score_id }}" data-axis="x">
+        </div>
+        <div class="ctrl-row">
+          <div class="ctrl-label">↑ Haut / Bas ↓ <span class="ctrl-val" id="v-soy-{{ score_id }}">{{ soy }}px</span></div>
+          <input type="range" id="soy-{{ score_id }}" min="-400" max="400" step="5" value="{{ soy }}" data-score="{{ score_id }}" data-axis="y">
+        </div>
+        <button class="reset-btn" data-score="{{ score_id }}" style="margin-top:6px;width:100%;padding:4px;border-radius:5px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.5);cursor:pointer;font-size:.72rem;">↺ Remettre à zéro</button>
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- NOMS DES ÉQUIPES -->
+    <div class="hud-section">
+      <div class="hud-section-title">Noms des équipes</div>
+      {% for name_id, name_lbl, nox, noy in name_offsets %}
+      <div class="hud-card" style="margin-bottom:6px;">
+        <div style="font-size:.75rem;font-weight:700;color:rgba(255,255,255,.6);margin-bottom:6px;">{{ name_lbl }}</div>
+        <div class="ctrl-row">
+          <div class="ctrl-label">← Gauche / Droite → <span class="ctrl-val" id="v-nox-{{ name_id }}">{{ nox }}px</span></div>
+          <input type="range" id="nox-{{ name_id }}" min="-400" max="400" step="5" value="{{ nox }}" data-name="{{ name_id }}" data-axis="x">
+        </div>
+        <div class="ctrl-row">
+          <div class="ctrl-label">↑ Haut / Bas ↓ <span class="ctrl-val" id="v-noy-{{ name_id }}">{{ noy }}px</span></div>
+          <input type="range" id="noy-{{ name_id }}" min="-400" max="400" step="5" value="{{ noy }}" data-name="{{ name_id }}" data-axis="y">
+        </div>
+        <button class="reset-btn" data-name="{{ name_id }}" style="margin-top:6px;width:100%;padding:4px;border-radius:5px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.5);cursor:pointer;font-size:.72rem;">↺ Remettre à zéro</button>
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- LOGOS DES ÉQUIPES -->
+    <div class="hud-section">
+      <div class="hud-section-title">Logos des équipes</div>
+      {% for logo_id, logo_lbl, lscale, lox, loy in logo_controls %}
+      <div class="hud-card" style="margin-bottom:6px;">
+        <div style="font-size:.75rem;font-weight:700;color:rgba(255,255,255,.6);margin-bottom:6px;">{{ logo_lbl }}</div>
+        <div class="ctrl-row">
+          <div class="ctrl-label">Taille <span class="ctrl-val" id="v-lsc-{{ logo_id }}">{{ lscale }}%</span></div>
+          <input type="range" id="lsc-{{ logo_id }}" min="20" max="300" step="10" value="{{ lscale }}" data-logo="{{ logo_id }}" data-axis="scale">
+        </div>
+        <div class="ctrl-row">
+          <div class="ctrl-label">← Gauche / Droite → <span class="ctrl-val" id="v-lox-{{ logo_id }}">{{ lox }}px</span></div>
+          <input type="range" id="lox-{{ logo_id }}" min="-300" max="300" step="5" value="{{ lox }}" data-logo="{{ logo_id }}" data-axis="x">
+        </div>
+        <div class="ctrl-row">
+          <div class="ctrl-label">↑ Haut / Bas ↓ <span class="ctrl-val" id="v-loy-{{ logo_id }}">{{ loy }}px</span></div>
+          <input type="range" id="loy-{{ logo_id }}" min="-300" max="300" step="5" value="{{ loy }}" data-logo="{{ logo_id }}" data-axis="y">
+        </div>
+        <button class="reset-btn-logo" data-logo="{{ logo_id }}" style="margin-top:6px;width:100%;padding:4px;border-radius:5px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.5);cursor:pointer;font-size:.72rem;">↺ Remettre à zéro</button>
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- POSITION DES BLOCS -->
+    <div class="hud-section">
+      <div class="hud-section-title">Position des blocs</div>
+      {% for bloc_id, bloc_lbl, ox, oy in offset_blocs %}
+      <div class="hud-card" style="margin-bottom:6px;">
+        <div style="font-size:.75rem;font-weight:700;color:rgba(255,255,255,.6);margin-bottom:6px;">{{ bloc_lbl }}</div>
+        <div class="ctrl-row">
+          <div class="ctrl-label">← Gauche / Droite → <span class="ctrl-val" id="v-ox-{{ bloc_id }}">{{ ox }}px</span></div>
+          <input type="range" id="ox-{{ bloc_id }}" min="-300" max="300" step="5" value="{{ ox }}" data-bloc="{{ bloc_id }}" data-axis="x">
+        </div>
+        <div class="ctrl-row">
+          <div class="ctrl-label">↑ Haut / Bas ↓ <span class="ctrl-val" id="v-oy-{{ bloc_id }}">{{ oy }}px</span></div>
+          <input type="range" id="oy-{{ bloc_id }}" min="-300" max="300" step="5" value="{{ oy }}" data-bloc="{{ bloc_id }}" data-axis="y">
+        </div>
+        <button class="reset-btn" data-bloc="{{ bloc_id }}" style="margin-top:6px;width:100%;padding:4px;border-radius:5px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.5);cursor:pointer;font-size:.72rem;">↺ Remettre à zéro</button>
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- SPONSORS GLOBAUX -->
+    <div class="hud-section">
+      <div class="hud-section-title">Sponsors — global</div>
+      <div class="hud-card">
+        <div class="ctrl-row">
+          <div class="ctrl-label">Hauteur barre <span class="ctrl-val" id="v-sh">{{ r.scoreboard_sponsor_height }}vh</span></div>
+          <input type="range" id="sh" min="3" max="30" step="1" value="{{ r.scoreboard_sponsor_height }}">
+        </div>
+        <div class="ctrl-row">
+          <div class="ctrl-label">Taille images <span class="ctrl-val" id="v-sc">{{ r.scoreboard_sponsor_scale }}%</span></div>
+          <input type="range" id="sc" min="20" max="250" step="10" value="{{ r.scoreboard_sponsor_scale }}">
+        </div>
+      </div>
+    </div>
+
+    <!-- SPONSORS INDIVIDUELS -->
+    <div class="hud-section">
+      <div class="hud-section-title">Sponsors — individuel</div>
+      <div class="hud-card" id="sp-individual">
+        <div style="font-size:.75rem;color:rgba(255,255,255,.3);text-align:center;padding:8px 0;">
+          Chargement…
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /hud-body -->
+
+  <div id="save-ind">Prêt</div>
+</div>
+
+<script>
+(function(){
+  const MATCH   = {{ match.id }};
+  const SB_API  = `/api/match/${MATCH}/state/`;
+  const CFG_API = `/api/match/${MATCH}/sb-settings/`;
+  const FRAME   = document.getElementById('sb-frame');
+  const HUD     = document.getElementById('hud');
+  const TOGGLE  = document.getElementById('hud-toggle');
+  const IND     = document.getElementById('save-ind');
+
+  /* ── HUD open/close ── */
+  function openHud()  { HUD.classList.add('open'); TOGGLE.classList.add('open'); TOGGLE.textContent='✕'; }
+  function closeHud() { HUD.classList.remove('open'); TOGGLE.classList.remove('open'); TOGGLE.textContent='⚙'; }
+  TOGGLE.addEventListener('click', () => HUD.classList.contains('open') ? closeHud() : openHud());
+  document.getElementById('hud-close-btn').addEventListener('click', closeHud);
+  // Ouvre par défaut après un court délai
+  setTimeout(openHud, 600);
+
+  /* ── postMessage vers iframe ── */
+  function push(patch) {
+    try { FRAME.contentWindow.postMessage({ type:'sb-config', ...patch }, '*'); } catch(_){}
+  }
+
+  /* ── Indicateur sauvegarde ── */
+  let _hideT = null;
+  function indicate(cls, txt) {
+    IND.className=cls; IND.textContent=txt;
+    clearTimeout(_hideT);
+    if(cls==='saved') _hideT=setTimeout(()=>{ IND.className=''; IND.textContent='Prêt'; }, 2000);
+  }
+
+  /* ── Auto-save debounce ── */
+  const _buf={};
+  let _saveT=null;
+  function save(key, value) {
+    _buf[key]=value;
+    clearTimeout(_saveT);
+    indicate('saving','Sauvegarde…');
+    _saveT=setTimeout(async()=>{
+      try {
+        const r=await fetch(CFG_API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({..._buf})});
+        Object.keys(_buf).forEach(k=>delete _buf[k]);
+        r.ok ? indicate('saved','Sauvegardé ✓') : indicate('err','Erreur');
+      } catch { indicate('err','Erreur réseau'); }
+    },700);
+  }
+
+  /* ── Sliders globaux ── */
+  function wire(id, lbl, unit, msgKey, saveKey) {
+    document.getElementById(id).addEventListener('input', function(){
+      const v=parseInt(this.value,10);
+      document.getElementById(lbl).textContent=v+(unit||'');
+      push({[msgKey]:v});
+      save(saveKey||msgKey, v);
+    });
+  }
+  wire('ss','v-ss','%','scoreScale','scoreScale');
+  wire('ts','v-ts','', 'teamScale', 'teamScale');
+  wire('sh','v-sh','vh','sponsorHeight','sponsorHeight');
+  wire('sc','v-sc','%','sponsorScale','sponsorScale');
+
+  document.getElementById('pv').addEventListener('change', function(){
+    push({playersVisible:this.checked});
+    save('playersVisible',this.checked);
+  });
+
+  /* ── Offsets noms ── */
+  document.querySelectorAll('input[data-name][data-axis]').forEach(el => {
+    el.addEventListener('input', function() {
+      const side = this.dataset.name, axis = this.dataset.axis;
+      const v = parseInt(this.value, 10);
+      document.getElementById(`v-no${axis}-${side}`).textContent = v + 'px';
+      push({ [`offset_name_${side}_${axis}`]: v });
+      save(`offset_name_${side}_${axis}`, v);
+    });
+  });
+  document.querySelectorAll('.reset-btn[data-name]').forEach(btn => {
+    btn.addEventListener('click', function() {
+      const side = this.dataset.name;
+      ['x','y'].forEach(axis => {
+        const sl = document.getElementById(`no${axis}-${side}`);
+        sl.value = 0;
+        document.getElementById(`v-no${axis}-${side}`).textContent = '0px';
+        save(`offset_name_${side}_${axis}`, 0);
+      });
+      push({ [`offset_name_${side}_x`]: 0, [`offset_name_${side}_y`]: 0 });
+    });
+  });
+
+  /* ── Offsets du score ── */
+  document.querySelectorAll('input[data-score][data-axis]').forEach(el => {
+    el.addEventListener('input', function() {
+      const side = this.dataset.score, axis = this.dataset.axis;
+      const v = parseInt(this.value, 10);
+      document.getElementById(`v-so${axis}-${side}`).textContent = v + 'px';
+      push({ [`offset_score_${side}_${axis}`]: v });
+      save(`offset_score_${side}_${axis}`, v);
+    });
+  });
+  document.querySelectorAll('.reset-btn[data-score]').forEach(btn => {
+    btn.addEventListener('click', function() {
+      const side = this.dataset.score;
+      ['x','y'].forEach(axis => {
+        const sl = document.getElementById(`so${axis}-${side}`);
+        sl.value = 0;
+        document.getElementById(`v-so${axis}-${side}`).textContent = '0px';
+        save(`offset_score_${side}_${axis}`, 0);
+      });
+      push({ [`offset_score_${side}_x`]: 0, [`offset_score_${side}_y`]: 0 });
+    });
+  });
+
+  /* ── Logos équipes (scale + offsets) ── */
+  document.querySelectorAll('input[data-logo][data-axis]').forEach(el => {
+    el.addEventListener('input', function() {
+      const side = this.dataset.logo, axis = this.dataset.axis;
+      const v = parseInt(this.value, 10);
+      if (axis === 'scale') {
+        document.getElementById(`v-lsc-${side}`).textContent = v + '%';
+        push({ [`logo_${side}_scale`]: v });
+        save(`logo_${side}_scale`, v);
+      } else {
+        document.getElementById(`v-lo${axis}-${side}`).textContent = v + 'px';
+        push({ [`offset_logo_${side}_${axis}`]: v });
+        save(`offset_logo_${side}_${axis}`, v);
+      }
+    });
+  });
+  document.querySelectorAll('.reset-btn-logo').forEach(btn => {
+    btn.addEventListener('click', function() {
+      const side = this.dataset.logo;
+      const slSc = document.getElementById(`lsc-${side}`);
+      slSc.value = 100;
+      document.getElementById(`v-lsc-${side}`).textContent = '100%';
+      save(`logo_${side}_scale`, 100);
+      ['x','y'].forEach(axis => {
+        const sl = document.getElementById(`lo${axis}-${side}`);
+        sl.value = 0;
+        document.getElementById(`v-lo${axis}-${side}`).textContent = '0px';
+        save(`offset_logo_${side}_${axis}`, 0);
+      });
+      push({ [`logo_${side}_scale`]: 100, [`offset_logo_${side}_x`]: 0, [`offset_logo_${side}_y`]: 0 });
+    });
+  });
+
+  /* ── Offsets de position des blocs ── */
+  document.querySelectorAll('input[data-bloc][data-axis]').forEach(el => {
+    el.addEventListener('input', function() {
+      const bloc = this.dataset.bloc, axis = this.dataset.axis;
+      const v = parseInt(this.value, 10);
+      document.getElementById(`v-o${axis}-${bloc}`).textContent = v + 'px';
+      push({ [`offset_${bloc}_${axis}`]: v });
+      save(`offset_${bloc}_${axis}`, v);
+    });
+  });
+  document.querySelectorAll('.reset-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+      const bloc = this.dataset.bloc;
+      ['x','y'].forEach(axis => {
+        const sl = document.getElementById(`o${axis}-${bloc}`);
+        sl.value = 0;
+        document.getElementById(`v-o${axis}-${bloc}`).textContent = '0px';
+        save(`offset_${bloc}_${axis}`, 0);
+      });
+      push({ [`offset_${bloc}_x`]: 0, [`offset_${bloc}_y`]: 0 });
+    });
+  });
+
+  /* ── Sponsors individuels (globaux — indépendants du match) ── */
+  const _spBuf={};
+  let _spTimer={};
+
+  function saveSponsorScale(sgId, scale) {
+    _spBuf[sgId]=scale;
+    clearTimeout(_spTimer[sgId]);
+    indicate('saving','Sauvegarde…');
+    _spTimer[sgId]=setTimeout(async()=>{
+      try {
+        const res=await fetch(`/api/global-sponsor/${sgId}/scale/`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({scale})});
+        res.ok ? indicate('saved','Sauvegardé ✓') : indicate('err','Erreur');
+      } catch { indicate('err','Erreur réseau'); }
+    },700);
+  }
+
+  function buildSponsorControls(sponsors) {
+    const container=document.getElementById('sp-individual');
+    if(!sponsors||!sponsors.length){
+      container.innerHTML='<div style="font-size:.75rem;color:rgba(255,255,255,.3);text-align:center;padding:8px 0;">Aucun sponsor dans la bibliothèque</div>';
+      return;
+    }
+    container.innerHTML='';
+    sponsors.forEach(sp=>{
+      const row=document.createElement('div');
+      row.className='sp-row';
+      row.innerHTML=`
+        <div class="sp-head">
+          <img class="sp-thumb" src="${sp.url}" alt="">
+          <span class="sp-name">${sp.nom||'Sponsor #'+sp.id}</span>
+          <span class="sp-val" id="spv-${sp.id}">${sp.scale}%</span>
+        </div>
+        <input type="range" min="20" max="300" step="10" value="${sp.scale}" data-sgid="${sp.id}">
+      `;
+      container.appendChild(row);
+      row.querySelector('input').addEventListener('input', function(){
+        const v=parseInt(this.value,10);
+        document.getElementById(`spv-${sp.id}`).textContent=v+'%';
+        push({sponsorId:sp.id, sponsorScale:v});
+        saveSponsorScale(sp.id, v);
+      });
+    });
+  }
+
+  /* ── Charger les sponsors depuis la bibliothèque globale ── */
+  async function loadSponsors(){
+    try {
+      const res=await fetch('/api/global-sponsors/'); if(!res.ok) return;
+      const d=await res.json();
+      if(d.sponsors) buildSponsorControls(d.sponsors);
+    } catch(_){}
+  }
+  FRAME.addEventListener('load', loadSponsors);
+  loadSponsors();
+
+})();
+</script>
+</body>
+</html>

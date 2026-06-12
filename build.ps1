@@ -53,13 +53,35 @@ Write-Host "[4/5] Installation des dépendances..." -ForegroundColor Yellow
     django `
     openpyxl `
     waitress `
+    pillow `
     --no-warn-script-location `
     --quiet
 Write-Host "[OK] Dépendances installées" -ForegroundColor Green
 
-# ── 5. Vérification finale ────────────────────────────────────────────────────
-Write-Host "[5/5] Vérification..." -ForegroundColor Yellow
-$test = & "$pyRuntime\python.exe" -c "import django, openpyxl, waitress; print('OK')" 2>&1
+# ── 5. Création de l'icône .ico ──────────────────────────────────────────────
+Write-Host "[5/6] Création de l'icône .ico..." -ForegroundColor Yellow
+$pngSrc = "$PSScriptRoot\Django\gestion\static\gestion\WaterpoloManager.png"
+$icoDst = "$PSScriptRoot\waterpolo.ico"
+if (Test-Path $pngSrc) {
+    $pyCode = @"
+from PIL import Image
+img = Image.open(r'$pngSrc').convert('RGBA')
+img.save(r'$icoDst', format='ICO', sizes=[(16,16),(32,32),(48,48),(256,256)])
+print('OK')
+"@
+    $result = & "$pyRuntime\python.exe" -c $pyCode 2>&1
+    if ($result -eq "OK") {
+        Write-Host "[OK] waterpolo.ico créé" -ForegroundColor Green
+    } else {
+        Write-Host "[WARN] Conversion icône échouée : $result" -ForegroundColor Yellow
+    }
+} else {
+    Write-Host "[WARN] Image source introuvable : $pngSrc" -ForegroundColor Yellow
+}
+
+# ── 6. Vérification finale ────────────────────────────────────────────────────
+Write-Host "[6/6] Vérification..." -ForegroundColor Yellow
+$test = & "$pyRuntime\python.exe" -c "import django, openpyxl, waitress, PIL; print('OK')" 2>&1
 if ($test -eq "OK") {
     Write-Host "[OK] Tous les modules fonctionnent" -ForegroundColor Green
 } else {
@@ -68,8 +90,8 @@ if ($test -eq "OK") {
 
 Write-Host "`n=== ENVIRONNEMENT PRÊT ===" -ForegroundColor Cyan
 Write-Host "Prochaine étape :"
-Write-Host "  1. Ouvre Inno Setup Compiler"
-Write-Host "  2. File > Open > installer.iss"
+Write-Host "  1. Telecharge et installe Inno Setup : https://jrsoftware.org/isinfo.php"
+Write-Host "  2. Ouvre installer.iss dans Inno Setup Compiler"
 Write-Host "  3. Build > Compile  (ou F9)"
 Write-Host "  4. Le setup.exe est dans Output\"
 Write-Host ""

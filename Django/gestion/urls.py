@@ -22,4 +22,12 @@ urlpatterns = [
     # Sponsors
     path('match/<int:match_id>/sponsors/upload/', views.upload_sponsor,  name='upload_sponsor'),
     path('sponsors/<int:sponsor_id>/delete/',     views.delete_sponsor,  name='delete_sponsor'),
+
+    # Config scoreboard live
+    path('match/<int:match_id>/config/',             views.scoreboard_config,          name='scoreboard_config'),
+    path('api/match/<int:match_id>/sb-settings/',    views.api_scoreboard_settings,    name='api_scoreboard_settings'),
+    path('api/sponsor/<int:sponsor_id>/scale/',      views.api_sponsor_scale,          name='api_sponsor_scale'),
+    # Sponsors globaux
+    path('api/global-sponsors/',                     views.api_global_sponsors,        name='api_global_sponsors'),
+    path('api/global-sponsor/<int:sg_id>/scale/',    views.api_global_sponsor_scale,   name='api_global_sponsor_scale'),
 ]

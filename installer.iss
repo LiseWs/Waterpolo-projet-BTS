@@ -1,13 +1,13 @@
 ; ============================================================
 ;  WaterPolo BTS — Inno Setup Script
-;  Prérequis : avoir exécuté build.ps1 d'abord
-;  Compiler  : F9 dans Inno Setup Compiler
+;  Prérequis : avoir exécuté build.ps1 d'abord (une seule fois)
+;  Compiler  : ouvrir dans Inno Setup Compiler puis F9
 ; ============================================================
 
 [Setup]
 AppName=WaterPolo BTS
 AppVersion=1.0
-AppPublisher=BTS SN
+AppPublisher=BTS CIEL
 DefaultDirName={autopf}\WaterPolo-BTS
 DefaultGroupName=WaterPolo BTS
 OutputDir=Output
@@ -18,6 +18,8 @@ WizardStyle=modern
 PrivilegesRequired=admin
 DisableWelcomePage=no
 DisableDirPage=no
+SetupIconFile=waterpolo.ico
+UninstallDisplayIcon={app}\waterpolo.ico
 
 [Languages]
 Name: "french"; MessagesFile: "compiler:Languages\French.isl"
@@ -26,25 +28,34 @@ Name: "french"; MessagesFile: "compiler:Languages\French.isl"
 Name: "desktopicon"; Description: "Créer un raccourci sur le Bureau"; GroupDescription: "Raccourcis :"
 
 [Files]
-; Application Django
-Source: "Django\*"; DestDir: "{app}\Django"; Flags: ignoreversion recursesubdirs createallsubdirs
+; Application Django — sans venv (~50 Mo inutile) ni __pycache__
+Source: "Django\*"; DestDir: "{app}\Django"; Excludes: "venv\*,__pycache__\*,*.pyc,*.pyo"; Flags: ignoreversion recursesubdirs createallsubdirs
 
-; Python portable + dépendances (pip install déjà fait)
+; Python portable + toutes les dépendances (installées par build.ps1)
 Source: "python-runtime\*"; DestDir: "{app}\python-runtime"; Flags: ignoreversion recursesubdirs createallsubdirs
 
-; Lanceur principal
+; Scripts de lancement
 Source: "start.bat"; DestDir: "{app}"; Flags: ignoreversion
+Source: "start.vbs"; DestDir: "{app}"; Flags: ignoreversion
+Source: "migrate.bat"; DestDir: "{app}"; Flags: ignoreversion
 
-; Code Arduino (documentation / référence)
-Source: "CODAGE\*"; DestDir: "{app}\CODAGE"; Flags: ignoreversion recursesubdirs createallsubdirs
+; Icône de l'application (générée par build.ps1)
+Source: "waterpolo.ico"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
-Name: "{group}\WaterPolo BTS";       Filename: "{app}\start.bat"; WorkingDir: "{app}"; Comment: "Lancer l'application WaterPolo BTS"
-Name: "{group}\Désinstaller";        Filename: "{uninstallexe}"
-Name: "{autodesktop}\WaterPolo BTS"; Filename: "{app}\start.bat"; WorkingDir: "{app}"; Tasks: desktopicon; Comment: "Lancer WaterPolo BTS"
+; Menu Démarrer
+Name: "{group}\WaterPolo BTS"; Filename: "wscript.exe"; Parameters: """{app}\start.vbs"""; WorkingDir: "{app}"; IconFilename: "{app}\waterpolo.ico"; Comment: "Lancer l'application WaterPolo BTS"
+Name: "{group}\Désinstaller"; Filename: "{uninstallexe}"
+
+; Bureau (coché par défaut)
+Name: "{autodesktop}\WaterPolo BTS"; Filename: "wscript.exe"; Parameters: """{app}\start.vbs"""; WorkingDir: "{app}"; IconFilename: "{app}\waterpolo.ico"; Comment: "Lancer WaterPolo BTS"; Tasks: desktopicon
 
 [Run]
-Filename: "{app}\start.bat"; Description: "Lancer WaterPolo BTS maintenant"; Flags: postinstall nowait runminimized skipifsilent
+; 1. Migration de la base de données (silencieuse, bloquante)
+Filename: "{app}\migrate.bat"; StatusMsg: "Initialisation de la base de données..."; Flags: runhidden waituntilterminated
+
+; 2. Proposer de lancer l'appli tout de suite après installation
+Filename: "wscript.exe"; Parameters: """{app}\start.vbs"""; WorkingDir: "{app}"; Description: "Lancer WaterPolo BTS maintenant"; Flags: postinstall nowait skipifsilent
 
 [UninstallDelete]
 Type: filesandordirs; Name: "{app}\Django\db.sqlite3"
