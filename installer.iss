@@ -8,14 +8,14 @@
 AppName=WaterPolo BTS
 AppVersion=1.0
 AppPublisher=BTS CIEL
-DefaultDirName={autopf}\WaterPolo-BTS
+DefaultDirName={localappdata}\WaterPolo-BTS
 DefaultGroupName=WaterPolo BTS
 OutputDir=Output
 OutputBaseFilename=WaterPolo-BTS-setup
 Compression=lzma2/ultra64
 SolidCompression=yes
 WizardStyle=modern
-PrivilegesRequired=admin
+PrivilegesRequired=lowest
 DisableWelcomePage=no
 DisableDirPage=no
 SetupIconFile=waterpolo.ico
