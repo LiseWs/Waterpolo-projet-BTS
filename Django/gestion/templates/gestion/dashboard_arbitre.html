@@ -1229,9 +1229,11 @@
         }
 
         /* ── Arduino / Web Serial ────────────────────────────────────────── */
-        // Protocole 3 octets (Arduino : arduino_afficheurs.ino) :
-        //   [shot_clock 0-30]  [timer_high]  [timer_low]  → 0-480 s sans troncature
-        // Envoi toutes les 500 ms via setInterval → synchro garantie à la seconde
+        // Protocole 3 octets vers Arduino (waterpolo_afficheurs.ino) :
+        //   [H_chrono]  octet fort du chrono en secondes
+        //   [L_chrono]  octet faible du chrono en secondes
+        //   [shot]      shot clock en secondes (0-255)
+        // Vitesse : 9600 bauds (même que Serial.begin(9600) dans l'Arduino)
         let portSerie = null, writer = null;
         let _syncInterval = null;
 
@@ -1239,44 +1241,58 @@
             const btn = document.getElementById('btnArduino');
             if (!btn) return;
             if (writer) {
-                btn.innerHTML = '<i class="fas fa-usb"></i> Afficheurs connectés';
+                btn.innerHTML = '<i class="fas fa-circle" style="color:#4ade80;font-size:.5em"></i> Afficheurs connectés';
                 btn.style.background = '#166534';
                 btn.onclick = deconnecterAfficheur;
             } else {
-                btn.innerHTML = '<i class="fas fa-usb"></i> Connecter Afficheurs';
-                btn.style.background = '#e65100';
+                btn.innerHTML = '<i class="fas fa-usb"></i> Connecter Afficheur';
+                btn.style.background = '';
                 btn.onclick = connecterAfficheur;
             }
         }
 
         async function envoyerValeursAfficheurs() {
             if (!writer) return;
-            const shotVal = Math.ceil(shotLeft()) & 0xFF;
+            const chrono = Math.max(0, Math.ceil(timeLeft()));
+            const shot   = Math.max(0, Math.ceil(shotLeft())) & 0xFF;
             try {
-                await writer.write(new Uint8Array([shotVal]));
+                // 3 octets : [H_chrono][L_chrono][shot] — 9600 bauds, même protocole que l'Arduino
+                await writer.write(new Uint8Array([
+                    (chrono >> 8) & 0xFF,
+                    chrono & 0xFF,
+                    shot,
+                ]));
             } catch (e) {
                 writer = null;
                 clearInterval(_syncInterval);
                 _syncInterval = null;
                 updateArduinoBtn();
+                showToast('⚠️ Afficheur déconnecté');
             }
         }
 
         async function connecterAfficheur() {
+            if (!('serial' in navigator)) {
+                alert('⚠️ Web Serial non disponible.\nUtilisez Chrome ou Edge.');
+                return;
+            }
             try {
                 portSerie = await navigator.serial.requestPort();
-                await portSerie.open({ baudRate: 115200 });
+                await portSerie.open({ baudRate: 9600 });  // même vitesse que Serial.begin(9600) Arduino
                 writer = portSerie.writable.getWriter();
                 updateArduinoBtn();
-                showToast('Connexion afficheur… (2s)');
-                // L'ouverture du port reboot l'Arduino via DTR.
-                // On attend 2.5s qu'il finisse de redémarrer avant d'envoyer.
+                showToast('Connexion afficheur… attente Arduino (2s)');
+                // L'ouverture du port reboot l'Arduino (DTR) — attendre qu'il démarre
                 await new Promise(r => setTimeout(r, 2500));
                 await envoyerValeursAfficheurs();
-                _syncInterval = setInterval(envoyerValeursAfficheurs, 200);
+                _syncInterval = setInterval(envoyerValeursAfficheurs, 500);
             } catch (e) {
-                console.error('Connexion série :', e);
-                alert('❌ Échec connexion afficheurs.');
+                if (e.name !== 'NotFoundError') {
+                    console.error('Connexion série :', e);
+                    alert('❌ Échec connexion afficheur : ' + e.message);
+                }
+                writer = null; portSerie = null;
+                updateArduinoBtn();
             }
         }
 
@@ -1288,6 +1304,7 @@
                 if (portSerie) { await portSerie.close(); portSerie = null; }
             } catch (e) { writer = null; portSerie = null; }
             updateArduinoBtn();
+            showToast('Afficheur déconnecté');
         }
 
         /* ── Actions chrono ──────────────────────────────────────────────── */

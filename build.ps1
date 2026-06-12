@@ -1,98 +1,108 @@
 # ============================================================
-#  build.ps1 — Construction automatique de WaterPolo-BTS
-#  Lance ce script UNE FOIS pour préparer tout l'environnement.
-#  Ensuite ouvre installer.iss dans Inno Setup et appuie sur F9.
+#  build.ps1 - Prepare le runtime Python + compile l'installeur
+#  Utilise par BUILD_INSTALLER.bat (ne pas lancer directement)
 # ============================================================
 Set-Location $PSScriptRoot
 $ErrorActionPreference = "Stop"
 
-Write-Host "`n=== WATERPOLO BTS — Script de build ===" -ForegroundColor Cyan
+Write-Host ""
+Write-Host "=== WATERPOLO BTS - Script de build ===" -ForegroundColor Cyan
+Write-Host ""
 
-# ── 1. Télécharger Python embeddable ─────────────────────────────────────────
-$pyVersion  = "3.12.10"
-$pyZip      = "python-$pyVersion-embed-amd64.zip"
-$pyUrl      = "https://www.python.org/ftp/python/$pyVersion/$pyZip"
-$pyRuntime  = "$PSScriptRoot\python-runtime"
-$pyZipPath  = "$PSScriptRoot\$pyZip"
+$pyVersion = "3.12.10"
+$pyZip     = "python-$pyVersion-embed-amd64.zip"
+$pyUrl     = "https://www.python.org/ftp/python/$pyVersion/$pyZip"
+$pyRuntime = "$PSScriptRoot\python-runtime"
 
+# -- 1. Telecharger Python embeddable --
 if (Test-Path "$pyRuntime\python.exe") {
-    Write-Host "[OK] Python embeddable déjà présent" -ForegroundColor Green
+    Write-Host "[OK] Python embeddable deja present" -ForegroundColor Green
 } else {
-    Write-Host "[1/5] Téléchargement Python $pyVersion embeddable..." -ForegroundColor Yellow
+    Write-Host "[1/5] Telechargement Python $pyVersion embeddable..." -ForegroundColor Yellow
+    $pyZipPath = "$PSScriptRoot\$pyZip"
     Invoke-WebRequest -Uri $pyUrl -OutFile $pyZipPath -UseBasicParsing
-    Write-Host "[2/5] Extraction..." -ForegroundColor Yellow
+    Write-Host "      Extraction..." -ForegroundColor Yellow
     Expand-Archive -Path $pyZipPath -DestinationPath $pyRuntime -Force
     Remove-Item $pyZipPath
     Write-Host "[OK] Python extrait dans python-runtime\" -ForegroundColor Green
 }
 
-# ── 2. Activer pip (décommenter import site dans le .pth) ────────────────────
-$pthFile = Get-ChildItem "$pyRuntime\python*.._pth" | Select-Object -First 1
-if ($pthFile) {
-    $content = Get-Content $pthFile.FullName
-    $fixed   = $content | ForEach-Object { $_ -replace "^#import site", "import site" }
-    $fixed | Set-Content $pthFile.FullName -Encoding ASCII
-    Write-Host "[OK] import site activé dans $($pthFile.Name)" -ForegroundColor Green
+# -- 2. Corriger le .pth : activer import site ET ajouter Lib\site-packages --
+Write-Host "[2/5] Configuration du runtime Python..." -ForegroundColor Yellow
+$pthFile = Get-ChildItem "$pyRuntime\python3*._pth" | Select-Object -First 1
+if (-not $pthFile) {
+    Write-Host "[ERREUR] Fichier .pth introuvable dans python-runtime\" -ForegroundColor Red
+    pause; exit 1
 }
 
-# ── 3. Installer pip ──────────────────────────────────────────────────────────
-$getPip = "$PSScriptRoot\get-pip.py"
-if (-not (Test-Path "$pyRuntime\Scripts\pip.exe")) {
-    Write-Host "[3/5] Installation de pip..." -ForegroundColor Yellow
+# Reecrire completement le .pth avec les bonnes entrees (sans here-string pour eviter les problemes d'encodage)
+$pthLines = @("python312.zip", ".", "Lib\site-packages", "", "import site")
+$pthLines | Set-Content -Path $pthFile.FullName -Encoding ASCII
+Write-Host "[OK] $($pthFile.Name) configure (import site + Lib\site-packages)" -ForegroundColor Green
+
+# -- 3. Installer pip (forcer si python -m pip ne fonctionne pas) --
+Write-Host "[3/5] Verification de pip..." -ForegroundColor Yellow
+$pipOk = & "$pyRuntime\python.exe" -m pip --version 2>&1
+if ($pipOk -notlike "*pip*") {
+    Write-Host "      pip non fonctionnel, reinstallation..." -ForegroundColor Yellow
+    $getPip = "$PSScriptRoot\get-pip.py"
     Invoke-WebRequest -Uri "https://bootstrap.pypa.io/get-pip.py" -OutFile $getPip -UseBasicParsing
     & "$pyRuntime\python.exe" $getPip --no-warn-script-location
     Remove-Item $getPip -ErrorAction SilentlyContinue
-    Write-Host "[OK] pip installé" -ForegroundColor Green
+    $pipOk2 = & "$pyRuntime\python.exe" -m pip --version 2>&1
+    if ($pipOk2 -notlike "*pip*") {
+        Write-Host "[ERREUR] pip toujours non fonctionnel apres reinstallation" -ForegroundColor Red
+        pause; exit 1
+    }
+    Write-Host "[OK] pip installe" -ForegroundColor Green
 } else {
-    Write-Host "[OK] pip déjà présent" -ForegroundColor Green
+    Write-Host "[OK] pip fonctionnel : $pipOk" -ForegroundColor Green
 }
 
-# ── 4. Installer les dépendances du projet ────────────────────────────────────
-Write-Host "[4/5] Installation des dépendances..." -ForegroundColor Yellow
+# -- 4. Installer les dependances --
+Write-Host "[4/5] Installation des dependances (django, waitress, openpyxl...)..." -ForegroundColor Yellow
 & "$pyRuntime\python.exe" -m pip install `
-    django `
-    openpyxl `
+    django==6.0.2 `
+    openpyxl==3.1.5 `
     waitress `
     pillow `
+    pyserial `
     --no-warn-script-location `
     --quiet
-Write-Host "[OK] Dépendances installées" -ForegroundColor Green
 
-# ── 5. Création de l'icône .ico ──────────────────────────────────────────────
-Write-Host "[5/6] Création de l'icône .ico..." -ForegroundColor Yellow
+$pipResult = $LASTEXITCODE
+if ($pipResult -ne 0) {
+    Write-Host "[ERREUR] pip install a echoue (code $pipResult)" -ForegroundColor Red
+    pause; exit 1
+}
+Write-Host "[OK] Dependances installees" -ForegroundColor Green
+
+# -- 5. Creer l'icone .ico --
+Write-Host "[5/5] Creation de l'icone .ico..." -ForegroundColor Yellow
 $pngSrc = "$PSScriptRoot\Django\gestion\static\gestion\WaterpoloManager.png"
 $icoDst = "$PSScriptRoot\waterpolo.ico"
 if (Test-Path $pngSrc) {
-    $pyCode = @"
-from PIL import Image
-img = Image.open(r'$pngSrc').convert('RGBA')
-img.save(r'$icoDst', format='ICO', sizes=[(16,16),(32,32),(48,48),(256,256)])
-print('OK')
-"@
+    $pyCode = "from PIL import Image; img=Image.open(r'$pngSrc').convert('RGBA'); img.save(r'$icoDst',format='ICO',sizes=[(16,16),(32,32),(48,48),(256,256)]); print('OK')"
     $result = & "$pyRuntime\python.exe" -c $pyCode 2>&1
-    if ($result -eq "OK") {
-        Write-Host "[OK] waterpolo.ico créé" -ForegroundColor Green
+    if ("$result" -eq "OK") {
+        Write-Host "[OK] waterpolo.ico cree" -ForegroundColor Green
     } else {
-        Write-Host "[WARN] Conversion icône échouée : $result" -ForegroundColor Yellow
+        Write-Host "[WARN] Icone non creee : $result" -ForegroundColor Yellow
     }
 } else {
-    Write-Host "[WARN] Image source introuvable : $pngSrc" -ForegroundColor Yellow
+    Write-Host "[WARN] Image source introuvable, icone ignoree" -ForegroundColor Yellow
 }
 
-# ── 6. Vérification finale ────────────────────────────────────────────────────
-Write-Host "[6/6] Vérification..." -ForegroundColor Yellow
-$test = & "$pyRuntime\python.exe" -c "import django, openpyxl, waitress, PIL; print('OK')" 2>&1
-if ($test -eq "OK") {
-    Write-Host "[OK] Tous les modules fonctionnent" -ForegroundColor Green
+# -- Verification finale --
+Write-Host ""
+Write-Host "Verification finale..." -ForegroundColor Yellow
+$test = & "$pyRuntime\python.exe" -c "import django, openpyxl, waitress; print('OK')" 2>&1
+if ("$test" -eq "OK") {
+    Write-Host "[OK] Tous les modules sont importables" -ForegroundColor Green
 } else {
     Write-Host "[ERREUR] $test" -ForegroundColor Red
+    pause; exit 1
 }
 
-Write-Host "`n=== ENVIRONNEMENT PRÊT ===" -ForegroundColor Cyan
-Write-Host "Prochaine étape :"
-Write-Host "  1. Telecharge et installe Inno Setup : https://jrsoftware.org/isinfo.php"
-Write-Host "  2. Ouvre installer.iss dans Inno Setup Compiler"
-Write-Host "  3. Build > Compile  (ou F9)"
-Write-Host "  4. Le setup.exe est dans Output\"
 Write-Host ""
-pause
+Write-Host "=== RUNTIME PRET ===" -ForegroundColor Cyan

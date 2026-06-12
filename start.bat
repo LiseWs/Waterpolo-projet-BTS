@@ -1,18 +1,32 @@
 @echo off
 cd /d "%~dp0"
 
-:: ── Lancer Waitress (serveur multi-thread) ───────────────────────────────────
+:: ════════════════════════════════════════════════════════════════
+::  CONFIGURATION AFFICHEURS RS485
+::  Mettre le port COM de l'Arduino (ex: COM3, COM4, COM5...)
+::  Laisser VIDE pour désactiver les afficheurs
+:: ════════════════════════════════════════════════════════════════
+set ARDUINO_PORT=
+:: ════════════════════════════════════════════════════════════════
+
 set PYTHONPATH=%~dp0Django
+
+:: ── Lancer Waitress (serveur) ─────────────────────────────────────────────────
 start "" /B python-runtime\python.exe -m waitress ^
     --host=127.0.0.1 ^
     --port=8000 ^
     --threads=8 ^
     waterpolo_site.wsgi:application
 
-:: Attendre 2 secondes que le serveur démarre
-timeout /t 2 /nobreak >nul
+:: Attendre que le serveur démarre
+timeout /t 3 /nobreak >nul
 
-:: ── Ouvrir en mode application (sans barre d'adresse) ────────────────────────
+:: ── Lancer le pont afficheurs si configuré ────────────────────────────────────
+if not "%ARDUINO_PORT%"=="" (
+    start "" /B python-runtime\python.exe serial_bridge.py --port %ARDUINO_PORT%
+)
+
+:: ── Ouvrir le navigateur en mode application ─────────────────────────────────
 set URL=http://127.0.0.1:8000
 set FLAGS=--app=%URL% --window-size=1400,900 --no-default-browser-check --disable-extensions --disable-infobars --disable-pinch --noerrdialogs
 

@@ -34,10 +34,11 @@ Source: "Django\*"; DestDir: "{app}\Django"; Excludes: "venv\*,__pycache__\*,*.p
 ; Python portable + toutes les dépendances (installées par build.ps1)
 Source: "python-runtime\*"; DestDir: "{app}\python-runtime"; Flags: ignoreversion recursesubdirs createallsubdirs
 
-; Scripts de lancement
+; Scripts de lancement et installation
 Source: "start.bat"; DestDir: "{app}"; Flags: ignoreversion
 Source: "start.vbs"; DestDir: "{app}"; Flags: ignoreversion
 Source: "migrate.bat"; DestDir: "{app}"; Flags: ignoreversion
+Source: "install_deps.bat"; DestDir: "{app}"; Flags: ignoreversion
 
 ; Icône de l'application (générée par build.ps1)
 Source: "waterpolo.ico"; DestDir: "{app}"; Flags: ignoreversion
@@ -51,7 +52,7 @@ Name: "{group}\Désinstaller"; Filename: "{uninstallexe}"
 Name: "{autodesktop}\WaterPolo BTS"; Filename: "wscript.exe"; Parameters: """{app}\start.vbs"""; WorkingDir: "{app}"; IconFilename: "{app}\waterpolo.ico"; Comment: "Lancer WaterPolo BTS"; Tasks: desktopicon
 
 [Run]
-; 1. Migration de la base de données (silencieuse, bloquante)
+; 1. Migration de la base de données (Django, création du SQLite)
 Filename: "{app}\migrate.bat"; StatusMsg: "Initialisation de la base de données..."; Flags: runhidden waituntilterminated
 
 ; 2. Proposer de lancer l'appli tout de suite après installation

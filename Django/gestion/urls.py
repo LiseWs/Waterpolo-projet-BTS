@@ -15,6 +15,8 @@ urlpatterns = [
     # API JSON
     path('api/match/<int:match_id>/',        views.api_match_action,  name='api_match_action'),
     path('api/match/<int:match_id>/state/',  views.api_match_state,   name='api_match_state'),
+    path('api/match/<int:match_id>/timer-serial/', views.api_timer_serial, name='api_timer_serial'),
+    path('api/latest-match/',                     views.api_latest_match, name='api_latest_match'),
 
     # Export Excel (feuille de match officielle FFN)
     path('match/<int:match_id>/export/',     views.export_excel,      name='export_excel'),

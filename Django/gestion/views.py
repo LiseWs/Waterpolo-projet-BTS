@@ -962,6 +962,38 @@ def api_global_sponsor_scale(request, sg_id):
 
 
 @csrf_exempt
+def api_latest_match(request):
+    """Retourne l'ID du dernier match créé (pour l'auto-détection du pont série)."""
+    match = Match.objects.order_by('-id').first()
+    return JsonResponse({'match_id': match.id if match else None})
+
+
+@csrf_exempt
+def api_timer_serial(request, match_id):
+    """Retourne les valeurs temps-réel du chrono et du shot clock pour le pont série Arduino."""
+    match = get_object_or_404(Match, id=match_id)
+    now = timezone.now().timestamp()
+
+    if match.chrono_en_cours and match.dernier_top_chrono:
+        elapsed = now - match.dernier_top_chrono.timestamp()
+        chrono = max(0, int(match.temps_restant - elapsed))
+    else:
+        chrono = max(0, match.temps_restant)
+
+    if match.shot_en_cours and match.shot_top:
+        elapsed = now - match.shot_top.timestamp()
+        shot = max(0, int(match.shot_restant - elapsed))
+    else:
+        shot = max(0, match.shot_restant)
+
+    return JsonResponse({
+        'chrono':  min(chrono, 65535),
+        'shot':    min(shot, 255),
+        'running': match.chrono_en_cours,
+    })
+
+
+@csrf_exempt
 def delete_sponsor(request, sponsor_id):
     """Delete a sponsor image."""
     if request.method != 'POST':
