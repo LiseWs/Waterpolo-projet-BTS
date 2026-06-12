@@ -36,6 +36,7 @@ Source: "python-runtime\*"; DestDir: "{app}\python-runtime"; Flags: ignoreversio
 
 ; Scripts de lancement et installation
 Source: "start.bat"; DestDir: "{app}"; Flags: ignoreversion
+Source: "serve.py"; DestDir: "{app}"; Flags: ignoreversion
 Source: "start.vbs"; DestDir: "{app}"; Flags: ignoreversion
 Source: "migrate.bat"; DestDir: "{app}"; Flags: ignoreversion
 Source: "install_deps.bat"; DestDir: "{app}"; Flags: ignoreversion

@@ -6,7 +6,7 @@ set ARDUINO_PORT=
 set PYTHONPATH=%~dp0Django
 
 :: Lancer Waitress en arriere-plan, log des erreurs
-start "" /B python-runtime\python.exe -m waitress --host=127.0.0.1 --port=8000 --threads=8 waterpolo_site.wsgi:application 2>"%~dp0server_error.log"
+start "" /B python-runtime\python.exe serve.py
 
 timeout /t 4 /nobreak >nul
 
